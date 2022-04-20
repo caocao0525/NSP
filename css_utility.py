@@ -4,7 +4,7 @@
 # ### Utility file
 # Various functions to process the initial bed data
 
-# In[159]:
+# In[1]:
 
 
 import os
@@ -16,7 +16,7 @@ from motif_utils import seq2kmer
 
 # #### Preparing the .bed file list
 
-# In[160]:
+# In[2]:
 
 
 # file name reader
@@ -31,40 +31,43 @@ def file_list_maker(path, files):
         file_path=os.path.join(path,file)
         all_files.append(file_path)
     return all_files
-# all_files=file_list_maker(path, bed_files)
+all_files=file_list_maker(path, bed_files)
 
 
+# In[3]:
 
 
+all_files[0]
 
-# In[162]:
+
+# In[4]:
 
 
 # test file
-# test_filename='../database/bed/unzipped/E017_15_coreMarks_stateno.bed'
+test_filename='../database/bed/unzipped/E017_15_coreMarks_stateno.bed'
 
 
-# In[163]:
+# In[5]:
 
 
 state_dict={1:"A", 2:"B", 3:"C", 4:"D", 5:"E",6:"F",7:"G",8:"H" ,
                 9:"I" ,10:"J",11:"K", 12:"L", 13:"M", 14:"N", 15:"O"}
 
 
-# In[287]:
+# In[6]:
 
 
 css_name=['TssA','TssAFlnk','TxFlnk','Tx','TxWk','EnhG','Enh','ZNF/Rpts',
           'Het','TssBiv','BivFlnk','EnhBiv','ReprPC','ReprPcWk','Quies']
 
 
-# In[305]:
+# In[7]:
 
 
 css_dict=dict(zip(list(state_dict.values()), css_name))  # css_dict={"A":"TssA", "B":"TssAFlnk", ... }
 
 
-# In[306]:
+# In[8]:
 
 
 css_color_dict={'TssA':(219, 57, 50), 'TssAFlnk': (222, 87, 54), 'TxFlnk': (107, 187, 87),
@@ -76,7 +79,7 @@ css_color_dict={'TssA':(219, 57, 50), 'TssAFlnk': (222, 87, 54), 'TxFlnk': (107,
 
 # #### Function to convert RGB into decimal RGB
 
-# In[337]:
+# In[9]:
 
 
 def colors2color_dec(css_color_dict):
@@ -88,9 +91,36 @@ def colors2color_dec(css_color_dict):
     return color_dec_list
 
 
+# In[10]:
+
+
+state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dict)))
+
+
+# #### Function to create pickle file (dataframe, expanded version) for an individual cell
+
+# In[9]:
+
+
+# create a pickle for a cell-wise dataframe
+
+def total_df2pickle(total_df_list):
+    for num, df_cell in enumerate(tqdm.notebook.tqdm(total_df_list)):
+        path="../database/cell_pickle/"
+        if num+1 < 10:
+            file_name=path+"df_cell"+"00"+str(num+1)+".pkl"
+            df_cell_pickled=df_cell.to_pickle(file_name)
+        elif num+1 < 100:
+            file_name=path+"df_cell"+"0"+str(num+1)+".pkl"
+            df_cell_pickled=df_cell.to_pickle(file_name)
+        else:
+            file_name=path+"df_cell"+str(num+1)+".pkl"
+            df_cell_pickled=df_cell.to_pickle(file_name)
+
+
 # #### Functions to make .bed to dataframe
 
-# In[164]:
+# In[11]:
 
 
 # create dataframe from bed file
@@ -111,7 +141,7 @@ def bed2df_as_is(filename):
     return df
 
 
-# In[165]:
+# In[12]:
 
 
 def bed2df_expanded(filename):
@@ -135,7 +165,7 @@ def bed2df_expanded(filename):
     return df 
 
 
-# In[166]:
+# In[13]:
 
 
 def total_df_maker(all_files):
@@ -154,7 +184,7 @@ def total_df_maker(all_files):
 # 
 # CSS here refers Chromatin state sequence
 
-# In[167]:
+# In[14]:
 
 
 def numchr(df):
@@ -162,7 +192,7 @@ def numchr(df):
     return df["chromosome"].nunique()    
 
 
-# In[168]:
+# In[15]:
 
 
 # create a large piece of string of the whole state_seq_full 
@@ -180,7 +210,7 @@ def df2css_allchr(df):
 
 # #### Create CSS chromosome-wise
 
-# In[169]:
+# In[16]:
 
 
 # first, learn where one chromosome ends in the df
@@ -216,7 +246,7 @@ def df2chr_index(df):
 
 # #### Create CSS chromosome-wise, string only
 
-# In[186]:
+# In[17]:
 
 
 # create a list of dataframes, each of which contains the name of chromosome and chromosome-wise string of state_seq_full
@@ -242,7 +272,7 @@ def df2css_chr(df):
     return df_chr_list    
 
 
-# In[252]:
+# In[18]:
 
 
 def df2css_chr_str(df):
@@ -263,13 +293,14 @@ def df2css_chr_str(df):
 
 
 
+
 # #### CSS Pattern analysis
 # 
 # Now the dataframe has been transformed into a list of string all connected css, chromosome-wise.<br>
 # The variable of the above list is now called chr_css_list.<br>
 # Following functions will analyze the statistics of the each strings.
 
-
+# In[19]:
 
 
 def css_list2count(df, chr_css_list):
@@ -290,6 +321,4 @@ def css_list2count(df, chr_css_list):
             count_all.loc[letter][chr_name]=chr_css.count(letter)
     
     return count_all
-
-
 
