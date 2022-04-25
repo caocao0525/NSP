@@ -70,7 +70,7 @@ css_color_dict={'TssA':(219, 57, 50), 'TssAFlnk': (222, 87, 54), 'TxFlnk': (107,
                 'Tx': (57, 124, 72), 'TxWk': (48, 98, 58), 'EnhG': (197, 213, 80), 'Enh': (245, 196, 98),
                 'ZNF/Rpts': (129, 194, 169), 'Het': (137,143,189), 'TssBiv': (192, 98, 95), 
                 'BivFlnk': (223, 156, 127), 'EnhBiv': (188, 182, 115), 'ReprPC': (147, 149, 153),
-                'ReprPCWk': (200, 202, 203), 'Quies': (255, 255, 255)}
+                'ReprPCWk': (200, 202, 203), 'Quies': (240, 240, 240)}
 
 
 # #### Function to convert RGB into decimal RGB
