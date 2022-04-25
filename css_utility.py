@@ -16,7 +16,7 @@ from motif_utils import seq2kmer
 
 # #### Preparing the .bed file list
 
-# In[2]:
+# In[8]:
 
 
 # file name reader
@@ -25,22 +25,18 @@ from motif_utils import seq2kmer
 path='../database/bed/unzipped/'
 bed_files=os.listdir(path)
 
+pickle_path='../database/cell_pickle'
+pickle_files=os.listdir(pickle_path)
+
 def file_list_maker(path, files):
     all_files=[]
     for file in files:
         file_path=os.path.join(path,file)
         all_files.append(file_path)
     return all_files
+
 all_files=file_list_maker(path, bed_files)
-
-
-# In[3]:
-
-
-all_files[0]
-
-
-# In[4]:
+all_cell_pickles=file_list_maker(pickle_path, pickle_files)
 
 
 # test file
@@ -97,9 +93,15 @@ def colors2color_dec(css_color_dict):
 state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dict)))
 
 
+# In[11]:
+
+
+state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values())))
+
+
 # #### Function to create pickle file (dataframe, expanded version) for an individual cell
 
-# In[9]:
+# In[12]:
 
 
 # create a pickle for a cell-wise dataframe
@@ -120,7 +122,7 @@ def total_df2pickle(total_df_list):
 
 # #### Functions to make .bed to dataframe
 
-# In[11]:
+# In[13]:
 
 
 # create dataframe from bed file
@@ -141,7 +143,7 @@ def bed2df_as_is(filename):
     return df
 
 
-# In[12]:
+# In[14]:
 
 
 def bed2df_expanded(filename):
@@ -165,7 +167,7 @@ def bed2df_expanded(filename):
     return df 
 
 
-# In[13]:
+# In[15]:
 
 
 def total_df_maker(all_files):
@@ -184,7 +186,7 @@ def total_df_maker(all_files):
 # 
 # CSS here refers Chromatin state sequence
 
-# In[14]:
+# In[16]:
 
 
 def numchr(df):
@@ -192,7 +194,7 @@ def numchr(df):
     return df["chromosome"].nunique()    
 
 
-# In[15]:
+# In[17]:
 
 
 # create a large piece of string of the whole state_seq_full 
@@ -210,7 +212,7 @@ def df2css_allchr(df):
 
 # #### Create CSS chromosome-wise
 
-# In[16]:
+# In[18]:
 
 
 # first, learn where one chromosome ends in the df
@@ -246,7 +248,7 @@ def df2chr_index(df):
 
 # #### Create CSS chromosome-wise, string only
 
-# In[17]:
+# In[19]:
 
 
 # create a list of dataframes, each of which contains the name of chromosome and chromosome-wise string of state_seq_full
@@ -272,7 +274,7 @@ def df2css_chr(df):
     return df_chr_list    
 
 
-# In[18]:
+# In[20]:
 
 
 def df2css_chr_str(df):
@@ -292,15 +294,13 @@ def df2css_chr_str(df):
     return chr_css_list
 
 
-
-
 # #### CSS Pattern analysis
 # 
 # Now the dataframe has been transformed into a list of string all connected css, chromosome-wise.<br>
 # The variable of the above list is now called chr_css_list.<br>
 # Following functions will analyze the statistics of the each strings.
 
-# In[19]:
+# In[21]:
 
 
 def css_list2count(df, chr_css_list):
@@ -321,4 +321,26 @@ def css_list2count(df, chr_css_list):
             count_all.loc[letter][chr_name]=chr_css.count(letter)
     
     return count_all
+
+
+
+
+
+def colored_css_str(sub_str):
+    col_str=""
+    for letter in sub_str:
+        for state in list(state_col_255_dict.keys()):
+            if letter==state:
+                r=state_col_255_dict[letter][0]
+                g=state_col_255_dict[letter][1]
+                b=state_col_255_dict[letter][2]
+                col_letter="\033[38;2;{};{};{}m{} \033[38;2;255;255;255m".format(r,g,b,letter)
+                col_str+=col_letter
+    return print("\033[1m"+col_str+"\033[0;0m") 
+
+
+
+
+
+
 
