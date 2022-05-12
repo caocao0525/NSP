@@ -89,14 +89,6 @@ css_color_dict={'TssA':(219, 57, 50), 'TssAFlnk': (222, 87, 54), 'TxFlnk': (107,
                 'ReprPCWk': (200, 202, 203), 'Quies': (240, 240, 240)}  # 255,255,255 was white -> bright gray 
 
 
-# In[41]:
-
-
-css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
-
-
-# #### Function to convert RGB into decimal RGB
-
 # In[10]:
 
 
@@ -121,9 +113,17 @@ state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dic
 state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values())))
 
 
+# In[13]:
+
+
+css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
+
+
+# #### Function to convert RGB into decimal RGB
+
 # #### Function to create pickle file (dataframe, expanded version) for an individual cell
 
-# In[13]:
+# In[14]:
 
 
 # create a pickle for a cell-wise dataframe
@@ -144,7 +144,7 @@ def total_df2pickle(total_df_list):
 
 # #### Functions to make .bed to dataframe
 
-# In[14]:
+# In[15]:
 
 
 # create dataframe from bed file
@@ -165,7 +165,7 @@ def bed2df_as_is(filename):
     return df
 
 
-# In[15]:
+# In[16]:
 
 
 def bed2df_expanded(filename):
@@ -189,7 +189,7 @@ def bed2df_expanded(filename):
     return df 
 
 
-# In[16]:
+# In[17]:
 
 
 def total_df_maker(all_files):
@@ -208,7 +208,7 @@ def total_df_maker(all_files):
 # 
 # CSS here refers Chromatin state sequence
 
-# In[17]:
+# In[18]:
 
 
 def numchr(df):
@@ -216,7 +216,7 @@ def numchr(df):
     return df["chromosome"].nunique()    
 
 
-# In[18]:
+# In[19]:
 
 
 # create a large piece of string of the whole state_seq_full 
@@ -234,7 +234,7 @@ def df2css_allchr(df):
 
 # #### Create CSS chromosome-wise
 
-# In[19]:
+# In[20]:
 
 
 # first, learn where one chromosome ends in the df
@@ -270,7 +270,7 @@ def df2chr_index(df):
 
 # #### Create df cut by each chromosome
 
-# In[20]:
+# In[21]:
 
 
 def df2chr_df(df):
@@ -295,7 +295,7 @@ def df2chr_df(df):
 
 # #### Create CSS chromosome-wise, string only
 
-# In[21]:
+# In[22]:
 
 
 # create a list of dataframes, each of which contains the name of chromosome and chromosome-wise string of state_seq_full
@@ -321,7 +321,7 @@ def df2css_chr(df):
     return df2col_chr_list    
 
 
-# In[22]:
+# In[23]:
 
 
 def df2css_chr_str(df):
@@ -347,7 +347,7 @@ def df2css_chr_str(df):
 # The variable of the above list is now called chr_css_list.<br>
 # Following functions will analyze the statistics of the each strings.
 
-# In[23]:
+# In[24]:
 
 
 def css_list2count(df, chr_css_list):
@@ -370,7 +370,7 @@ def css_list2count(df, chr_css_list):
     return count_all
 
 
-# In[37]:
+# In[25]:
 
 
 def draw_count_barplot_incl15(count_all, chr_no):
@@ -386,7 +386,7 @@ def draw_count_barplot_incl15(count_all, chr_no):
     ax0=ax0.set_ylabel("Counts", fontsize=14)
 
 
-# In[38]:
+# In[26]:
 
 
 def draw_count_barplot_wo15(count_all, chr_no):
@@ -402,7 +402,7 @@ def draw_count_barplot_wo15(count_all, chr_no):
     ax0.set_ylabel("Counts", fontsize=14)  
 
 
-# In[36]:
+# In[27]:
 
 
 def colored_css_str(sub_str):
@@ -424,7 +424,7 @@ def colored_css_str(sub_str):
 # 2. create a whole list of css without 15th state, using a all-chromosome df (df2wo15list)
 # 3. calculate the length of each element of the generated list, and analyze the statistics
 
-# In[29]:
+# In[28]:
 
 
 def df2inbetweeen_lst(df):
@@ -447,7 +447,7 @@ def df2inbetweeen_lst(df):
     return lst
 
 
-# In[30]:
+# In[29]:
 
 
 def df2wo15list(df):
@@ -459,7 +459,7 @@ def df2wo15list(df):
     return total_lst   # total_lst here consists of the connected-patterns betweeen 15th state
 
 
-# In[31]:
+# In[30]:
 
 
 def css_elm_stat(total_lst):# graph of the length distribution 
@@ -477,7 +477,7 @@ def css_elm_stat(total_lst):# graph of the length distribution
     plt.ylabel("Count", fontsize=14)
 
 
-# In[33]:
+# In[31]:
 
 
 def lst2let_compose(total_lst):# graph of the number of letter composed for a pattern
@@ -500,7 +500,7 @@ def lst2let_compose(total_lst):# graph of the number of letter composed for a pa
     plt.ylabel("Count", fontsize=14)
 
 
-# In[ ]:
+# In[32]:
 
 
 # def lst2solo_compose(total_lst):
@@ -521,7 +521,7 @@ def lst2let_compose(total_lst):# graph of the number of letter composed for a pa
 
 # ### class test ...should I make a class?
 
-# In[28]:
+# In[33]:
 
 
 # class bed2df_cls:
