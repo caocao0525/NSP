@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from motif_utils import seq2kmer
+import collections
 
 
 # #### Preparing the .bed file list
@@ -79,17 +80,46 @@ css_name=['TssA','TssAFlnk','TxFlnk','Tx','TxWk','EnhG','Enh','ZNF/Rpts',
 css_dict=dict(zip(list(state_dict.values()), css_name))  # css_dict={"A":"TssA", "B":"TssAFlnk", ... }
 
 
-# In[9]:
+# In[35]:
 
 
-css_color_dict={'TssA':(219, 57, 50), 'TssAFlnk': (222, 87, 54), 'TxFlnk': (107, 187, 87),
-                'Tx': (57, 124, 72), 'TxWk': (48, 98, 58), 'EnhG': (197, 213, 80), 'Enh': (245, 196, 98),
-                'ZNF/Rpts': (129, 194, 169), 'Het': (137,143,189), 'TssBiv': (192, 98, 95), 
-                'BivFlnk': (223, 156, 127), 'EnhBiv': (188, 182, 115), 'ReprPC': (147, 149, 153),
-                'ReprPCWk': (200, 202, 203), 'Quies': (240, 240, 240)}  # 255,255,255 was white -> bright gray 
+# color dict update using the info from https://egg2.wustl.edu/roadmap/web_portal/chr_state_learning.html
+# 18th May 2022
+
+css_color_dict={'TssA':(255,0,0), # Red
+                'TssAFlnk': (255,69,0), # OrangeRed
+                'TxFlnk': (50,205,50), # LimeGreen
+                'Tx': (0,128,0), # Green
+                'TxWk': (0,100,0), # DarkGreen
+                'EnhG': (194,225,5), # GreenYellow 
+                'Enh': (255,255,0),# Yellow
+                'ZNF/Rpts': (102,205,170), # Medium Aquamarine
+                'Het': (138,145,208), # PaleTurquoise
+                'TssBiv': (205,92,92), # IndianRed
+                'BivFlnk': (233,150,122), # DarkSalmon
+                'EnhBiv': (189,183,107), # DarkKhaki
+                'ReprPC': (128,128,128), # Silver
+                'ReprPCWk': (192,192,192), # Gainsboro
+                'Quies': (240, 240, 240)}  # White -> bright gray 
+
+# css_color_dict={'TssA':(219, 57, 50), 
+#                 'TssAFlnk': (222, 87, 54), 
+#                 'TxFlnk': (107, 187, 87),
+#                 'Tx': (57, 124, 72), 
+#                 'TxWk': (48, 98, 58), 
+#                 'EnhG': (197, 213, 80), 
+#                 'Enh': (245, 196, 98),
+#                 'ZNF/Rpts': (129, 194, 169), 
+#                 'Het': (137,143,189), 
+#                 'TssBiv': (192, 98, 95), 
+#                 'BivFlnk': (223, 156, 127), 
+#                 'EnhBiv': (188, 182, 115), 
+#                 'ReprPC': (147, 149, 153),
+#                 'ReprPCWk': (200, 202, 203), 
+#                 'Quies': (240, 240, 240)}  # 255,255,255 was white -> bright gray 
 
 
-# In[10]:
+# In[36]:
 
 
 def colors2color_dec(css_color_dict):
@@ -101,19 +131,19 @@ def colors2color_dec(css_color_dict):
     return color_dec_list
 
 
-# In[11]:
+# In[37]:
 
 
 state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dict)))
 
 
-# In[12]:
+# In[38]:
 
 
 state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values())))
 
 
-# In[13]:
+# In[39]:
 
 
 css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
@@ -123,7 +153,7 @@ css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
 
 # #### Function to create pickle file (dataframe, expanded version) for an individual cell
 
-# In[14]:
+# In[40]:
 
 
 # create a pickle for a cell-wise dataframe
@@ -144,7 +174,7 @@ def total_df2pickle(total_df_list):
 
 # #### Functions to make .bed to dataframe
 
-# In[15]:
+# In[41]:
 
 
 # create dataframe from bed file
@@ -165,7 +195,7 @@ def bed2df_as_is(filename):
     return df
 
 
-# In[16]:
+# In[42]:
 
 
 def bed2df_expanded(filename):
@@ -181,7 +211,7 @@ def bed2df_expanded(filename):
     df["end"]=pd.to_numeric(df["end"])
     df["state"]=pd.to_numeric(df["state"])
     df["length"]=df["end"]-df["start"]
-    df["unit"]=(df["length"]/100).astype(int)
+    df["unit"]=(df["length"]/200).astype(int)  # chromatin state is annotated every 200 bp (18th May 2022)
                
     df["state_seq"]=df["state"].map(state_dict)
     df["state_seq_full"]=df["unit"]*df["state_seq"]
@@ -189,7 +219,7 @@ def bed2df_expanded(filename):
     return df 
 
 
-# In[17]:
+# In[43]:
 
 
 def total_df_maker(all_files):
@@ -208,7 +238,7 @@ def total_df_maker(all_files):
 # 
 # CSS here refers Chromatin state sequence
 
-# In[18]:
+# In[44]:
 
 
 def numchr(df):
@@ -216,7 +246,7 @@ def numchr(df):
     return df["chromosome"].nunique()    
 
 
-# In[19]:
+# In[45]:
 
 
 # create a large piece of string of the whole state_seq_full 
@@ -234,7 +264,7 @@ def df2css_allchr(df):
 
 # #### Create CSS chromosome-wise
 
-# In[20]:
+# In[46]:
 
 
 # first, learn where one chromosome ends in the df
@@ -270,7 +300,7 @@ def df2chr_index(df):
 
 # #### Create df cut by each chromosome
 
-# In[21]:
+# In[47]:
 
 
 def df2chr_df(df):
@@ -295,7 +325,7 @@ def df2chr_df(df):
 
 # #### Create CSS chromosome-wise, string only
 
-# In[22]:
+# In[48]:
 
 
 # create a list of dataframes, each of which contains the name of chromosome and chromosome-wise string of state_seq_full
@@ -321,7 +351,7 @@ def df2css_chr(df):
     return df2col_chr_list    
 
 
-# In[23]:
+# In[49]:
 
 
 def df2css_chr_str(df):
@@ -347,7 +377,7 @@ def df2css_chr_str(df):
 # The variable of the above list is now called chr_css_list.<br>
 # Following functions will analyze the statistics of the each strings.
 
-# In[24]:
+# In[50]:
 
 
 def css_list2count(df, chr_css_list):
@@ -370,7 +400,7 @@ def css_list2count(df, chr_css_list):
     return count_all
 
 
-# In[25]:
+# In[51]:
 
 
 def draw_count_barplot_incl15(count_all, chr_no):
@@ -386,7 +416,7 @@ def draw_count_barplot_incl15(count_all, chr_no):
     ax0=ax0.set_ylabel("Counts", fontsize=14)
 
 
-# In[26]:
+# In[52]:
 
 
 def draw_count_barplot_wo15(count_all, chr_no):
@@ -402,7 +432,7 @@ def draw_count_barplot_wo15(count_all, chr_no):
     ax0.set_ylabel("Counts", fontsize=14)  
 
 
-# In[27]:
+# In[53]:
 
 
 def colored_css_str(sub_str):
@@ -424,7 +454,7 @@ def colored_css_str(sub_str):
 # 2. create a whole list of css without 15th state, using a all-chromosome df (df2wo15list)
 # 3. calculate the length of each element of the generated list, and analyze the statistics
 
-# In[28]:
+# In[54]:
 
 
 def df2inbetweeen_lst(df):
@@ -447,7 +477,7 @@ def df2inbetweeen_lst(df):
     return lst
 
 
-# In[29]:
+# In[55]:
 
 
 def df2wo15list(df):
@@ -459,7 +489,7 @@ def df2wo15list(df):
     return total_lst   # total_lst here consists of the connected-patterns betweeen 15th state
 
 
-# In[30]:
+# In[56]:
 
 
 def css_elm_stat(total_lst):# graph of the length distribution 
@@ -477,7 +507,7 @@ def css_elm_stat(total_lst):# graph of the length distribution
     plt.ylabel("Count", fontsize=14)
 
 
-# In[31]:
+# In[57]:
 
 
 def lst2let_compose(total_lst):# graph of the number of letter composed for a pattern
@@ -500,11 +530,74 @@ def lst2let_compose(total_lst):# graph of the number of letter composed for a pa
     plt.ylabel("Count", fontsize=14)
 
 
-# In[32]:
+# In[58]:
 
 
-# def lst2solo_compose(total_lst):
+def custom_colorlist(data_dict):
     
+    """ 
+    INPUT: solo chromatin state data in dict such as 
+           data_dict={'I': 114, 'A': 23, 'N': 119, 'G': 33, 'E': 131, 'H': 1}
+    OUTPUT: customized colormap according to ROADMAP (type=list)
+    """
+    state_list=list(data_dict.keys())
+    colormap_list=[]
+    assert type(state_list[0])==str
+    for state in state_list:
+        if css_dict[state] in css_name_col_dict.keys():
+            color_rgb=css_name_col_dict[css_dict[state]]
+            colormap_list.append(color_rgb)
+    return colormap_list
+
+
+# In[59]:
+
+
+def lst2solo_compose(total_lst):# graph of a solo pattern frequency
+    
+    """INPUT: the entire list of in-between pattern w.o. 15th state (total_lst)
+       OUTPUT: the most/least frequent solo pattern and the frequency graph
+    """
+    
+    letter_cnt=[]
+    for word in total_lst:
+        chk_let=word[0]
+        num_let=1
+        for let in word:
+            if let!=chk_let:
+                num_let+=1
+                chk_let=let
+        letter_cnt.append(num_let)
+    css_lst_dict=dict(zip(total_lst, letter_cnt))
+    
+    lst_for_solo=[]                   # prepare to make a solo pattern list
+    for pattern, num in list(css_lst_dict.items()): # as a tuple element (key, val)
+        if num==1:
+            lst_for_solo.append(pattern[0])
+    solo_counter=collections.Counter(lst_for_solo)
+    solo_data_dict=dict(solo_counter) # ditionary of solo pattern and the frequency
+    solo_data_dict=dict(sorted(solo_data_dict.items(), reverse=True, key=lambda item: item[1]))
+    my_color=custom_colorlist(solo_data_dict)  # create a customized colormap using solo data
+    
+    for pattern, num in solo_data_dict.items():
+        if num is max(solo_data_dict.values()):
+            max_state=pattern
+            max_num=num
+        elif num is min(solo_data_dict.values()):
+            min_state=pattern
+            min_num=num
+
+    print("frequency of solo pattern: ", len(lst_for_solo))
+    print("the most frequent solo pattern: ", css_dict[max_state], " for ", max_num, " times appeared." )
+    print("the least frequent solo pattern: ", css_dict[min_state], " for ", min_num, " times appeared." )
+    
+    x=[css_dict[state] for state in solo_data_dict.keys()]
+    y=solo_data_dict.values()
+    
+    fig =plt.figure(figsize=(6,4))
+    plt.bar(x,y, color=my_color)
+    plt.xlabel("solo pattern", fontsize=14)
+    plt.ylabel("Frequency", fontsize=14)
 
 
 # In[ ]:
@@ -521,7 +614,7 @@ def lst2let_compose(total_lst):# graph of the number of letter composed for a pa
 
 # ### class test ...should I make a class?
 
-# In[33]:
+# In[60]:
 
 
 # class bed2df_cls:
@@ -537,7 +630,7 @@ def lst2let_compose(total_lst):# graph of the number of letter composed for a pa
 #         df["start"]=pd.to_numeric(df["start"])
 #         df["end"]=pd.to_numeric(df["end"])
 #         df["length"]=df["end"]-df["start"]
-#         df["unit"]=(df["length"]/100).astype(int)
+#         df["unit"]=(df["length"]/200).astype(int)
         
 #         state_dict={1:"A", 2:"B", 3:"C", 4:"D", 5:"E",6:"F",7:"G",8:"H" ,
 #                     9:"I" ,10:"J",11:"K", 12:"L", 13:"M", 14:"N", 15:"O"}
