@@ -4,7 +4,7 @@
 # ### Utility file
 # Various functions to process the initial bed data
 
-# In[1]:
+# In[50]:
 
 
 import os
@@ -13,12 +13,54 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from motif_utils import seq2kmer
+from scipy.stats import norm
 import collections
+
+
+# #### Gene file preprocessing
+
+# In[9]:
+
+
+whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'
+
+
+# In[10]:
+
+
+# function for preprocess the whole gene data and produce chromosome-wise gene lists
+# each element is dataframe
+
+def whGene2GLChr(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
+    g_fn=whole_gene_file
+    g_df_raw=pd.read_csv(g_fn, sep='\t', lineterminator='\n', header=None, low_memory=False)
+    g_df_int=g_df_raw.rename(columns={0:"chromosome",1:"TxStart",2:"TxEnd",3:"name",4:"unk0",
+                                  5:'strand', 6:'cdsStart', 7:'cdsEnd',8:"unk1",9:"exonCount",
+                                  10:"unk2",11:"unk3"})
+    g_df=g_df_int[["chromosome","TxStart","TxEnd","name"]]
+    
+    # Remove other than regular chromosomes
+    chr_lst=['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10',
+             'chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19',
+             'chr20','chr21','chr22','chrX','chrY']
+    g_df=g_df.loc[g_df["chromosome"].isin(chr_lst)]
+    
+    # Create a list of chromosome-wise dataframe 
+    g_df_chr_lst=[]
+    for num in range(len(chr_lst)):
+        chr_num=chr_lst[num]
+        g_chr_df='g_'+chr_num
+        locals()[g_chr_df]=g_df[g_df["chromosome"]==chr_num]
+        g_chr_df=locals()[g_chr_df]
+        g_chr_df=g_chr_df.sort_values("TxStart")
+        g_df_chr_lst.append(g_chr_df)
+        
+    return g_df_chr_lst
 
 
 # #### Preparing the .bed file list
 
-# In[2]:
+# In[11]:
 
 
 # file name reader
@@ -41,46 +83,46 @@ all_files=file_list_maker(path, bed_files)
 all_cell_pickles=file_list_maker(pickle_path, pickle_files)
 
 
-# In[3]:
+# In[12]:
 
 
 all_files[0]
 
 
-# In[4]:
+# In[13]:
 
 
 all_cell_pickles[0]
 
 
-# In[5]:
+# In[14]:
 
 
 # test file
-test_filename='../database/bed/unzipped/E017_15_coreMarks_stateno.bed'
+# test_filename='../database/bed/unzipped/E017_15_coreMarks_stateno.bed'
 
 
-# In[6]:
+# In[15]:
 
 
 state_dict={1:"A", 2:"B", 3:"C", 4:"D", 5:"E",6:"F",7:"G",8:"H" ,
                 9:"I" ,10:"J",11:"K", 12:"L", 13:"M", 14:"N", 15:"O"}
 
 
-# In[7]:
+# In[16]:
 
 
 css_name=['TssA','TssAFlnk','TxFlnk','Tx','TxWk','EnhG','Enh','ZNF/Rpts',
           'Het','TssBiv','BivFlnk','EnhBiv','ReprPC','ReprPcWk','Quies']
 
 
-# In[8]:
+# In[17]:
 
 
 css_dict=dict(zip(list(state_dict.values()), css_name))  # css_dict={"A":"TssA", "B":"TssAFlnk", ... }
 
 
-# In[35]:
+# In[18]:
 
 
 # color dict update using the info from https://egg2.wustl.edu/roadmap/web_portal/chr_state_learning.html
@@ -119,7 +161,7 @@ css_color_dict={'TssA':(255,0,0), # Red
 #                 'Quies': (240, 240, 240)}  # 255,255,255 was white -> bright gray 
 
 
-# In[36]:
+# In[19]:
 
 
 def colors2color_dec(css_color_dict):
@@ -131,19 +173,19 @@ def colors2color_dec(css_color_dict):
     return color_dec_list
 
 
-# In[37]:
+# In[20]:
 
 
 state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dict)))
 
 
-# In[38]:
+# In[21]:
 
 
 state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values())))
 
 
-# In[39]:
+# In[22]:
 
 
 css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
@@ -153,7 +195,7 @@ css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
 
 # #### Function to create pickle file (dataframe, expanded version) for an individual cell
 
-# In[40]:
+# In[23]:
 
 
 # create a pickle for a cell-wise dataframe
@@ -174,7 +216,7 @@ def total_df2pickle(total_df_list):
 
 # #### Functions to make .bed to dataframe
 
-# In[41]:
+# In[24]:
 
 
 # create dataframe from bed file
@@ -195,7 +237,7 @@ def bed2df_as_is(filename):
     return df
 
 
-# In[42]:
+# In[25]:
 
 
 def bed2df_expanded(filename):
@@ -219,12 +261,12 @@ def bed2df_expanded(filename):
     return df 
 
 
-# In[43]:
+# In[26]:
 
 
 def total_df_maker(all_files):
     
-    """Create a list of dataframe from a list of bed files.]
+    """Create a list of dataframe from a list of bed files.
     This function utilizes the function named 'bed2df_expanded.'"""
     
     total_df=[]
@@ -238,7 +280,7 @@ def total_df_maker(all_files):
 # 
 # CSS here refers Chromatin state sequence
 
-# In[44]:
+# In[27]:
 
 
 def numchr(df):
@@ -246,7 +288,7 @@ def numchr(df):
     return df["chromosome"].nunique()    
 
 
-# In[45]:
+# In[28]:
 
 
 # create a large piece of string of the whole state_seq_full 
@@ -264,7 +306,7 @@ def df2css_allchr(df):
 
 # #### Create CSS chromosome-wise
 
-# In[46]:
+# In[29]:
 
 
 # first, learn where one chromosome ends in the df
@@ -300,7 +342,7 @@ def df2chr_index(df):
 
 # #### Create df cut by each chromosome
 
-# In[47]:
+# In[30]:
 
 
 def df2chr_df(df):
@@ -325,7 +367,7 @@ def df2chr_df(df):
 
 # #### Create CSS chromosome-wise, string only
 
-# In[48]:
+# In[31]:
 
 
 # create a list of dataframes, each of which contains the name of chromosome and chromosome-wise string of state_seq_full
@@ -351,7 +393,7 @@ def df2css_chr(df):
     return df2col_chr_list    
 
 
-# In[49]:
+# In[32]:
 
 
 def df2css_chr_str(df):
@@ -371,13 +413,287 @@ def df2css_chr_str(df):
     return chr_css_list
 
 
+# #### make a long string of the css (not using unit, but the real length)
+# * ChrM is removed
+# * chromosome-wise list
+# * real length
+
+# In[33]:
+
+
+# make a long string of the css (not using unit, but the real length)
+
+def df2longcss(df):
+    df_lst_chr=df2chr_df(df)
+    # remove the microchondria DNA from df_lst_chr
+    if df_lst_chr[-3]["chromosome"].iloc[0]=="chrM":
+        del df_lst_chr[-3]
+        assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+    else:   
+        assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+    
+    all_css=[]
+    for i in range(len(df_lst_chr)):
+        df_chr=df_lst_chr[i]
+        css_chr=''
+        for j in range(len(df_chr)):
+            css_chr+=df_chr["length"].iloc[j]*df_chr["state_seq"].iloc[j]
+        all_css.append(css_chr)  
+    return all_css
+
+
+# #### Cut the chromatin states : genic area
+
+# In[34]:
+
+
+def compGene2css(whole_gene_file,df):
+    g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
+    css_lst_chr=df2longcss(df) # list of long css per chromosome
+    total_chr=len(g_lst_chr)
+    
+    css_gene_lst_all=[]
+    for i in range(total_chr):
+        css=css_lst_chr[i]   # long css of i-th chromosome
+        gene_df=g_lst_chr[i] # gene df of i-th chromosome
+        
+        css_gene_lst_chr=[]
+        for j in range(len(gene_df)):
+            g_start=gene_df["TxStart"].iloc[j]-1  # python counts form 0
+            g_end=gene_df["TxEnd"].iloc[j]+1      # python excludes the end
+            
+            css_gene=css[g_start:g_end]           # cut the gene area only
+            css_gene_lst_chr.append(css_gene)     # store in the list
+          
+        css_gene_lst_all.append(css_gene_lst_chr)  # list of list
+    
+    assert len(css_gene_lst_all)==total_chr
+    return css_gene_lst_all
+
+
+# * css_gene_lst_all : list of list that css for genic region per chromosome
+
+# #### Count the number of 15th states in genic, non-genic region
+
+# In[35]:
+
+
+# for cell-wise count : how many 15th-including genes are there per cell
+
+def QnonQforCell(all_files=all_files,whole_gene_file=whole_gene_file):
+    total_cells=len(all_files)
+    
+    q_cnt_lst=[]
+    not_q_cnt_lst=[]
+    for i in range(total_cells):
+        cell_path=all_files[i]
+        df=bed2df_expanded(cell_path)
+        css_gene_lst_all=compGene2css(whole_gene_file,df)
+        
+        q_cnt=0
+        not_q_cnt=0
+        for j in range(len(css_gene_lst_all)):
+            css_gene_lst=css_gene_lst_all[j]
+            for k in range(len(css_gene_lst)):
+                css_gene=css_gene_lst[k]
+                if "O" in css_gene:
+                    q_cnt+=1
+                else:
+                    not_q_cnt+=1
+        q_cnt_lst.append(q_cnt)
+        not_q_cnt_lst.append(not_q_cnt)
+    return q_cnt_lst, not_q_cnt_lst
+
+
+# In[53]:
+
+
+# for chromosome-wise list of list -> flatten list
+
+def QnonQforChr(all_files=all_files,whole_gene_file=whole_gene_file):
+#     import itertools
+    total_cells=len(all_files)
+    
+    q_cnt_lst_all=[]
+    not_q_cnt_lst_all=[]
+    for i in range(total_cells):
+        cell_path=all_files[i]
+        df=bed2df_expanded(cell_path)
+        css_gene_lst_all=compGene2css(whole_gene_file,df)
+        
+        q_cnt_lst=[]
+        not_q_cnt_lst=[]
+        for j in range(len(css_gene_lst_all)):
+            css_gene_lst=css_gene_lst_all[j]
+            
+            q_cnt=0
+            not_q_cnt=0
+            for k in range(len(css_gene_lst)):
+                css_gene=css_gene_lst[k]
+                if "O" in css_gene:
+                    q_cnt+=1
+                else:
+                    not_q_cnt+=1
+                    
+            q_cnt_lst.append(q_cnt)
+            not_q_cnt_lst.append(not_q_cnt)        
+        q_cnt_lst_all.append(q_cnt_lst)
+        not_q_cnt_lst_all.append(not_q_cnt_lst)
+
+#     flatten the list of list and make it into list
+    q_cnt_lst_all=list(itertools.chain.from_iterable(q_cnt_lst_all))
+    not_q_cnt_lst_all=list(itertools.chain.from_iterable(not_q_cnt_lst))
+        
+    return q_cnt_lst_all, not_q_cnt_lst_all
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[60]:
+
+
+# draw a histogram type1 (group by data)
+def QnonQforCellHistT1(q_cnt_lst, not_q_cnt_lst, bin_size=15):
+    """Run this after executing QnonQforCell"""
+    data_w=q_cnt_lst
+    data_wo=not_q_cnt_lst
+
+    mu_w, std_w=norm.fit(data_w)
+    mu_wo, std_wo=norm.fit(data_wo)
+
+    plt.hist(data_w, bins=bin_size, alpha=0.3, color="k")
+    plt.hist(data_wo, bins=bin_size, alpha=0.5, color="r")
+
+#     xmin_w, xmax_w=plt.xlim()
+#     xmin_wo, xmax_wo=plt.xlim()
+
+#     x_w = np.linspace(xmin_w, xmax_w, 100)
+#     p_w = norm.pdf(x_w, mu_w, std)
+#     x_wo = np.linspace(xmin_wo, xmax_wo, 100)
+#     p_wo = norm.pdf(x_wo, mu_wo, std)
+
+#     plt.plot(x_w, p_w, "r", linewidth=2)
+#     plt.plot(x_wo, p_wo, "k", linewidth=2)
+
+    title='Number of Genic region with/without Quiescent state'
+    plt.title(title)
+#     plt.legend("with Quiescent state","without Quiescent state")
+    plt.xlabel("No. of Genes")
+    plt.ylabel("Counts")
+    plt.show()
+
+
+# In[59]:
+
+
+# draw a histogram type2 (group by bin)
+def QnonQforCellHistT2(q_cnt_lst, not_q_cnt_lst,bin_size):
+    """Run this after executing QnonQforCell"""
+    data_w=q_cnt_lst
+    data_wo=not_q_cnt_lst
+
+    mu_w, std_w=norm.fit(data_w)
+    mu_wo, std_wo=norm.fit(data_wo)
+
+    fig=plt.figure(figsize=(8,4))
+    ax=fig.add_subplot(1,1,1)
+    ax.hist([data_w,data_wo], bins=bin_size, alpha=0.5, color=["teal","orange"], label=["with Quiescent state","without Quiescent state"])
+
+#     xmin_w, xmax_w=plt.xlim()
+#     xmin_wo, xmax_wo=plt.xlim()
+
+#     x_w = np.linspace(xmin_w, xmax_w, 100)
+#     p_w = norm.pdf(x_w, mu_w, std)
+#     x_wo = np.linspace(xmin_wo, xmax_wo, 100)
+#     p_wo = norm.pdf(x_wo, mu_wo, std)
+
+    ax.legend(loc="upper left")
+
+#     plt.plot(x_w, p_w, "teal", linewidth=2)
+#     plt.plot(x_wo, p_wo, "orange", linewidth=2)
+
+    title='Number of Genic region with/without Quiescent state'
+    plt.title(title)
+    plt.legend()
+    plt.xlabel("No. of Genes")
+    plt.ylabel("Counts")
+    plt.show()
+
+
+# In[ ]:
+
+
+# generate thee lists: 15th state-including gene count, gene length, proportion of 15th state per gene
+def cntQinGene(css_gene_lst_all):
+    """run this after executing compGene2css(whole_gene_file,df)
+       [Input]
+       css_gene_lst_all : list of css list of each chromosome
+       [Output]
+       cnt_o_lst : list of Quiescent state counts list per chromosome
+       gene_len_lst : list of gene length (in terms of chromatin state Anno.200bps) list per chromosome
+       pro_o_lst : list of proportion of Quiescent state per gene list per chromosome
+    """
+    cnt_o_lst=[]
+    gene_len_lst=[]
+    pro_o_lst=[]
+    for i in range(len(css_gene_lst_all)):
+        css_gene_lst=css_gene_lst_all[i]
+        
+        cnt_o_chr=[]
+        gene_len_chr=[]
+        pro_o_chr=[]
+        for j in range(len(css_gene_lst)):
+            css_gene=css_gene_lst[j]
+            cnt_o=css_gene.count("O")
+            gene_len=len(css_gene)
+            pro_o=cnt_o/gene_len
+            
+            cnt_o_chr.append(cnt_o)
+            gene_len_chr.append(gene_len)
+            pro_o_chr.append(pro_o)
+            
+        cnt_o_lst.append(cnt_o_chr)
+        gene_len_lst.append(gene_len_chr)
+        pro_o_lst.append(pro_o_chr)
+        
+    return cnt_o_lst, gene_len_lst, pro_o_lst
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
 # #### CSS Pattern analysis
 # 
 # Now the dataframe has been transformed into a list of string all connected css, chromosome-wise.<br>
 # The variable of the above list is now called chr_css_list.<br>
 # Following functions will analyze the statistics of the each strings.
 
-# In[50]:
+# In[36]:
 
 
 def css_list2count(df, chr_css_list):
@@ -400,7 +716,7 @@ def css_list2count(df, chr_css_list):
     return count_all
 
 
-# In[51]:
+# In[37]:
 
 
 def draw_count_barplot_incl15(count_all, chr_no):
@@ -416,7 +732,7 @@ def draw_count_barplot_incl15(count_all, chr_no):
     ax0=ax0.set_ylabel("Counts", fontsize=14)
 
 
-# In[52]:
+# In[38]:
 
 
 def draw_count_barplot_wo15(count_all, chr_no):
@@ -432,7 +748,7 @@ def draw_count_barplot_wo15(count_all, chr_no):
     ax0.set_ylabel("Counts", fontsize=14)  
 
 
-# In[53]:
+# In[39]:
 
 
 def colored_css_str(sub_str):
@@ -454,7 +770,7 @@ def colored_css_str(sub_str):
 # 2. create a whole list of css without 15th state, using a all-chromosome df (df2wo15list)
 # 3. calculate the length of each element of the generated list, and analyze the statistics
 
-# In[54]:
+# In[40]:
 
 
 def df2inbetweeen_lst(df):
@@ -477,7 +793,7 @@ def df2inbetweeen_lst(df):
     return lst
 
 
-# In[55]:
+# In[41]:
 
 
 def df2wo15list(df):
@@ -489,7 +805,7 @@ def df2wo15list(df):
     return total_lst   # total_lst here consists of the connected-patterns betweeen 15th state
 
 
-# In[56]:
+# In[42]:
 
 
 def css_elm_stat(total_lst):# graph of the length distribution 
@@ -507,7 +823,7 @@ def css_elm_stat(total_lst):# graph of the length distribution
     plt.ylabel("Count", fontsize=14)
 
 
-# In[57]:
+# In[43]:
 
 
 def lst2let_compose(total_lst):# graph of the number of letter composed for a pattern
@@ -525,12 +841,12 @@ def lst2let_compose(total_lst):# graph of the number of letter composed for a pa
     print("min composition: ", min(letter_cnt))
     print("average composition: ", np.mean(letter_cnt))
     fig =plt.figure(figsize=(6,4))
-    plt.hist(cnt_lst, bins=20, log=True, color="orange", edgecolor="white")
+    plt.hist(letter_cnt, bins=20, log=True, color="orange", edgecolor="white")
     plt.xlabel("number of state in a composition", fontsize=14)
     plt.ylabel("Count", fontsize=14)
 
 
-# In[58]:
+# In[44]:
 
 
 def custom_colorlist(data_dict):
@@ -550,7 +866,7 @@ def custom_colorlist(data_dict):
     return colormap_list
 
 
-# In[59]:
+# In[45]:
 
 
 def lst2solo_compose(total_lst):# graph of a solo pattern frequency
@@ -600,10 +916,51 @@ def lst2solo_compose(total_lst):# graph of a solo pattern frequency
     plt.ylabel("Frequency", fontsize=14)
 
 
+# #### make a kmer and save as a sample
+
+# In[46]:
+
+
+def total_lst2kmer(total_lst,k):
+    total_kmer_lst=[]
+    for elm in total_lst:
+        elm2kmer=seq2kmer(elm, k)
+        if len(elm2kmer) >0:   # remove the short pattern... will be fine?
+            total_kmer_lst.append(elm2kmer)
+    return total_kmer_lst
+
+
+# In[47]:
+
+
+# total_kmer_lst=total_lst2kmer(total_lst,6)
+
+
+# In[48]:
+
+
+# file_name02="../database/test_data/6_tr01.txt"
+# with open(file_name02,"w") as g:
+#     g.write("\n".join(total_kmer_lst))
+# g.close()
+
+
 # In[ ]:
 
 
 
+
+
+# In[ ]:
+
+
+
+
+
+# In[49]:
+
+
+# !jupyter nbconvert --to script css_utility.ipynb
 
 
 # In[ ]:
