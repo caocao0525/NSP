@@ -442,6 +442,30 @@ def df2longcss(df):
     return all_css
 
 
+# In[1]:
+
+
+# make a long string of the css (unit length, not the real length)
+
+def df2unitcss(df):
+    df_lst_chr=df2chr_df(df)
+    # remove the microchondria DNA from df_lst_chr
+    if df_lst_chr[-3]["chromosome"].iloc[0]=="chrM":
+        del df_lst_chr[-3]
+        assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+    else:   
+        assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+    
+    all_unit_css=[]
+    for i in range(len(df_lst_chr)):
+        df_chr=df_lst_chr[i]
+        css_chr=''
+        for j in range(len(df_chr)):
+            css_chr+=df_chr["unit"].iloc[j]*df_chr["state_seq"].iloc[j]
+        all_unit_css.append(css_chr)  
+    return all_unit_css
+
+
 # #### Cut the chromatin states : genic area
 
 # In[34]:
