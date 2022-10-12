@@ -4,7 +4,7 @@
 # ### Utility file
 # Various functions to process the initial bed data
 
-# In[5]:
+# In[66]:
 
 
 import os
@@ -737,7 +737,53 @@ def all_chr_UnitCSS_Q_Dist(df, normalization=True):
         return all_chr_q_index
 
 
-# #### Cut the chromatin states : genic area
+# #### Cut the telomere region and save the file
+# * function: **`cssWOteloKmer(df,k)`**
+# * Create and save a list of css trimming the telometer region (10,000 bp = 50 unit)
+# * Output file name: `k_wo_telo_v1.txt`, v1 stands for version 1 (considering telomere 
+# * Usage: (in case of creating 6mer) `cssWOteloKmer(df,6)`
+# 
+# *Output message* <br>
+# 6mer prepraration process for telomere-less data has been started...<br>
+# unit-length css for 6mer was saved at ../database/wo_telo/
+
+# In[61]:
+
+
+def cssWOteloKmer(df,k):
+    """
+    description: Create and save a list of css trimming the telometer region (10,000 bp = 50 unit)
+    input: df (bed to df, containing all chr), k (number for k-mer)
+    output: saved file (kmer css at '../database/wo_telo/')
+    """
+    all_unit_css=df2unitcss(df) # unit-long css for 
+    
+    ### telomere is set to 10,000 at the initial and final genome sequences
+    ### unit length is 200-bp resolution, 50 units are telomeres
+    
+    print("{}mer prepraration process for telomere-less data has been started...".format(k))
+    
+    total_lst_wotelo=[]
+    for i in range(len(all_unit_css)):
+        unit_css=all_unit_css[i]
+        unit_css_wotelo=unit_css[50:-50]  # cut initial-final 50 units
+        unit_css_wotelo_kmer=seq2kmer(unit_css_wotelo,k)
+        
+        total_lst_wotelo+=unit_css_wotelo_kmer  # didn't use [append], as it adds as a list per se 
+        
+    path='../database/wo_telo/'
+    fn_base=str(k)+"_wo_telo_v1"   # version 1 (Oct. 2022)
+    ext=".txt"
+          
+    fn=path+fn_base+ext  # file name
+
+    with open(fn,"w") as save_file:
+        save_file.write("".join(total_lst_wotelo))
+          
+    return print("unit-length css for {}mer was saved at {}".format(k, path))
+
+
+# ### Cut the chromatin states : genic area
 
 # In[39]:
 
@@ -1059,7 +1105,7 @@ def colored_css_str(sub_str):
     return print("\033[1m"+col_str+"\033[0;0m") 
 
 
-# In[49]:
+# In[65]:
 
 
 def colored_css_str_as_is(sub_str):   # convert space into space
