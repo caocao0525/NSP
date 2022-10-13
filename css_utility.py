@@ -931,7 +931,7 @@ def compGene2css(whole_gene_file,df):
 
 # caution: takes tremendous of time!
 # better make it for a single cell?
-# No, it was required, and the result files are saved at ./temp_files
+# No, it was required, and the result files are pickled at ./temp_files
 
 def QnonQforCell(all_files=all_files,whole_gene_file=whole_gene_file):
     total_cells=len(all_files)
@@ -1088,7 +1088,7 @@ def QnonQforCellHistT2(q_cnt_lst, not_q_cnt_lst,bin_size):
 # In[43]:
 
 
-# generate thee lists: 15th state-including gene count, gene length, proportion of 15th state per gene
+# generate three lists: 15th state-including gene count, gene length, proportion of 15th state per gene
 def cntQinGene(css_gene_lst_all):
     """run this after executing compGene2css(whole_gene_file,df)
        [Input]
@@ -1431,7 +1431,7 @@ def total_lst2kmer(total_lst,k):
 
 
 
-# In[64]:
+# In[82]:
 
 
 get_ipython().system('jupyter nbconvert --to script css_utility.ipynb')
