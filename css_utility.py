@@ -25,6 +25,7 @@ import collections
 import operator
 import itertools
 import pickle
+import seaborn as sns
 from tqdm import tqdm
 from tqdm.notebook import tqdm_notebook
 
@@ -53,7 +54,7 @@ from tqdm.notebook import tqdm_notebook
 #         > (1) `sed 's/>//g' genome.fa > genome_mod.fa` : find `>` and remove it then save as `genome.fa`<br>
 #         > (2) `awk '$1 ~/^chr/{close(name);name=$1;next}{print $1>name}' genome_mod.fa` : find string starting `chr` form `genome_mod.fa` and save the 1st field (=the base string) as reading the file. 
 
-# In[7]:
+# In[3]:
 
 
 # load the file from local
@@ -106,7 +107,7 @@ def whGene2GLChr(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 # 
 # * Prerequisite file: chromosome-wise separated reference genome file.
 
-# In[8]:
+# In[5]:
 
 
 # prerequisite file load
@@ -182,7 +183,7 @@ def chrNdist(chr_file=chr1):
 #     * `all_chr_n_index` (if normalization OFF)
 # <img src="./desc_img/all_chr_Ndist.png" width=500 height=250>
 
-# In[10]:
+# In[7]:
 
 
 def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalization=True):
@@ -240,7 +241,7 @@ def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalizat
 # * Location: (local linux DLBOX2, macpro ➡️) `/database/bed/unzipped`  (server ➡️) `euph:/work/ChIP-seq/ROADMAP/byFileType/chromhmmSegmentations/ChmmModels/coreMarks/jointModel/final/*_15_coreMarks_dense.bed`
 # * Structure: tab-delimited, 4 columns (chromosome numner, start, end, and state number)
 
-# In[11]:
+# In[8]:
 
 
 # file name reader: make a list of all the filename
@@ -275,13 +276,13 @@ all_files=file_list_maker(path, bed_files)
 all_cell_pickles=file_list_maker(pickle_path, pickle_files)
 
 
-# In[8]:
+# In[9]:
 
 
 all_files[0]
 
 
-# In[9]:
+# In[10]:
 
 
 all_cell_pickles[0]
@@ -363,7 +364,7 @@ css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
 
 # #### Functions to make .bed to dataframe
 
-# In[20]:
+# In[19]:
 
 
 # create dataframe from bed file
@@ -384,7 +385,7 @@ def bed2df_as_is(filename):
     return df
 
 
-# In[21]:
+# In[20]:
 
 
 def bed2df_expanded(filename):
@@ -408,7 +409,7 @@ def bed2df_expanded(filename):
     return df 
 
 
-# In[22]:
+# In[21]:
 
 
 def total_df_maker(all_files):
@@ -427,7 +428,7 @@ def total_df_maker(all_files):
 # 
 # CSS here refers Chromatin state sequence
 
-# In[23]:
+# In[22]:
 
 
 def numchr(df):
@@ -435,7 +436,7 @@ def numchr(df):
     return df["chromosome"].nunique()    
 
 
-# In[24]:
+# In[23]:
 
 
 # create a large piece of string of the whole state_seq_full 
@@ -453,7 +454,7 @@ def df2css_allchr(df):
 
 # #### Create CSS chromosome-wise
 
-# In[25]:
+# In[24]:
 
 
 # first, learn where one chromosome ends in the df
@@ -489,7 +490,7 @@ def df2chr_index(df):
 
 # #### Create df cut by each chromosome
 
-# In[26]:
+# In[25]:
 
 
 def df2chr_df(df):
@@ -514,7 +515,7 @@ def df2chr_df(df):
 
 # #### Create CSS chromosome-wise, string only
 
-# In[27]:
+# In[26]:
 
 
 # create a list of dataframes, each of which contains the name of chromosome and chromosome-wise string of state_seq_full
@@ -540,7 +541,7 @@ def df2css_chr(df):
     return df2col_chr_list    
 
 
-# In[28]:
+# In[27]:
 
 
 def df2css_chr_str(df):
@@ -565,7 +566,7 @@ def df2css_chr_str(df):
 # * chromosome-wise list
 # * real length
 
-# In[29]:
+# In[28]:
 
 
 # make a long string of the css (not using unit, but the real length)
@@ -597,7 +598,7 @@ def df2longcss(df):
 # * chromosome-wise list
 # * unit length (chromatin is annotated per 200 bp)
 
-# In[30]:
+# In[29]:
 
 
 # make a long string of the css (unit length, not the real length)
@@ -625,7 +626,7 @@ def df2unitcss(df):
 # * With 15th state (including 15ths state)
 # 1. State distribution on genome across all the cell types
 
-# In[31]:
+# In[30]:
 
 
 def prop_data2df(path='../database/conserv_overlap/'):
@@ -678,7 +679,7 @@ def prop_data2df(path='../database/conserv_overlap/'):
     return temp_df, trans_df
 
 
-# In[32]:
+# In[31]:
 
 
 # temp_df, trans_df=prop_data2df(path='../database/conserv_overlap/')
@@ -694,7 +695,7 @@ def prop_data2df(path='../database/conserv_overlap/'):
 # * Input: df, chromosome number
 # * Output: `q_index` index of genome (not normalized) where Quiescent states are found.
 
-# In[33]:
+# In[32]:
 
 
 # index list for O state in unit-length css sequence:
@@ -725,7 +726,7 @@ def UnitCSS_Q_Dist(df, chr_no=1):
 # * Graph (distribution histogram)
 # <img src="./desc_img/all_chr_UnitCSS_Q_Dist.png" width=400 height=150>
 
-# In[34]:
+# In[33]:
 
 
 def all_chr_UnitCSS_Q_Dist(df,normalization=True):
@@ -801,7 +802,7 @@ def all_chr_UnitCSS_Q_Dist(df,normalization=True):
 # >*Output message* <br>
 # >unit-length css of chr1 cut randomly(weighted range:5-510) for 3mer was saved at '../database/wo_telo/'
 
-# In[37]:
+# In[34]:
 
 
 # randomly cut the string 
@@ -871,7 +872,7 @@ def chr_cssWOtelo_ranCUT_Kmer(df,chr_no,num1=5,num2=510, k=3, weight_rn=False, v
 # * Input: data path, k (of kmer), color, bins, dna or not (default=false)
 # 
 
-# In[18]:
+# In[35]:
 
 
 def dataLengCompo(path, k, color="teal", bins=15, dna=False):
@@ -901,7 +902,7 @@ def dataLengCompo(path, k, color="teal", bins=15, dna=False):
     return  
 
 
-# ## 3-3.  Cut the chromatin states : genic area
+# ## 3-3.  Cut the chromatin states : genic/non-genic area
 
 # ### 3-3-1. Genic area
 # #### Function: `compGene2css`
@@ -910,13 +911,13 @@ def dataLengCompo(path, k, color="teal", bins=15, dna=False):
 # * Output: `css_gene_lst_all` list of list that css for genic region per chromosome (which can be utilized very frequently after this)
 # * The output is pickled as `"../database/temp_files/css_gene_lst_all"`
 
-# In[72]:
+# In[36]:
 
 
 def compGene2css(whole_gene_file,df):
     """
     Input: Reference gene file, df (CSS)
-    Output: list of chromosome-wise list that contains the css at genic area only.c
+    Output: list of chromosome-wise list that contains the css at genic area only.
     """
     g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
     css_lst_chr=df2longcss(df) # list of long css per chromosome
@@ -941,7 +942,220 @@ def compGene2css(whole_gene_file,df):
     return css_gene_lst_all
 
 
-# ### 3-3-1. Non-genic area
+# ### 3-3-1. Non-genic area (intergenic region)
+# 
+# * The problem in evaluating the intergenic region is that the positions of genes are frequently duplicated. Therefore, the gene table shares lots of same start and end position.
+#     1. First, we need to take a look how many genes are duplicated at the start and end position.
+#     2. Second, gene table has been collapsed to remove the overlaps.
+
+# #### Function: `count_samePos` (To take a look how many genes are overlapped)
+# * Input: `whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'`
+# * Output: 2 dataframes (`df_cnt` and `df_pro`) and visualization for them in violin plot
+#     * `df_cnt` : Chromosome-wise list of the count of the duplicated gene Start and End position on genome
+#     * `df_pro` : Chromosome-wise list of the proportion of the duplicated gene Start and End position on genome (per gene)    
+#     
+# <img src="./desc_img/gene_dup_start_end_vis.png" width=500 height=200>
+
+# In[63]:
+
+
+# function to visualize how many genes are sharing the start and end position on genome
+
+def count_samePos(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
+    g_df_chr_lst=whGene2GLChr(whole_gene_file)
+    cnt_same_start_all=[]
+    pro_same_start_all=[]
+    cnt_same_end_all=[]
+    pro_same_end_all=[]
+    tot_chr_no=len(g_df_chr_lst)
+    
+    ########### count the same start position ###########
+    def count_sameStart(g_df_chr_lst,chr_no):
+        cnt_same_start=0
+        tot_start=len(g_df_chr_lst[chr_no])
+        for i in range(len(g_df_chr_lst[chr_no])):
+            chr1=g_df_chr_lst[chr_no]["TxStart"]
+            if i==0:
+                continue
+            elif chr1.iloc[i]==chr1.iloc[i-1]:
+                cnt_same_start+=1  # how many same start in rows
+            else:
+                continue
+        prop_same_start=cnt_same_start/tot_start
+        return cnt_same_start, prop_same_start
+    
+    ########### count the same end position ############
+    def count_sameEnd(g_df_chr_lst,chr_no):
+        cnt_same_end=0
+        tot_end=len(g_df_chr_lst[chr_no])
+        for i in range(len(g_df_chr_lst[chr_no])):
+            chr1=g_df_chr_lst[chr_no]["TxEnd"]       
+            if i==0:
+                continue
+            elif chr1.iloc[i]==chr1.iloc[i-1]:
+                cnt_same_end+=1  # how many same start in rows
+            else:
+                continue
+        prop_same_end=cnt_same_end/tot_end
+        return cnt_same_end, prop_same_end
+    ####################################################
+    
+    for chr_no in tqdm_notebook(range(tot_chr_no)):
+        cnt_same_start, prop_same_start = count_sameStart(g_df_chr_lst,chr_no)
+        cnt_same_end, prop_same_end = count_sameEnd(g_df_chr_lst,chr_no)
+        
+        cnt_same_start_all.append(cnt_same_start)
+        pro_same_start_all.append(prop_same_start)
+        cnt_same_end_all.append(cnt_same_end)
+        pro_same_end_all.append(prop_same_end)
+        
+    dict_cnt={"cnt_same_start":cnt_same_start_all, "cnt_same_end":cnt_same_end_all}
+    dict_pro={"pro_same_start":pro_same_start_all, "pro_same_end":pro_same_end_all}
+    df_cnt=pd.DataFrame(dict_cnt)
+    df_pro=pd.DataFrame(dict_pro)
+    
+    ###### Visualization ######
+    fig, (ax1,ax2) = plt.subplots(1,2,figsize=(10,5), sharey=False)
+    ax1=sns.violinplot(data=df_cnt, palette="pastel", linewidth=0.7, saturation=0.5, ax=ax1)
+    ax1.set_ylabel("Count", fontsize=15)
+    ax2=sns.violinplot(data=df_pro, palette="husl", linewidth=0.7, saturation=0.5, ax=ax2)
+    ax2.set_ylim([0.2,0.8])
+    ax2.set_ylabel("Proportion", fontsize=15)
+    plt.show()
+
+    return df_cnt, df_pro
+
+
+# #### Function: `removeOverlapDF` and `gene_removeDupl`
+# 
+# * Main function: `gene_removeDupl`
+# * `removeOverlapDF`: function used inside the main function.
+# * To acquire final collapsed gene table, run `gene_removeDupl`
+
+# In[64]:
+
+
+def removeOverlapDF(test_df):    
+    new_lst=[]
+    for i in range(len(test_df)):
+        start=test_df["TxStart"].iloc[i]
+        end=test_df["TxEnd"].iloc[i]
+
+        exist_pair=(start,end)
+
+        if i==0:
+            new_pair=exist_pair
+            new_lst.append(new_pair)        
+        else:
+            start_pre=test_df["TxStart"].iloc[i-1]
+            end_pre=test_df["TxEnd"].iloc[i-1]
+
+            # first, concatenate all the shared start
+            if start==start_pre:
+                new_end=max(end, end_pre)
+                new_pair=(start, new_end)
+            # second, concatenate all the shared end
+            elif end==end_pre:
+                new_start=min(start, start_pre)
+                new_pair=(new_start, end)
+            else:    
+                new_pair=exist_pair
+
+        new_lst.append(new_pair) 
+    new_lst=list(dict.fromkeys(new_lst))
+    
+    mod_lst=[[start, end] for (start, end) in new_lst] # as a list element
+
+    for j, elm in enumerate(mod_lst):
+        start, end = elm[0], elm[1]
+
+        if j==0:
+            continue
+        else:
+            start_pre=mod_lst[j-1][0]
+            end_pre=mod_lst[j-1][1]
+
+            if end_pre>=end:
+                mod_lst[j][0]=mod_lst[j-1][0]  # if end_pre is larger than end, replace start as start_pre
+                mod_lst[j][1]=mod_lst[j-1][1]  # if end_pre is larger than end, replace end as end_pre
+
+            elif start <=end_pre:
+                mod_lst[j][0]=mod_lst[j-1][0]  # current start=start_pre
+                mod_lst[j-1][1]=max(mod_lst[j][1],mod_lst[j-1][1])  # end_pre = end
+
+            else:
+                continue
+           
+    mod_lst=[tuple(elm) for elm in mod_lst]
+    fin_lst=list(dict.fromkeys(mod_lst))
+    gene_collapsed_df=pd.DataFrame(fin_lst, columns=["TxStart", "TxEnd"])
+ 
+    return gene_collapsed_df
+
+
+# In[66]:
+
+
+def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
+    g_df_chr_lst=whGene2GLChr(whole_gene_file)
+    new_gene_lst_all=[]
+    for chr_no in tqdm_notebook(range(len(g_df_chr_lst))):
+        gene_df=g_df_chr_lst[chr_no]
+        gene_collapsed_df=removeOverlapDF(gene_df)
+        new_gene_lst_all.append(gene_collapsed_df)
+    return new_gene_lst_all # list of chromosome-wise dataframe for collapsed gene table
+
+
+# In[ ]:
+
+
+
+
+
+# In[62]:
+
+
+def compNonGene2css(whole_gene_file,df):  ## intermidiate version. need to update after the fix (due to the gene position overlapping)
+    """
+    Input: Reference gene file, df (CSS)
+    Output: list of chromosome-wise list that contains the css at "non-genic" area only.
+    """
+    g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
+    css_lst_chr=df2longcss(df) # list of long css per chromosome
+    total_chr=len(g_lst_chr)
+    
+    css_Ngene_lst_all=[]
+    for i in tqdm_notebook(range(total_chr)):
+        css=css_lst_chr[i]   # long css of i-th chromosome
+        gene_df=g_lst_chr[i] # gene df of i-th chromosome
+        
+        assert gene_df["TxStart"].iloc[0]>=1, "Gene starts from the very first location at {}-th chromosome.".format(i)
+        assert gene_df["TxEnd"].iloc[-1]<=len(css), "Gene ends at the very last location at {}-th chromosome.".format(i)  
+                
+        css_Ngene_lst_chr=[]
+        for j in range(len(gene_df)):
+            if j==0:
+                ng_start=1 # to avoid any "zero" causing problem 
+                ng_end=gene_df["TxStart"].iloc[j]
+#                 css_gene=css[g_start:g_end] 
+            elif j==len(gene_df)-1: 
+                ng_start=gene_df["TxEnd"].iloc[j]
+                ng_end=len(css)-1
+            else:
+                ng_start=gene_df["TxEnd"].iloc[j-1]
+                if j <=3:
+                    print("j: {} | ng_start: {}".format(j, ng_start))
+                ng_end=gene_df["TxStart"].iloc[j]
+                if j <=3:
+                    print("j: {} | ng_end: {}".format(j, ng_end))
+        
+            css_Ngene=css[ng_start:ng_end]
+            css_Ngene_lst_chr.append(css_Ngene)
+        
+        css_Ngene_lst_all.append(css_Ngene_lst_chr)   
+    assert len(css_Ngene_lst_all)==total_chr
+    return css_Ngene_lst_all
+
 
 # In[ ]:
 
@@ -955,13 +1169,7 @@ def compGene2css(whole_gene_file,df):
 
 
 
-# In[ ]:
-
-
-
-
-
-# In[ ]:
+# In[38]:
 
 
 # length distribution for the 
@@ -1069,7 +1277,7 @@ def QnonQforChr(all_files=all_files,whole_gene_file=whole_gene_file):
 # 
 # <img src="./desc_img/qnonq_hist1.png" width=400 height=150>
 
-# In[12]:
+# In[41]:
 
 
 # draw a histogram type1 (group by data)
@@ -1140,7 +1348,7 @@ def QnonQforCellHistT2(q_cnt_lst, not_q_cnt_lst,bin_size):
 # 
 # <img src="./desc_img/qnonq_swarmp.png" width=400 height=150>
 
-# In[13]:
+# In[43]:
 
 
 def QnonQforCellSwarmp(q_cnt_lst, not_q_cnt_lst):
@@ -1164,7 +1372,7 @@ def QnonQforCellSwarmp(q_cnt_lst, not_q_cnt_lst):
 #     2. `gene_len_lst`: 15th state-including gene length
 #     3. `pro_o_lst`: Proportion of 15th state in the 15th state-including gene
 
-# In[43]:
+# In[44]:
 
 
 # generate three lists: 15th state-including gene count, gene length, proportion of 15th state per gene
@@ -1209,7 +1417,7 @@ def cntQinGene(css_gene_lst_all):
 # * Output: Letter-value histogram of `cnt_o_lst` and `gene_len_lst`, and violin plot for `pro_o_lst`
 # <img src="./desc_img/cntQinGeneVis1.png" width=500 height=150>
 
-# In[14]:
+# In[45]:
 
 
 def cntQinGeneVis1(cnt_o_lst, gene_len_lst, pro_o_lst):
@@ -1249,7 +1457,7 @@ def cntQinGeneVis1(cnt_o_lst, gene_len_lst, pro_o_lst):
 # > `len(all_unit_css[0])` =1246253
 # <!-- * Start from the process [3-2. Cut the telomere region on CSS and save the file](#3-2.-Cut-the-telomere-region-on-CSS-and-save-the-file) -->
 
-# In[16]:
+# In[46]:
 
 
 ## but it must be a distribution where 15th states covers almost of the entire area. 
@@ -1274,7 +1482,7 @@ def cntQinGeneVis1(cnt_o_lst, gene_len_lst, pro_o_lst):
 # The variable of the above list is now called chr_css_list.<br>
 # Following functions will analyze the statistics of the each strings.
 
-# In[44]:
+# In[47]:
 
 
 def css_list2count(df, chr_css_list):
@@ -1297,7 +1505,7 @@ def css_list2count(df, chr_css_list):
     return count_all
 
 
-# In[45]:
+# In[48]:
 
 
 def draw_count_barplot_incl15(count_all, chr_no):
@@ -1313,7 +1521,7 @@ def draw_count_barplot_incl15(count_all, chr_no):
     ax0=ax0.set_ylabel("Counts", fontsize=14)
 
 
-# In[46]:
+# In[49]:
 
 
 def draw_count_barplot_wo15(count_all, chr_no):
@@ -1329,7 +1537,7 @@ def draw_count_barplot_wo15(count_all, chr_no):
     ax0.set_ylabel("Counts", fontsize=14)  
 
 
-# In[47]:
+# In[50]:
 
 
 def colored_css_str(sub_str):
@@ -1348,7 +1556,7 @@ def colored_css_str(sub_str):
 # **Frequently used function!** <br>
 # To convert any string into colored string according to the color palette for CSS.
 
-# In[48]:
+# In[51]:
 
 
 def colored_css_str_as_is(sub_str):   # convert space into space
@@ -1373,7 +1581,7 @@ def colored_css_str_as_is(sub_str):   # convert space into space
 # 2. create a whole list of css without 15th state, using a all-chromosome df (df2wo15list)
 # 3. calculate the length of each element of the generated list, and analyze the statistics
 
-# In[49]:
+# In[52]:
 
 
 def df2inbetweeen_lst(df):
@@ -1396,7 +1604,7 @@ def df2inbetweeen_lst(df):
     return lst
 
 
-# In[50]:
+# In[53]:
 
 
 def df2wo15list(df):
@@ -1408,7 +1616,7 @@ def df2wo15list(df):
     return total_lst   # total_lst here consists of the connected-patterns betweeen 15th state
 
 
-# In[51]:
+# In[54]:
 
 
 def css_elm_stat(total_lst):# graph of the length distribution 
@@ -1426,7 +1634,7 @@ def css_elm_stat(total_lst):# graph of the length distribution
     plt.ylabel("Count", fontsize=14)
 
 
-# In[52]:
+# In[55]:
 
 
 def lst2let_compose(total_lst):# graph of the number of letter composed for a pattern
@@ -1449,7 +1657,7 @@ def lst2let_compose(total_lst):# graph of the number of letter composed for a pa
     plt.ylabel("Count", fontsize=14)
 
 
-# In[53]:
+# In[56]:
 
 
 def custom_colorlist(data_dict):
@@ -1469,7 +1677,7 @@ def custom_colorlist(data_dict):
     return colormap_list
 
 
-# In[54]:
+# In[57]:
 
 
 def lst2solo_compose(total_lst):# graph of a solo pattern frequency
@@ -1521,7 +1729,7 @@ def lst2solo_compose(total_lst):# graph of a solo pattern frequency
 
 # #### make a kmer and save as a sample
 
-# In[55]:
+# In[58]:
 
 
 def total_lst2kmer(total_lst,k):
@@ -1533,13 +1741,13 @@ def total_lst2kmer(total_lst,k):
     return total_kmer_lst
 
 
-# In[56]:
+# In[59]:
 
 
 # total_kmer_lst=total_lst2kmer(total_lst,6)
 
 
-# In[57]:
+# In[60]:
 
 
 # file_name02="../database/test_data/6_tr01.txt"
@@ -1560,7 +1768,7 @@ def total_lst2kmer(total_lst,k):
 
 
 
-# In[82]:
+# In[61]:
 
 
 # !jupyter nbconvert --to script css_utility.ipynb
