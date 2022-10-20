@@ -1,10 +1,17 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ### Utility file
-# Various functions to process the initial bed data
+# # Utilities
+# Various functions to process the initial data
 
-# In[81]:
+# In[1]:
+
+
+#### To convert the file into .py
+#!jupyter nbconvert --to script css_utility.ipynb
+
+
+# In[2]:
 
 
 import os
@@ -22,15 +29,47 @@ from tqdm import tqdm
 from tqdm.notebook import tqdm_notebook
 
 
-# ### Gene file preprocessing
+# ## 1. Gene and Genome file preprocessing
+# Handling the human gene location file and the reference human genome file *hg19*
 
-# In[2]:
+# **Gene file info**
+# * This file includes the information of the location of genes on the human genome.
+# * Name: `RefSeq.WholeGene.bed`
+# * Location: (local linux DLBOX2 ➡️) `../database/RefSeq/` (server ➡️) `euphonium:/work/Database/UCSC/hg19/` 
+# * Structure: 
+#     * tab-delimited
+#     * columns: `{0:"chromosome",1:"TxStart",2:"TxEnd",3:"name",4:"unk0",5:'strand', 6:'cdsStart', 7:'cdsEnd',8:"unk1",9:"exonCount",10:"unk2",11:"unk3"}`
+# <br>
+# 
+# **Genome file info**
+# 
+# * This file is the human reference genome file.
+# * Name: `genome.fa`
+# * Location: (local linux DLBOX2, macpro ➡️) `../database/hg19/` (server ➡️) `/work/Database/UCSC/hg19/`
+# * Chromosome-wise file location: (local linux DLBOX2, macpro ➡️) `../database/hg19/genome_per_chr/`
+# * Structure:
+#     * `>` delimiter per chromosome (e.g. `>chr1`)
+#     * The file is separated chromosome-wise, using following command lines
+#         > (1) `sed 's/>//g' genome.fa > genome_mod.fa` : find `>` and remove it then save as `genome.fa`<br>
+#         > (2) `awk '$1 ~/^chr/{close(name);name=$1;next}{print $1>name}' genome_mod.fa` : find string starting `chr` form `genome_mod.fa` and save the 1st field (=the base string) as reading the file. 
+
+# In[7]:
 
 
+# load the file from local
 whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'
 
 
-# In[3]:
+# ### 1-1. Gene file separation by chromosome
+# #### Function: `WhGene2GLChr`
+# * **Description**: Generate the chromosome-wise list of dataframe of gene location
+# <br>
+# * **Input**: `whole_gene_file`
+# * **Output**: `g_df_chr_lst` A list of chromosome-wise Dataframes, each of which contains `chromosome` (chromosome number), `TxStart`, `TxEnd`, and `name` (gene name). Note that `chrM` is removed in the process. 
+# 
+# * This fuction is used in the function `compGene2css` [jump](#compGene2css) which generates **`css_gene_lst_all`**, the list of list that contains the chromatin states for genic region per chromosome.
+
+# In[4]:
 
 
 # function for preprocess the whole gene data and produce chromosome-wise gene lists
@@ -63,17 +102,27 @@ def whGene2GLChr(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
     return g_df_chr_lst
 
 
-# ### Genome statistics
+# ### 1-2. Genome statistics
+# 
+# * Prerequisite file: chromosome-wise separated reference genome file.
 
-# In[4]:
+# In[8]:
 
 
+# prerequisite file load
 chr_path='../database/hg19/genome_per_chr/'
 chr_list=[os.path.join(chr_path, file) for file in sorted(os.listdir(chr_path))]
 chr1=chr_list[0]
 
 
-# In[5]:
+# #### Function `chrNdist`
+# 
+# * **Description**: Generate the index list and dataframe ('start' and 'end' location) of 'N' base in genome file. <br> 'N' indicates that it can be *any* base (See [reference](https://iubmb.qmul.ac.uk/misc/naseq.html))
+# * **Input**: Chromosome-wise separated genome
+# * **Output**: Two elements (`all_n_index` (list) and  `n_dist_df`(dataframe)). <br> `all_n_index` is just a list of all the indices where 'N's are located, while `n_dist_df` accomodates 'start', 'end', and 'count' as columns.
+# * **Note** that the 'N' here stands for 50 bases. (resolution=50 bases)
+
+# In[6]:
 
 
 def chrNdist(chr_file=chr1):
@@ -119,19 +168,21 @@ def chrNdist(chr_file=chr1):
         return all_n_index, n_dist_df
 
 
-# Description.
+# #### Function: `all_chr_Ndist `
 # 
-# * Prerequisite: The human reference genome was read line by line (50 characters per line) and the index where all the characters are "N (any base)" [reference](https://iubmb.qmul.ac.uk/misc/naseq.html). Therefore, the resolution per se is 50 bases.
+# * **Description**
+#     * Draw a histogram of 'N' distiribution chromosome-wise.
+#     * Generate a list of chromosome-wise list of the index for 'N' location (still, resolution = 50 bases)
+# * **Input**: The reference genome file path `'../database/hg19/genome_per_chr/'`
+# * **Option**: Normalization (default=`True`)
 # 
-# * Fuction **`all_chr_Ndist`**
-# * Usage: `all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalization=True)`
-# * The distribution of "N" in genome
-# * Output: list of list (the element list is the index of genome position)
-# * Graph
-# 
-# <img src="./desc_img/all_chr_Ndist.png" width=400 height=150>
+# * **Output**
+#     * A list of chromosome-wise list of 'N' location on genome.
+#     * `all_chr_n_index_norm` (if normalization ON) 
+#     * `all_chr_n_index` (if normalization OFF)
+# <img src="./desc_img/all_chr_Ndist.png" width=500 height=250>
 
-# In[6]:
+# In[10]:
 
 
 def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalization=True):
@@ -160,10 +211,7 @@ def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalizat
         all_n_index_norm=[elm/all_n_index[-1] for elm in all_n_index]
         ##########################################
         
-#         grad_color=plt.cm.viridis_r(i*10)
-#         grad_color=plt.cm.coolwarm(i*10)
         grad_color=plt.cm.terrain(i*10)
-#         ax.hist(all_n_index_norm, 100, color=grad_color, ec='white', alpha=0.5, label=chr_no)
         ax.hist(all_n_index_norm, 50, color=grad_color, histtype="step", label=chr_no)
         all_chr_n_index_norm.append(all_n_index_norm)
         
@@ -183,21 +231,19 @@ def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalizat
         return all_chr_n_index
 
 
-# ### Chromatin state preprocessing
-# #### Preparing the .bed file list
+# ## 2. Chromatin state preprocessing
+# 
+# Chromatin state file (`.bed` file) preprocessing to further analysis
 
-# In[7]:
+# **Chromatin state file info**
+# * This files are the chromatin state-annotated (15 different states, per 200 bps) genomes of 127 different cells.
+# * Location: (local linux DLBOX2, macpro ➡️) `/database/bed/unzipped`  (server ➡️) `euph:/work/ChIP-seq/ROADMAP/byFileType/chromhmmSegmentations/ChmmModels/coreMarks/jointModel/final/*_15_coreMarks_dense.bed`
+# * Structure: tab-delimited, 4 columns (chromosome numner, start, end, and state number)
+
+# In[11]:
 
 
-# file name reader
-# make a list of all the filename
-
-path='../database/bed/unzipped/'
-bed_files=os.listdir(path)
-
-pickle_path='../database/cell_pickle'
-pickle_files=os.listdir(pickle_path)
-
+# file name reader: make a list of all the filename
 def file_list_maker(path, files):
     all_files=[]
     for file in files:
@@ -205,6 +251,26 @@ def file_list_maker(path, files):
         all_files.append(file_path)
     return all_files
 
+# create a pickle for a cell-wise dataframe
+def total_df2pickle(total_df_list):
+    for num, df_cell in enumerate(tqdm.notebook.tqdm(total_df_list)):
+        path="../database/cell_pickle/"
+        if num+1 < 10:
+            file_name=path+"df_cell"+"00"+str(num+1)+".pkl"
+            df_cell_pickled=df_cell.to_pickle(file_name)
+        elif num+1 < 100:
+            file_name=path+"df_cell"+"0"+str(num+1)+".pkl"
+            df_cell_pickled=df_cell.to_pickle(file_name)
+        else:
+            file_name=path+"df_cell"+str(num+1)+".pkl"
+            df_cell_pickled=df_cell.to_pickle(file_name)
+
+path='../database/bed/unzipped/'
+bed_files=os.listdir(path)
+
+pickle_path='../database/cell_pickle'
+pickle_files=os.listdir(pickle_path)
+            
 all_files=file_list_maker(path, bed_files)
 all_cell_pickles=file_list_maker(pickle_path, pickle_files)
 
@@ -219,13 +285,6 @@ all_files[0]
 
 
 all_cell_pickles[0]
-
-
-# In[10]:
-
-
-# test file
-# test_filename='../database/bed/unzipped/E017_15_coreMarks_stateno.bed'
 
 
 # In[11]:
@@ -253,7 +312,6 @@ css_dict=dict(zip(list(state_dict.values()), css_name))  # css_dict={"A":"TssA",
 
 # color dict update using the info from https://egg2.wustl.edu/roadmap/web_portal/chr_state_learning.html
 # 18th May 2022
-
 css_color_dict={'TssA':(255,0,0), # Red
                 'TssAFlnk': (255,69,0), # OrangeRed
                 'TxFlnk': (50,205,50), # LimeGreen
@@ -270,22 +328,8 @@ css_color_dict={'TssA':(255,0,0), # Red
                 'ReprPCWk': (192,192,192), # Gainsboro
                 'Quies': (240, 240, 240)}  # White -> bright gray 
 
-# css_color_dict={'TssA':(219, 57, 50), 
-#                 'TssAFlnk': (222, 87, 54), 
-#                 'TxFlnk': (107, 187, 87),
-#                 'Tx': (57, 124, 72), 
-#                 'TxWk': (48, 98, 58), 
-#                 'EnhG': (197, 213, 80), 
-#                 'Enh': (245, 196, 98),
-#                 'ZNF/Rpts': (129, 194, 169), 
-#                 'Het': (137,143,189), 
-#                 'TssBiv': (192, 98, 95), 
-#                 'BivFlnk': (223, 156, 127), 
-#                 'EnhBiv': (188, 182, 115), 
-#                 'ReprPC': (147, 149, 153),
-#                 'ReprPCWk': (200, 202, 203), 
-#                 'Quies': (240, 240, 240)}  # 255,255,255 was white -> bright gray 
 
+# #### Function to convert RGB into decimal RGB
 
 # In[15]:
 
@@ -315,29 +359,6 @@ state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values
 
 
 css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
-
-
-# #### Function to convert RGB into decimal RGB
-
-# #### Function to create pickle file (dataframe, expanded version) for an individual cell
-
-# In[19]:
-
-
-# create a pickle for a cell-wise dataframe
-
-def total_df2pickle(total_df_list):
-    for num, df_cell in enumerate(tqdm.notebook.tqdm(total_df_list)):
-        path="../database/cell_pickle/"
-        if num+1 < 10:
-            file_name=path+"df_cell"+"00"+str(num+1)+".pkl"
-            df_cell_pickled=df_cell.to_pickle(file_name)
-        elif num+1 < 100:
-            file_name=path+"df_cell"+"0"+str(num+1)+".pkl"
-            df_cell_pickled=df_cell.to_pickle(file_name)
-        else:
-            file_name=path+"df_cell"+str(num+1)+".pkl"
-            df_cell_pickled=df_cell.to_pickle(file_name)
 
 
 # #### Functions to make .bed to dataframe
@@ -569,6 +590,9 @@ def df2longcss(df):
 
 
 # #### make a unit-length string of the css (not the real length, but 200-bp resolution unit)
+
+# #### Unit length css
+
 # * ChrM is removed
 # * chromosome-wise list
 # * unit length (chromatin is annotated per 200 bp)
@@ -597,8 +621,8 @@ def df2unitcss(df):
     return all_unit_css
 
 
-# ### Statistics
-# * With 15th state
+# ### Chromatin State Statistics
+# * With 15th state (including 15ths state)
 # 1. State distribution on genome across all the cell types
 
 # In[31]:
@@ -660,7 +684,15 @@ def prop_data2df(path='../database/conserv_overlap/'):
 # temp_df, trans_df=prop_data2df(path='../database/conserv_overlap/')
 
 
-# ### Cutting the telomere: where to cut?
+# # 3. Cutting the telomere: where to cut?
+
+# ## 3-1. Quiescent state distribution
+# How Quiescent states are distributed on the whole genome?
+# 
+# #### Function: `UnitCSS_Q_Dist`
+# 
+# * Input: df, chromosome number
+# * Output: `q_index` index of genome (not normalized) where Quiescent states are found.
 
 # In[33]:
 
@@ -684,12 +716,12 @@ def UnitCSS_Q_Dist(df, chr_no=1):
     return q_index
 
 
-# Description.
+# #### Function: `all_chr_UnitCSS_Q_Dist(df, normalization=True)`
 # 
-# * Function **`all_chr_UnitCSS_Q_Dist(df, normalization=True)`**
-# 
-# * Usage: `all_chr_q_index_norm=all_chr_UnitCSS_Q_Dist(df, normalization=True)`
-# * Result: list of list, the element list contains the position index of the Q state in a chromosome
+# * Input: df, normalization (T/F, default=T)
+# * Output: list of list, the element of which is a list contains the position index of the Q state in a chromosome
+#     * Normalization True: `all_chr_q_index_norm`
+#     * Normalization False: `all_chr_q_index`
 # * Graph (distribution histogram)
 # <img src="./desc_img/all_chr_UnitCSS_Q_Dist.png" width=400 height=150>
 
@@ -744,88 +776,30 @@ def all_chr_UnitCSS_Q_Dist(df,normalization=True):
         return all_chr_q_index
 
 
-# #### Cut the telomere region and save the file
-# * function: **`cssWOteloKmer(df,k)`**
-# * Create and save a list of css trimming the telometer region (10,000 bp = 50 unit)
-# * Output file name: `k_wo_telo_v1.txt`, v1 stands for version 1 (considering telomere 
-# * Usage: (in case of creating 6mer) `cssWOteloKmer(df,6)`
+# ## 3-2. Cut the telomere region on CSS and save the file
+
+# ### 3-2-1. Random cut
+
+# #### Function: `chr_cssWOtelo_ranCUT_Kmer`
 # 
-# *Output message* <br>
-# 6mer prepraration process for telomere-less data has been started...<br>
-# unit-length css for 6mer was saved at ../database/wo_telo/
-
-# In[35]:
-
-
-def cssWOteloKmer(df,k):
-    """
-    description: Create and save a list of css trimming the telometer region (10,000 bp = 50 unit)
-    input: df (bed to df, containing all chr), k (number for k-mer)
-    output: saved file (kmer css at '../database/wo_telo/')
-    """
-    all_unit_css=df2unitcss(df) # unit-long css for 
-    
-    ### telomere is set to 10,000 at the initial and final genome sequences
-    ### unit length is 200-bp resolution, 50 units are telomeres
-    
-    print("{}mer prepraration process for telomere-less data has been started...".format(k))
-    
-    total_lst_wotelo=[]
-    for i in range(len(all_unit_css)):
-        unit_css=all_unit_css[i]
-        unit_css_wotelo=unit_css[50:-50]  # cut initial-final 50 units
-        unit_css_wotelo_kmer=seq2kmer(unit_css_wotelo,k)
-        
-        total_lst_wotelo+=unit_css_wotelo_kmer  # didn't use [append], as it adds as a list per se 
-        
-    path='../database/wo_telo/'
-    fn_base=str(k)+"_wo_telo_v1"   # version 1 (Oct. 2022)
-    ext=".txt"
-          
-    fn=path+fn_base+ext  # file name
-
-    with open(fn,"w") as save_file:
-        save_file.write("".join(total_lst_wotelo))
-          
-    return print("unit-length css for {}mer was saved at {}".format(k, path))
-
-
-# In[36]:
-
-
-# chromosome-wise
-
-def chr_cssWOteloKmer(df,chr_no,k):
-    
-    all_unit_css=df2unitcss(df)
-    
-    ch1_unit_css=all_unit_css[chr_no]
-    ch1_unit_css_wotelo=ch1_unit_css[50:-50]
-    ch1_unit_css_wotelo_kmer=seq2kmer(ch1_unit_css_wotelo,k)
-    
-    path='../database/wo_telo/'
-    fn_base="chr"+str(chr_no)+"_"+str(k)+"_wo_telo_v1"   # version 1 (Oct. 2022)
-    ext=".txt"
-          
-    fn=path+fn_base+ext  # file name
-
-    with open(fn,"w") as save_file:
-        save_file.write("".join(ch1_unit_css_wotelo_kmer))
-          
-    return print("unit-length css of {} for {}mer was saved at {}".format(chr_no, k, path))
-
-
-# ### How to cut?
+# * Cut the list of CSS into trainable size and save after trimming the telometer region 
+#     >1. Cut the telomere (50 units=10000 bp)
+#     >2. Select the sample `df` and chromosome number `chr_no` to take
+#     >3. Determine the range of random cut of the string (e.g. `100` to `2000`)
+#     >4. Determine the `k` for making kmer
+#     
+# * Input: df,chr_no,num1=5,num2=510, k=3, weight_rn=False, v_name="v1.01"
+# > weight_rn `True`: 50% cut into 510, 50% cut randomly between 5 and 510 <br>
+# > weight_rn `False` : 100% cut randomly between 5 and 510
+# * Output file name: `k_wo_telo_v1.01.txt`, v1 stands for version 1 (considering telomere length) 
+# * Usage: `chr_cssWOtelo_ranCUT_Kmer(df,1,100,200,6)`
 # 
-# * Function: **chr_cssWOtelo_ranCUT_Kmer**
-# 1. Cut the telomere (50 units, 10000 bp)
-# 2. Select the sample `df` and chromosome number `chr_no` to take
-# 3. Determine the range of random cut of the string (e.g. `100` to `2000`)
-# 4. Determine the `k` for making kmer
-# 5. Usage: `chr_cssWOtelo_ranCUT_Kmer(df,1,100,200,6)`
+# * Version control (e.g. v1.01)
+#      * v1: version 1, telomere length set at 50 units.
+#      * .01: not weighted random, from 5 to 510 
 # 
-# *Output message*
-# unit-length css of chr1 cut randomly(range:100-2000) for 3mer was saved at ../database/wo_telo/
+# >*Output message* <br>
+# >unit-length css of chr1 cut randomly(weighted range:5-510) for 3mer was saved at '../database/wo_telo/'
 
 # In[37]:
 
@@ -879,8 +853,8 @@ def chr_cssWOtelo_ranCUT_Kmer(df,chr_no,num1=5,num2=510, k=3, weight_rn=False, v
     
       
     path='../database/wo_telo/'
-    fn_base="chr"+str(chr_no)+"_"+str(k)+"_wo_telo_"+v_name   # version 1.01 (Oct. 2022) : telo 50 unit, rn 200-1000
-                                                              # version 1.02 (Oct. 2022) : telo 50, rn 5 - 510
+    fn_base="chr"+str(chr_no)+"_"+str(k)+"_wo_telo_"+v_name   # version 1.01_pre (Oct. 2022) : telo 50 unit, rn 200-1000
+                                                              # version 1.01 (Oct. 2022) : telo 50, rn 5 - 510
     ext=".txt"
           
     fn=path+fn_base+ext  # file name
@@ -891,12 +865,59 @@ def chr_cssWOtelo_ranCUT_Kmer(df,chr_no,num1=5,num2=510, k=3, weight_rn=False, v
     return print("unit-length css of chr{} cut randomly(weighted range:{}-{}) for {}mer was saved at {}".format(chr_no, num1, num2, k,fn))
 
 
-# ### Cut the chromatin states : genic area
+# ### 3-2-1. Kmerized data visualization
+
+# #### Function: `dataLengCompo`
+# * Input: data path, k (of kmer), color, bins, dna or not (default=false)
+# 
+
+# In[18]:
+
+
+def dataLengCompo(path, k, color="teal", bins=15, dna=False):
+    """
+    Create a histogram of data length (elements before k-merization in the training dataset list)
+    """
+    file_name=path
+    with open(file_name) as f:
+        len_lst=[]
+        for line_no, line in enumerate(f):
+            if dna:
+                line_len=int((len(line)-1)/k)+(k-1)  # -1 comes from the space only between DNA sequence kmer
+                if line_len!=0:
+                    len_lst.append(line_len)               
+            else:
+                line_len=int(len(line)/(k+1))+(k-1)  # reduced 
+#                 line_len=int(len(line)/(k+1))*k # +1 comes from the space after the kmers
+                len_lst.append(line_len)
+                
+    fig=plt.figure(figsize=(6,4))
+    
+    s=sns.histplot(len_lst, kde=False, color=color, log_scale=True, bins=bins, element="step", fill=False)
+    sns.set_style("whitegrid")
+    plt.xlabel("Length of each element in training dataset", fontsize=12)
+    plt.xlim([1,10000])
+    plt.show()
+    return  
+
+
+# ## 3-3.  Cut the chromatin states : genic area
+
+# ### 3-3-1. Genic area
+# #### Function: `compGene2css`
+# 
+# * Input: whole_gene_file, df
+# * Output: `css_gene_lst_all` list of list that css for genic region per chromosome (which can be utilized very frequently after this)
+# * The output is pickled as `"../database/temp_files/css_gene_lst_all"`
 
 # In[72]:
 
 
 def compGene2css(whole_gene_file,df):
+    """
+    Input: Reference gene file, df (CSS)
+    Output: list of chromosome-wise list that contains the css at genic area only.c
+    """
     g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
     css_lst_chr=df2longcss(df) # list of long css per chromosome
     total_chr=len(g_lst_chr)
@@ -920,9 +941,41 @@ def compGene2css(whole_gene_file,df):
     return css_gene_lst_all
 
 
-# * css_gene_lst_all : list of list that css for genic region per chromosome
+# ### 3-3-1. Non-genic area
 
-# #### Count the number of 15th states in genic, non-genic region
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+# length distribution for the 
+
+
+# ## 3-4. Count the number of 15th states in genic and non-genic region
+
+# #### Function: `QnonQforCell`
+# 
+# * Calculate the numbers of genes that contain/ not contain 15th state (Quiescent) for all 127 cells
+# * Caution: it takes tremendous of time. Just use pickled output at `"../database/temp_files/"`
+# * Input: cell file list, whole gene file
+# * Output: `q_cnt_lst` (The number of gene that contains 15th state) / `not_q_cnt_lst` (genes do not have 15th state)
+# * Note that you need to flatten it when use
 
 # In[39]:
 
@@ -958,6 +1011,9 @@ def QnonQforCell(all_files=all_files,whole_gene_file=whole_gene_file):
         not_q_cnt_lst.append(not_q_cnt)
     return q_cnt_lst, not_q_cnt_lst
 
+
+# #### Function: `QnonQforChr`
+# * Similar to `QnonQforCell`, but it is a flatten version
 
 # In[40]:
 
@@ -1002,23 +1058,22 @@ def QnonQforChr(all_files=all_files,whole_gene_file=whole_gene_file):
     return q_cnt_lst_all, not_q_cnt_lst_all
 
 
-# In[ ]:
+# #### Function: `QnonQforCellHistT1`
+# 
+# * Input: `q_cnt_lst`, `not_q_cnt_lst` (they are pickled at `"../database/temp_files/"`)
+# * How to load the pickled data
+#     > `with open("path", "rb") as f:`  <br>
+#     > `data=pickle.load(f)`
+# * Output: Histogram of the numbers of gene per cell that contains/ don't contain 15th state in the all cell types
+# <br><br>
+# 
+# <img src="./desc_img/qnonq_hist1.png" width=400 height=150>
 
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[41]:
+# In[12]:
 
 
 # draw a histogram type1 (group by data)
-def QnonQforCellHistT1(q_cnt_lst, not_q_cnt_lst, bin_size=15):
+def QnonQforCellHistT1(q_cnt_lst, not_q_cnt_lst, bin_size=20):
     """Run this after executing QnonQforCell"""
     data_w=q_cnt_lst
     data_wo=not_q_cnt_lst
@@ -1026,27 +1081,31 @@ def QnonQforCellHistT1(q_cnt_lst, not_q_cnt_lst, bin_size=15):
     mu_w, std_w=norm.fit(data_w)
     mu_wo, std_wo=norm.fit(data_wo)
 
-    plt.hist(data_w, bins=bin_size, alpha=0.3, color="k")
-    plt.hist(data_wo, bins=bin_size, alpha=0.5, color="r")
-
-#     xmin_w, xmax_w=plt.xlim()
-#     xmin_wo, xmax_wo=plt.xlim()
-
-#     x_w = np.linspace(xmin_w, xmax_w, 100)
-#     p_w = norm.pdf(x_w, mu_w, std)
-#     x_wo = np.linspace(xmin_wo, xmax_wo, 100)
-#     p_wo = norm.pdf(x_wo, mu_wo, std)
-
-#     plt.plot(x_w, p_w, "r", linewidth=2)
-#     plt.plot(x_wo, p_wo, "k", linewidth=2)
+    fig=plt.figure(figsize=(8,4))
+    ax=fig.add_subplot(1,1,1)
+    ax.hist(data_w, bins=bin_size, alpha=0.3, color="k")
+    ax.hist(data_wo, bins=bin_size, alpha=0.5, color="r")
 
     title='Number of Genic region with/without Quiescent state'
-    plt.title(title)
-#     plt.legend("with Quiescent state","without Quiescent state")
-    plt.xlabel("No. of Genes")
-    plt.ylabel("Counts")
-    plt.show()
+    
+    ax.set_title(title, fontsize=15)
+    ax.set_xlabel("No. of Genes", fontsize=15)
+    plt.xticks(fontsize=12)
+    ax.set_ylabel("Counts", fontsize=15)
+    ax.legend(["With Q", "Without Q"])
+    plt.yticks(fontsize=12)
 
+
+# #### Function: `QnonQforCellHistT2`
+# 
+# * Input: `q_cnt_lst`, `not_q_cnt_lst` and `bin_size` (they are pickled at `"../database/temp_files/"`)
+# * How to load the pickled data
+#     > `with open("path", "rb") as f:`  <br>
+#     > `data=pickle.load(f)`
+# * Output: Histogram of the numbers of gene per cell that contains/ don't contain 15th state in the all cell types that is grouped by bin (Well, I don't know why I wrote this code..)
+# <br><br>
+# 
+# <img src="./desc_img/qnonq_hist2.png" width=400 height=150>
 
 # In[42]:
 
@@ -1063,19 +1122,8 @@ def QnonQforCellHistT2(q_cnt_lst, not_q_cnt_lst,bin_size):
     fig=plt.figure(figsize=(8,4))
     ax=fig.add_subplot(1,1,1)
     ax.hist([data_w,data_wo], bins=bin_size, alpha=0.5, color=["teal","orange"], label=["with Quiescent state","without Quiescent state"])
-
-#     xmin_w, xmax_w=plt.xlim()
-#     xmin_wo, xmax_wo=plt.xlim()
-
-#     x_w = np.linspace(xmin_w, xmax_w, 100)
-#     p_w = norm.pdf(x_w, mu_w, std)
-#     x_wo = np.linspace(xmin_wo, xmax_wo, 100)
-#     p_wo = norm.pdf(x_wo, mu_wo, std)
-
+    
     ax.legend(loc="upper left")
-
-#     plt.plot(x_w, p_w, "teal", linewidth=2)
-#     plt.plot(x_wo, p_wo, "orange", linewidth=2)
 
     title='Number of Genic region with/without Quiescent state'
     plt.title(title)
@@ -1084,6 +1132,37 @@ def QnonQforCellHistT2(q_cnt_lst, not_q_cnt_lst,bin_size):
     plt.ylabel("Counts")
     plt.show()
 
+
+# #### Fuction: `QnonQforCellSwarmp`
+# * Create a dataframe of two lists (below) and draw a dual swarmp graph in a single figure.
+# * Input: `q_cnt_lst` and `not_q_cnt_lst` (find them pickled at `"../database/temp_files/"`)
+# * Output: `q_cnt_data` (dataframe of the two lists) and the graph
+# 
+# <img src="./desc_img/qnonq_swarmp.png" width=400 height=150>
+
+# In[13]:
+
+
+def QnonQforCellSwarmp(q_cnt_lst, not_q_cnt_lst):
+    q_cnt_data=pd.DataFrame({"q_cnt":q_cnt_lst, "not_q_cnt":not_q_cnt_lst}) # create a dataframe
+    fig=plt.figure(figsize=(6,4))
+    sns.swarmplot(data=q_cnt_data, palette="bone")
+    plt.grid(b=None)
+    plt.ylabel("Counts", fontsize=12)
+    plt.show()
+    return q_cnt_data
+
+
+# #### Function: `cntQinGene`
+# * This function generates three lists
+#     1. 15th state-including gene count
+#     2. 15th state-including gene length
+#     3. Proportion of 15th state in the 15th state-including gene
+# * Input: `css_gene_lst_all` (pickled at `"../database/temp_files/"`, note that it's 2.8Gb)
+# * Output: 
+#     1. `cnt_o_lst`: 15th state-including gene count
+#     2. `gene_len_lst`: 15th state-including gene length
+#     3. `pro_o_lst`: Proportion of 15th state in the 15th state-including gene
 
 # In[43]:
 
@@ -1124,6 +1203,59 @@ def cntQinGene(css_gene_lst_all):
     return cnt_o_lst, gene_len_lst, pro_o_lst
 
 
+# #### Function: `cntQinGeneVis1`
+# * For visualization of the result of the function `cntQinGene`.
+# * Input: `cnt_o_lst`, `gene_len_lst`, and `pro_o_lst` (result of `cntQinGene`), for more info, see that function.
+# * Output: Letter-value histogram of `cnt_o_lst` and `gene_len_lst`, and violin plot for `pro_o_lst`
+# <img src="./desc_img/cntQinGeneVis1.png" width=500 height=150>
+
+# In[14]:
+
+
+def cntQinGeneVis1(cnt_o_lst, gene_len_lst, pro_o_lst):
+    """
+    Input: cnt_o_lst, gene_len_lst, pro_o_lst (the result lists of cntQinGene(css_gene_lst_all). To load the css_gene_lst_all, find the file at "../database/temp_files/")
+    Output: Dataframe of those 3 lists, and the visualization of the above lists using histogram
+    """
+    def flatLst(lst):
+        flatten_lst=[elm for sublst in lst for elm in sublst]
+        return flatten_lst
+
+    cnt_o_lst_flat=flatLst(cnt_o_lst)
+    gene_len_lst_flat=flatLst(gene_len_lst)
+    pro_o_lst_flat=flatLst(pro_o_lst)
+    
+    three_df=pd.DataFrame({"gene_len":gene_len_lst_flat, "cnt_o":cnt_o_lst_flat, "o_proportion":pro_o_lst_flat})
+    
+    fig, (ax1,ax2) = plt.subplots(1,2,figsize=(10,5), sharey=False)
+    ax1=sns.boxenplot(data=three_df[["gene_len","cnt_o"]],palette="viridis", width=0.6, linewidth=0.01, ax=ax1)
+    ax1.set_ylabel("Count", fontsize=15)
+    
+    ax2=sns.violinplot(data=three_df[["o_proportion"]], linewidth=0.6, inner="box", width=0.6, color="lightgray", ax=ax2)
+    plt.grid(b=None)
+    ax2.set_ylabel("Proportion", fontsize=15)
+    
+    return three_df   
+
+
+# # 4. CSS Pattern analysis
+
+# ## 4-1. For 15th-including data
+# 
+# * Target data: CSS dataset with 15th state included
+# * Starting data is acquired from `all_unit_css=df2unitcss(df)` [Jump](#Unit-length-css)
+# * `all_unit_css` is a list, the element of which is chromosome-wise all-connected **unit-length** (per 200 bp) CSS
+# > `len(all_unit_css)` = 24 <br>
+# > `len(all_unit_css[0])` =1246253
+# <!-- * Start from the process [3-2. Cut the telomere region on CSS and save the file](#3-2.-Cut-the-telomere-region-on-CSS-and-save-the-file) -->
+
+# In[16]:
+
+
+## but it must be a distribution where 15th states covers almost of the entire area. 
+## So I stopped here, because basic statistics are known from 4-2. For 15th-less data
+
+
 # In[ ]:
 
 
@@ -1136,13 +1268,7 @@ def cntQinGene(css_gene_lst_all):
 
 
 
-# In[ ]:
-
-
-
-
-
-# #### CSS Pattern analysis
+# ## 4-2. For 15th-less data
 # 
 # Now the dataframe has been transformed into a list of string all connected css, chromosome-wise.<br>
 # The variable of the above list is now called chr_css_list.<br>
@@ -1218,6 +1344,9 @@ def colored_css_str(sub_str):
                 col_str+=col_letter
     return print("\033[1m"+col_str+"\033[0;0m") 
 
+
+# **Frequently used function!** <br>
+# To convert any string into colored string according to the color palette for CSS.
 
 # In[48]:
 
@@ -1434,7 +1563,7 @@ def total_lst2kmer(total_lst,k):
 # In[82]:
 
 
-get_ipython().system('jupyter nbconvert --to script css_utility.ipynb')
+# !jupyter nbconvert --to script css_utility.ipynb
 
 
 # In[ ]:
