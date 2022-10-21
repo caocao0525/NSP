@@ -4,11 +4,11 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[68]:
+# In[74]:
 
 
 #### To convert the file into .py
-# !jupyter nbconvert --to script css_utility.ipynb
+#!jupyter nbconvert --to script css_utility.ipynb
 
 
 # In[2]:
@@ -28,6 +28,16 @@ import pickle
 import seaborn as sns
 from tqdm import tqdm
 from tqdm.notebook import tqdm_notebook
+
+
+# **Frequently used functions**
+
+# In[77]:
+
+
+def flatLst(lst):
+    flatten_lst=[elm for sublst in lst for elm in sublst]
+    return flatten_lst
 
 
 # ## 1. Gene and Genome file preprocessing
@@ -70,13 +80,14 @@ whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'
 # 
 # * This fuction is used in the function `compGene2css` [jump](#compGene2css) which generates **`css_gene_lst_all`**, the list of list that contains the chromatin states for genic region per chromosome.
 
-# In[4]:
+# In[72]:
 
 
 # function for preprocess the whole gene data and produce chromosome-wise gene lists
 # each element is dataframe
 
 def whGene2GLChr(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
+    print("Extracting the gene file ...")
     g_fn=whole_gene_file
     g_df_raw=pd.read_csv(g_fn, sep='\t', lineterminator='\n', header=None, low_memory=False)
     g_df_int=g_df_raw.rename(columns={0:"chromosome",1:"TxStart",2:"TxEnd",3:"name",4:"unk0",
@@ -99,7 +110,8 @@ def whGene2GLChr(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
         g_chr_df=locals()[g_chr_df]
         g_chr_df=g_chr_df.sort_values("TxStart")
         g_df_chr_lst.append(g_chr_df)
-        
+    print("Done!")
+    
     return g_df_chr_lst
 
 
@@ -1093,67 +1105,75 @@ def removeOverlapDF(test_df):
     return gene_collapsed_df
 
 
-# In[66]:
+# In[69]:
 
 
 def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
     g_df_chr_lst=whGene2GLChr(whole_gene_file)
     new_gene_lst_all=[]
-    for chr_no in tqdm_notebook(range(len(g_df_chr_lst))):
+    for chr_no in range(len(g_df_chr_lst)):
         gene_df=g_df_chr_lst[chr_no]
         gene_collapsed_df=removeOverlapDF(gene_df)
         new_gene_lst_all.append(gene_collapsed_df)
     return new_gene_lst_all # list of chromosome-wise dataframe for collapsed gene table
 
 
-# In[ ]:
+# #### Function: `compNonGene2css`
+# * This function extracts the css on the non-genic (intergenic) area of the genome.
+# * The function `gene_removeDupl` was used here, for extracting the non-genic region index.
+# * Input: `whole_gene_file` and `df` (from the css bed file)
+# * Output: `css_Ngene_lst_all` The CSS on the non-genic region
+
+# In[76]:
 
 
-
-
-
-# In[62]:
-
-
-def compNonGene2css(whole_gene_file,df):  ## intermidiate version. need to update after the fix (due to the gene position overlapping)
+def compNonGene2css(whole_gene_file,df):
     """
     Input: Reference gene file, df (CSS)
     Output: list of chromosome-wise list that contains the css at "non-genic" area only.
     """
-    g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
+    
+    print("Extracting the CSS on the intergenic region ...")
+
+    ########### new fancy gene table without overlap ###########
+    new_gene_lst_all=gene_removeDupl(whole_gene_file)
+    ############################################################
+    
     css_lst_chr=df2longcss(df) # list of long css per chromosome
-    total_chr=len(g_lst_chr)
+    total_chr=len(new_gene_lst_all)
     
     css_Ngene_lst_all=[]
+        
     for i in tqdm_notebook(range(total_chr)):
         css=css_lst_chr[i]   # long css of i-th chromosome
-        gene_df=g_lst_chr[i] # gene df of i-th chromosome
+        gene_df=new_gene_lst_all[i] # gene df of i-th chromosome
         
         assert gene_df["TxStart"].iloc[0]>=1, "Gene starts from the very first location at {}-th chromosome.".format(i)
         assert gene_df["TxEnd"].iloc[-1]<=len(css), "Gene ends at the very last location at {}-th chromosome.".format(i)  
                 
-        css_Ngene_lst_chr=[]
+        css_Ngene_lst_chr=[]        
         for j in range(len(gene_df)):
             if j==0:
                 ng_start=1 # to avoid any "zero" causing problem 
                 ng_end=gene_df["TxStart"].iloc[j]
-#                 css_gene=css[g_start:g_end] 
+#                 print("j: {} | ng_start: {} - ng_end: {} ".format(j, ng_start, ng_end)) # for checking
             elif j==len(gene_df)-1: 
                 ng_start=gene_df["TxEnd"].iloc[j]
-                ng_end=len(css)-1
+                ng_end=len(css)
+#                 print("j: {} | ng_start: {} - ng_end: {} ".format(j, ng_start, ng_end)) # for checking
             else:
                 ng_start=gene_df["TxEnd"].iloc[j-1]
-                if j <=3:
-                    print("j: {} | ng_start: {}".format(j, ng_start))
                 ng_end=gene_df["TxStart"].iloc[j]
-                if j <=3:
-                    print("j: {} | ng_end: {}".format(j, ng_end))
+#                 print("j: {} | ng_start: {} - ng_end: {} ".format(j, ng_start, ng_end)) # for checking 
         
             css_Ngene=css[ng_start:ng_end]
             css_Ngene_lst_chr.append(css_Ngene)
         
-        css_Ngene_lst_all.append(css_Ngene_lst_chr)   
+        css_Ngene_lst_all.append(css_Ngene_lst_chr) 
+        
     assert len(css_Ngene_lst_all)==total_chr
+    print("Done!")
+    
     return css_Ngene_lst_all
 
 
