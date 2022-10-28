@@ -4,14 +4,14 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[74]:
+# In[79]:
 
 
 #### To convert the file into .py
 #!jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[2]:
+# In[94]:
 
 
 import os
@@ -20,7 +20,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from motif_utils import seq2kmer
+from motif_utils import kmer2seq
 from scipy.stats import norm
+import random
 import collections
 import operator
 import itertools
@@ -29,6 +31,35 @@ import seaborn as sns
 from tqdm import tqdm
 from tqdm.notebook import tqdm_notebook
 
+
+# ## Index
+# 
+# * **[1. Gene and Genome file preprocessing](#1.-Gene-and-Genome-file-preprocessing)**
+#     * [1-1. Gene file separation by chromosome](#1-1.-Gene-file-separation-by-chromosome)
+#     * [1-2. Genome statistics](#1-2.-Genome-statistics)
+# * **[2. Chromatin state preprocessing](#2.-Chromatin-state-preprocessing)**
+#     * [2-1. Chromatin state file info](#2-1.-Chromatin-state-file-info)
+#     * [2-2. Prerequisite dictionaries](#2-2.-Prerequisite-dictionaries)
+#         * [2-2-1. Function to convert RGB into decimal RGB](#2-2-1.-Function-to-convert-RGB-into-decimal-RGB)
+#     * [2-3. Generate CSS .bed to dataframe](#2-3.-Generate-CSS-.bed-to-dataframe)
+#         * [2-3-1. Individual dataframe analysis](#2-3-1.-Individual-dataframe-analysis)
+#     * [2-4. CSS string generation from dataframe](#2-4.-CSS-string-generation-from-dataframe)
+#         * [2-4-1. Real length CSS](#2-4-1.-Real-length-CSS)
+#         * [2-4-2. Unit-length CSS](#2-4-2.-Unit-length-CSS)
+#     * [2-5. Chromatin State Statistics](#2-5.-Chromatin-State-Statistics)
+# * **[3. Cutting the telomere: where to cut?](#3.-Cutting-the-telomere:-where-to-cut?)**
+#     * [3-1. Quiescent state distribution](#3-1.-Quiescent-state-distribution)
+#     * [3-2. Cut the telomere region on CSS and save the file](#3-2.-Cut-the-telomere-region-on-CSS-and-save-the-file) -> **pretrain data are saved**
+#     * [3-3. Cut the chromatin states : genic/non-genic area](#3-3.-Cut-the-chromatin-states-:-genic-or-non-genic-area)
+#         * [3-3-1. Genic area](#3-3-1.-Genic-area)
+#         * [3-3-2. Non-genic area (intergenic region)](#3-3-2.-Non-genic-area-(intergenic-region))
+#         * [3-3-3. Genic or Non-genic raw-length CSS to unit-length CSS](#3-3-3.-Genic-or-Non-genic-raw-length-CSS-to-unit-length-CSS)
+#         * [3-3-4. Cut the unit-length css into trainable size and kmerize it](#3-3-4.-Cut-the-unit-length-css-into-trainable-size-and-kmerize-it) 
+#         * [3-3-5. Fine-tuning data: Dataframe version](#3-3-5.-Fine-tuning-data:-Dataframe-version)
+#         * [3-3-6. Fine-tuning data: save files as .tsv](#3-3-6.-Fine-tuning-data:-save-files-as-.tsv) ->**fine-tuning data are saved**
+#     * [3-4. Count the number of 15th states in genic and non-genic region](#3-4.-Count-the-number-of-15th-states-in-genic-and-non-genic-region) 
+# * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
+# * **[5. Training result analysis](#5.-Training-result-analysis)**
 
 # **Frequently used functions**
 
@@ -40,13 +71,24 @@ def flatLst(lst):
     return flatten_lst
 
 
+# In[95]:
+
+
+def file_list_maker(path, files):
+    all_files=[]
+    for file in files:
+        file_path=os.path.join(path,file)
+        all_files.append(file_path)
+    return all_files
+
+
 # ## 1. Gene and Genome file preprocessing
 # Handling the human gene location file and the reference human genome file *hg19*
 
 # **Gene file info**
 # * This file includes the information of the location of genes on the human genome.
 # * Name: `RefSeq.WholeGene.bed`
-# * Location: (local linux DLBOX2 ➡️) `../database/RefSeq/` (server ➡️) `euphonium:/work/Database/UCSC/hg19/` 
+# * Location: (local linux DLBOX2 ->) `../database/RefSeq/` (server ->) `euphonium:/work/Database/UCSC/hg19/` 
 # * Structure: 
 #     * tab-delimited
 #     * columns: `{0:"chromosome",1:"TxStart",2:"TxEnd",3:"name",4:"unk0",5:'strand', 6:'cdsStart', 7:'cdsEnd',8:"unk1",9:"exonCount",10:"unk2",11:"unk3"}`
@@ -56,8 +98,8 @@ def flatLst(lst):
 # 
 # * This file is the human reference genome file.
 # * Name: `genome.fa`
-# * Location: (local linux DLBOX2, macpro ➡️) `../database/hg19/` (server ➡️) `/work/Database/UCSC/hg19/`
-# * Chromosome-wise file location: (local linux DLBOX2, macpro ➡️) `../database/hg19/genome_per_chr/`
+# * Location: (local linux DLBOX2, macpro ->) `../database/hg19/` (server ->) `/work/Database/UCSC/hg19/`
+# * Chromosome-wise file location: (local linux DLBOX2, macpro ->) `../database/hg19/genome_per_chr/`
 # * Structure:
 #     * `>` delimiter per chromosome (e.g. `>chr1`)
 #     * The file is separated chromosome-wise, using following command lines
@@ -193,7 +235,9 @@ def chrNdist(chr_file=chr1):
 #     * A list of chromosome-wise list of 'N' location on genome.
 #     * `all_chr_n_index_norm` (if normalization ON) 
 #     * `all_chr_n_index` (if normalization OFF)
-# <img src="./desc_img/all_chr_Ndist.png" width=500 height=250>
+# <!-- ![](./desc_img/all_chr_Ndist.png) -->
+# 
+# <img src="./desc_img/all_chr_Ndist.png" width="500" height="250" />
 
 # In[7]:
 
@@ -244,25 +288,19 @@ def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalizat
         return all_chr_n_index
 
 
-# ## 2. Chromatin state preprocessing
+# # 2. Chromatin state preprocessing
+# **[back to index](#Index)**
 # 
 # Chromatin state file (`.bed` file) preprocessing to further analysis
 
-# **Chromatin state file info**
+# ## 2-1. Chromatin state file info
+# 
 # * This files are the chromatin state-annotated (15 different states, per 200 bps) genomes of 127 different cells.
-# * Location: (local linux DLBOX2, macpro ➡️) `/database/bed/unzipped`  (server ➡️) `euph:/work/ChIP-seq/ROADMAP/byFileType/chromhmmSegmentations/ChmmModels/coreMarks/jointModel/final/*_15_coreMarks_dense.bed`
+# * Location: (local linux DLBOX2, macpro ->) `/database/bed/unzipped`  (server ->) `euph:/work/ChIP-seq/ROADMAP/byFileType/chromhmmSegmentations/ChmmModels/coreMarks/jointModel/final/*_15_coreMarks_dense.bed`
 # * Structure: tab-delimited, 4 columns (chromosome numner, start, end, and state number)
 
-# In[8]:
+# In[96]:
 
-
-# file name reader: make a list of all the filename
-def file_list_maker(path, files):
-    all_files=[]
-    for file in files:
-        file_path=os.path.join(path,file)
-        all_files.append(file_path)
-    return all_files
 
 # create a pickle for a cell-wise dataframe
 def total_df2pickle(total_df_list):
@@ -299,6 +337,8 @@ all_files[0]
 
 all_cell_pickles[0]
 
+
+# ## 2-2. Prerequisite dictionaries
 
 # In[11]:
 
@@ -342,7 +382,7 @@ css_color_dict={'TssA':(255,0,0), # Red
                 'Quies': (240, 240, 240)}  # White -> bright gray 
 
 
-# #### Function to convert RGB into decimal RGB
+# ### 2-2-1. Function to convert RGB into decimal RGB
 
 # In[15]:
 
@@ -374,7 +414,7 @@ state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values
 css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
 
 
-# #### Functions to make .bed to dataframe
+# ## 2-3. Generate CSS .bed to dataframe
 
 # In[19]:
 
@@ -436,9 +476,10 @@ def total_df_maker(all_files):
     return total_df
 
 
-# #### Functions for analyzing an individual dataframe
+# ### 2-3-1. Individual dataframe analysis
 # 
-# CSS here refers Chromatin state sequence
+# * Functions for analyzing an individual dataframe
+# * CSS here refers Chromatin state sequence
 
 # In[22]:
 
@@ -573,7 +614,12 @@ def df2css_chr_str(df):
     return chr_css_list
 
 
-# #### make a long string of the css (not using unit, but the real length)
+# ## 2-4. CSS string generation from dataframe
+
+# ### 2-4-1. Real length CSS
+# 
+# #### Function: `df2longcss`
+# * make a long string of the css (not using unit, but the **real** length)
 # * ChrM is removed
 # * chromosome-wise list
 # * real length
@@ -602,10 +648,11 @@ def df2longcss(df):
     return all_css
 
 
-# #### make a unit-length string of the css (not the real length, but 200-bp resolution unit)
+# ### 2-4-2. Unit-length CSS
 
-# #### Unit length css
-
+# #### Function: `df2unitcss`
+# 
+# * make a unit-length string of the css (not the real length, but **200-bp resolution unit**)
 # * ChrM is removed
 # * chromosome-wise list
 # * unit length (chromatin is annotated per 200 bp)
@@ -634,9 +681,16 @@ def df2unitcss(df):
     return all_unit_css
 
 
-# ### Chromatin State Statistics
+# ## 2-5. Chromatin State Statistics
+# 
+# 
+# #### Function: `prop_data2df`
+# 
 # * With 15th state (including 15ths state)
-# 1. State distribution on genome across all the cell types
+# * `'../database/conserv_overlap/'` contains the emission of the state (occupation of the state on the genome) 
+# * State distribution on genome across all the cell types
+# * Mostly for visualization
+#     <img src="./desc_img/prop_data2df.png" width="500">
 
 # In[30]:
 
@@ -655,7 +709,7 @@ def prop_data2df(path='../database/conserv_overlap/'):
         prop=prop_data["Genome %"]
         temp_df=pd.concat([init_col,prop], axis=1)
         temp_df=temp_df.rename(columns={"Genome %":str(sample_name)})
-        init_col=temp_df
+        init_col=temp_dfx
     
     # show the result df (first col=state, other col=samples)
     temp_df.drop(temp_df.tail(1).index, inplace=True) # remove the last row (100%)
@@ -698,6 +752,7 @@ def prop_data2df(path='../database/conserv_overlap/'):
 
 
 # # 3. Cutting the telomere: where to cut?
+# **[back to index](#Index)**
 
 # ## 3-1. Quiescent state distribution
 # How Quiescent states are distributed on the whole genome?
@@ -707,7 +762,7 @@ def prop_data2df(path='../database/conserv_overlap/'):
 # * Input: df, chromosome number
 # * Output: `q_index` index of genome (not normalized) where Quiescent states are found.
 
-# In[32]:
+# In[ ]:
 
 
 # index list for O state in unit-length css sequence:
@@ -736,7 +791,7 @@ def UnitCSS_Q_Dist(df, chr_no=1):
 #     * Normalization True: `all_chr_q_index_norm`
 #     * Normalization False: `all_chr_q_index`
 # * Graph (distribution histogram)
-# <img src="./desc_img/all_chr_UnitCSS_Q_Dist.png" width=400 height=150>
+# <img src="./desc_img/all_chr_UnitCSS_Q_Dist.png" width="400" height="150">
 
 # In[33]:
 
@@ -792,6 +847,7 @@ def all_chr_UnitCSS_Q_Dist(df,normalization=True):
 # ## 3-2. Cut the telomere region on CSS and save the file
 
 # ### 3-2-1. Random cut
+# **Pretrain data was generated by this function, and chromosome-wise data are saved at `database/wo_telo`**
 
 # #### Function: `chr_cssWOtelo_ranCUT_Kmer`
 # 
@@ -838,7 +894,6 @@ def chr_cssWOtelo_ranCUT_Kmer(df,chr_no,num1=5,num2=510, k=3, weight_rn=False, v
     output: randomly cut w15 css for one chromosome unit-length css
     """
     all_unit_css=df2unitcss(df)
-    
     ch1_unit_css=all_unit_css[chr_no]
     ch1_unit_css_wotelo=ch1_unit_css[50:-50] #cut the telomere
 
@@ -914,7 +969,7 @@ def dataLengCompo(path, k, color="teal", bins=15, dna=False):
     return  
 
 
-# ## 3-3.  Cut the chromatin states : genic/non-genic area
+# ## 3-3. Cut the chromatin states : genic or non-genic area
 
 # ### 3-3-1. Genic area
 # #### Function: `compGene2css`
@@ -926,7 +981,7 @@ def dataLengCompo(path, k, color="teal", bins=15, dna=False):
 # In[36]:
 
 
-def compGene2css(whole_gene_file,df):
+def compGene2css(whole_gene_file,df):   # note that the result is also overlapped css... 
     """
     Input: Reference gene file, df (CSS)
     Output: list of chromosome-wise list that contains the css at genic area only.
@@ -954,7 +1009,53 @@ def compGene2css(whole_gene_file,df):
     return css_gene_lst_all
 
 
-# ### 3-3-1. Non-genic area (intergenic region)
+# #### Function: `countGeneCss`
+# * How many css data strips are in the Non-genic (intergenic) region?
+# * How long each css data strips are in the Non-genic (intergenic) region?
+# * Input: `css_gene_lst_all`, the result list from `compGene2css(whole_gene_file,df)`. (Also pickled at `"../database/temp_files/css_gene_lst_all"`
+# * Output: Two lists (`g_css_cnt_all` and `g_css_len_all`) and their distribution histogram
+# 
+# <img src="./desc_img/countGeneCss.png" width="600" height="300">
+
+# In[86]:
+
+
+def countGeneCss(css_gene_lst_all):
+    g_css_cnt_all=[]
+    g_css_len_all=[]
+    tot_chr=len(css_gene_lst_all)
+    for chr_no in range(tot_chr):
+        g_chr_lst=css_gene_lst_all[chr_no]
+        g_css_cnt_all.append(len(g_chr_lst))
+        g_css_len_chr=[]
+        for i in range(len(g_chr_lst)):
+            g_css_len=len(g_chr_lst[i])
+            g_css_len_chr.append(g_css_len)  # to let it iterate for chr!
+        g_css_len_all.append(g_css_len_chr)
+    g_css_len_all=flatLst(g_css_len_all) 
+    
+    g_css_len_all=list(filter(lambda elm: elm!=0, g_css_len_all))  # remove 0s
+        
+    # visualization for ng_css_cnt_all (no. of data strips per chromosome)
+    fig,(ax1, ax2)=plt.subplots(1,2,figsize=(12,4), sharey=False)
+    ax1=sns.histplot(g_css_cnt_all, bins=12, color="cadetblue", element="step", fill=False, ax=ax1)
+    ax1.set_xlabel("Count of data strip on Genic region", fontsize=13)
+    ax1.set_ylabel("Count", fontsize=13)
+    ax1.grid(b=None)
+    ax1.xaxis.grid(None)
+    ax1.yaxis.grid()
+    
+    # visualization for ng_css_cnt_all (no. of data strips per chromosome)
+    ax2=sns.histplot(g_css_len_all, bins=15, log_scale=True, color="crimson", element="step", fill=False, ax=ax2)
+    ax2.set_xlabel("Length of CSS on Genic region", fontsize=13)
+    ax2.set_ylabel("Count", fontsize=13)
+    ax2.grid(b=None)
+    plt.grid(False)
+            
+    return g_css_cnt_all,g_css_len_all
+
+
+# ### 3-3-2. Non-genic area (intergenic region)
 # 
 # * The problem in evaluating the intergenic region is that the positions of genes are frequently duplicated. Therefore, the gene table shares lots of same start and end position.
 #     1. First, we need to take a look how many genes are duplicated at the start and end position.
@@ -966,7 +1067,7 @@ def compGene2css(whole_gene_file,df):
 #     * `df_cnt` : Chromosome-wise list of the count of the duplicated gene Start and End position on genome
 #     * `df_pro` : Chromosome-wise list of the proportion of the duplicated gene Start and End position on genome (per gene)    
 #     
-# <img src="./desc_img/gene_dup_start_end_vis.png" width=500 height=200>
+# <img src="./desc_img/gene_dup_start_end_vis.png" width="500" height="200">
 
 # In[63]:
 
@@ -1177,22 +1278,324 @@ def compNonGene2css(whole_gene_file,df):
     return css_Ngene_lst_all
 
 
-# In[ ]:
+# #### Function: `countNgeneCss`
+# * How many css data strips are in the Non-genic (intergenic) region?
+# * How long each css data strips are in the Non-genic (intergenic) region?
+# * Input: `css_Ngene_lst_all`, the result list from `compNonGene2css(whole_gene_file,df)`. (Also pickled at `"../database/temp_files/css_Ngene_lst_all"`
+# * Output: Two lists (`ng_css_cnt_all` and `ng_css_len_all`) and their distribution histogram
+# 
+# <img src="./desc_img/countNgeneCss.png" width="600" height="300">
+
+# In[87]:
 
 
+def countNgeneCss(css_Ngene_lst_all):
+    ng_css_cnt_all=[]
+    ng_css_len_all=[]
+    tot_chr=len(css_Ngene_lst_all)
+    for chr_no in range(tot_chr):
+        ng_chr_lst=css_Ngene_lst_all[chr_no]
+        ng_css_cnt_all.append(len(ng_chr_lst))
+        ng_css_len_chr=[]
+        for i in range(len(ng_chr_lst)):
+            ng_css_len=len(ng_chr_lst[i])
+            ng_css_len_chr.append(ng_css_len)  # to let it iterate for chr!
+        ng_css_len_all.append(ng_css_len_chr)
+    ng_css_len_all=flatLst(ng_css_len_all) 
+    
+    ng_css_len_all=list(filter(lambda elm: elm!=0, ng_css_len_all))  # remove 0s
+        
+    # visualization for ng_css_cnt_all (no. of data strips per chromosome)
+    fig,(ax1, ax2)=plt.subplots(1,2,figsize=(12,4), sharey=False)
+    ax1=sns.histplot(ng_css_cnt_all, bins=12, color="navy", element="step", fill=False, ax=ax1)
+    ax1.set_xlabel("Count of data strip on Intergenic region", fontsize=13)
+    ax1.set_ylabel("Count", fontsize=13)
+    ax1.grid(b=None)
+    ax1.xaxis.grid(None)
+    ax1.yaxis.grid()
+    
+    # visualization for ng_css_cnt_all (no. of data strips per chromosome)
+    ax2=sns.histplot(ng_css_len_all, bins=15, log_scale=True, color="maroon", element="step", fill=False, ax=ax2)
+    ax2.set_xlabel("Length of CSS on Intergenic region", fontsize=13)
+    ax2.set_ylabel("Count", fontsize=13)
+    ax2.grid(b=None)
+    plt.grid(False)
+            
+    return ng_css_cnt_all,ng_css_len_all
 
 
+# ### 3-3-3. Genic or Non-genic raw-length CSS to unit-length CSS
+# 
+# * For the genic and intergenic region, the css is the raw length, not the unit length. To keep the same training data condition, the data should be formed as unit length (200-bp).
+# * So, the purpose is to convert `css_Ngene_lst_all` and `css_gene_lst_all` into the unit-length version of them.
+# * To do this job, 2 functions are required : `long2unitCSS` and `Convert2unitCSS_main`
 
-# In[ ]:
+# #### Function (preliminary) : `long2unitCSS` (included in the main function)
+# 
+# * As the **preliminary** function, `long2unitCSS`, investigates 
+#     1. The sequence of the state (letter) appears -> as a list of string
+#     2. How many times the state appears -> as a list of list (numbers)   
+# 
+# * Input: `long_css_lst` which is a list of string.
+# 
+# * Output
+#     1. `let_str_lst_all`: The list of string that only shows the sequence of the css 
+#     2. `unit_cnt_lst_all`: The list of list of unit-length of each state in the list `let_str_lst_all`
+
+# In[88]:
 
 
+# the idea is to separate, count, combine
+def long2unitCSS(long_css_lst, unit=200):
+    """
+    * description *
+    long_css is the result of the function "df2longcss" (real length css), 
+    and this function aims to convert it into the result of the function "df2unitcss",
+    which is shortest possible version of the css.
+    Why? because pre-train data for ChromBERT is done by unit-length, 
+    and the genic/intergenic css is acquired as a long-css
+    
+    Input: long_css_lst (type=list) acquired by df2longcss(df) and the unit length bp (default=200 bp)
+    Output: let_str_lst_all (list of unit state) and unit_cnt_lst_all (list of list)
+    """
+    assert type(long_css_lst)==list, "Check the input type: it should be a list, but now it's {}".format(type(long_css_lst))
+    assert type(long_css_lst[0])==str, "Check the type of input element: it should be a string, but it's {}".format(type(long_css_lst[0]))
+    let_str_lst_all=[]
+    unit_cnt_lst_all=[]
+    for elm in long_css_lst:
+        unit_str=''
+        unit_cnt_lst=[]
+        unit_cnt=0
+        for i, let_str in enumerate(elm):
+            if i==0:     # handling the first letter
+                unit_str+=let_str
+                unit_cnt=1
+            elif i==len(elm)-1:    # handling the final letter
+                unit_cnt+=1
+                unit_cnt_lst.append(int(unit_cnt/unit)) 
+            elif let_str==elm[i-1]:
+                unit_cnt+=1      
+            elif (let_str!=elm[i-1] and i!=len(elm)-1):
+                unit_str+=let_str            
+                unit_cnt+=1
+                unit_cnt_lst.append(int(unit_cnt/unit))  
+                unit_cnt=1
+            else:
+                continue
+        let_str_lst_all.append(unit_str)
+        unit_cnt_lst_all.append(unit_cnt_lst)
+    return let_str_lst_all, unit_cnt_lst_all
 
 
+# #### Function (main): `Convert2unitCSS_main`
+# * Input: `css_gene_lst_all` or `css_Ngene_lst_all`, the raw-length css on genic and non-genic regions, and the unit (default=200, as the css are annotated per )
+# * Output: `css_unit_lst_all`, the list of chromosome-wise list of unit-length css.
 
-# In[38]:
+# In[91]:
 
 
-# length distribution for the 
+def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst_all or css_Ngene_lst_all
+    """
+    Input: css_gene_lst_all or css_Ngene_lst_all, the list of chromosome-wise list of the css in genic, intergenic regions.
+    Output: css_gene_unit_lst_all or css_Ngene_unit_lst_all
+    """
+    print("Converting css from the raw length into unit-length ... ")
+    css_unit_lst_all=[]
+    for chr_no in tqdm_notebook(range(len(css_lst_all))):
+        css_chr_lst=css_lst_all[chr_no]
+        css_chr_unit_lst=[]
+        let_str_lst_all, unit_cnt_lst_all=long2unitCSS(css_chr_lst, unit=unit)
+        unit_css_lst=['']*len(let_str_lst_all)
+        for i, let_str in enumerate(let_str_lst_all):
+            for j in range(len(let_str)-1):
+                unit_css_lst[i]+=let_str[j]*unit_cnt_lst_all[i][j] # only unit will be multiplied!
+        unit_css_lst=[css for css in unit_css_lst if css!='']  # remove the empty element
+        css_unit_lst_all.append(unit_css_lst)
+    print("Done!")
+    return css_unit_lst_all
+
+
+# Now following files are saved at : `../database/temp_files/` 
+# * `css_gene_unit_lst_all` : The unit-length css on the genic area
+# * `css_Ngene_unit_lst_all`: The unit-length css on the intergenic area
+
+# ### 3-3-4. Cut the unit-length css into trainable size and kmerize it
+# 
+# #### Function: `chr_css_CUT_Kmer`
+# * Input: Unit-length css list of chromosome-wise list (e.g. `css_gene_unit_lst_all` or `css_Ngene_unit_lst_all`)
+# * Output: 
+#     1. `splitted` : List of strings before kmerization (to visualize later)
+#     2. `kmerized_unit_css` :  List of strings after kmerization (to use as a trinable data)
+#  
+# * Usage (e.g. Generate a 3-mer traning data from 2nd chromosome in intergenic area)
+# > `splitted, kmerized_unit_css=chr_css_CUT_Kmer(css_Ngene_unit_lst_all, 2, 510, 3)`
+# * And the data can be stored like 
+# > `with open("../database/fine_tune/genic_and_intergenic/3mer/chr2_Ngene.txt", "w") as f:         f.write("\n".join(kmerized_unit_css))`
+#        
+# * The reason why the above code for saving is not included is because it takes too much time.. dunno why
+
+# In[92]:
+
+
+# Cut the unit-length string (input: unit-css, not df)
+def chr_css_CUT_Kmer(unit_css, chr_no, cut_thres, k):
+    """    
+    Prepare kmer dataset for unit_css, as is if length<=510, else cut it to be length>510   
+    Usage: chr_css_CUT_Kmer(unit_css, chr_no, cut_thres, k)
+    
+    - unit_css: list of chromosome-wise list of unit-length css (e.g. css_gene_unit_lst_all)
+    - chr_no: no. of chromosome
+    - cut_thres: length of split, default=510
+    - k: kmer
+    
+    Output: 1. splitted (before kmerization) 2. kmerized_unit_css (after kmerization) 
+    """    
+    chr_unit_css=unit_css[chr_no]   # designated chromosome no.    
+    splitted=[] # bucket for the all the splitted strings   
+    cnt_short, cnt_long=0,0
+    for css_elm in chr_unit_css:
+        if len(css_elm) <=cut_thres:
+            splitted.append(css_elm)
+            cnt_short+=1
+        else:
+            cnt_long+=1
+            prev=0
+            while True:
+                splitted.append(css_elm[prev:prev+cut_thres])
+                prev+=cut_thres
+                if prev>=len(css_elm)-1:
+                    break                   
+    kmerized_unit_css=[seq2kmer(item, k) for item in splitted]
+    long_pro=cnt_long/(cnt_long+cnt_short)
+    
+    return splitted, kmerized_unit_css
+
+
+# #### Function: `saveCUTs_all`
+# 
+# * Simply save the file created from the above fucntion: k-merized genic and intergenic unit-length css
+# * 3mer, 4mer files are already stored at `../database/fine_tune/genic_and_intergenic/`
+# * Usage
+# > `saveCUTs_all(css_gene_unit_lst_all, 510, 3, gene=True)`
+# > saves the css on the genic region after 3-merization.
+
+# In[93]:
+
+
+def saveCUTs_all(unit_css, cut_thres, k, gene=True):
+    for chr_no in range(len(unit_css)):        
+        _, kmerized=chr_css_CUT_Kmer(unit_css, chr_no, cut_thres, k)
+        chr_num=str(chr_no+1)
+        if gene:
+            g='gene'
+        else:
+            g='Ngene'
+   
+        path="../database/fine_tune/genic_and_intergenic/"
+        kmer=str(k)+'mer/'
+        folder=g+"/"
+        name="chr"+chr_num+"_"+g+".txt"
+        f_name=path+kmer+folder+name
+        
+        with open(f_name, "w") as f:
+            f.write("\n".join(kmerized))
+    return #print("{}merized files for {} are saved at {}.".format(k,unit_css,path+kmer))
+
+
+# 
+
+# ### 3-3-5. Fine-tuning data: Dataframe version
+
+# #### Function: `prepFT_gNg`
+# * Create a dataframe version of dataset, accommodating the same number of genic and non-genic region unit css.
+# * Input: `path` (for the specific task), `k`, `sampling_no` (number of chromosome you want to pick as a random no.)
+# * Output: `df_g_ng_all` the dataframe containing same amount of genic/non-genic css strips
+
+# In[97]:
+
+
+# preparing the dataframe-version for generating train and dev dataset
+def prepFT_gNg(path="../database/fine_tune/genic_and_intergenic/", k=4, sampling_no=10):
+    dir_k=path+str(k)+"mer/"
+    
+    dir_g=dir_k+"gene/"
+    dir_ng=dir_k+"Ngene/"
+    g_files=os.listdir(dir_g)
+    ng_files=os.listdir(dir_ng)
+    all_g_files=file_list_maker(dir_g,g_files)
+    all_ng_files=file_list_maker(dir_ng,ng_files)
+    
+    g_len_all,ng_len_all=[],[]
+    df_ng_all,df_g_all=[],[]
+    
+    ### for Ngene data
+    for chr_ng in all_ng_files:
+        df_ng=pd.read_csv(chr_ng, header=None, names=["sequence"], sep="\n")
+        df_ng["label"]=0        
+        ng_len=len(df_ng)  # only for checking length
+        ng_len_all.append(ng_len)  # only for checking length
+        
+        df_ng_all.append(df_ng) 
+    df_ng_concat=pd.concat(df_ng_all)  # for ng, concatenate all the list
+    
+    ### for gene data
+    sample=random.sample([i for i, elm in enumerate(all_g_files)], sampling_no)
+    print("Sampled chromosome for genic region: {}".format(sample))
+    for i, chr_g in enumerate(all_g_files):
+        df_g=pd.read_csv(chr_g, header=None, names=["sequence"], sep="\n")
+        df_g["label"]=1
+        g_len=len(df_g)  # only for checking length
+        g_len_all.append(g_len)  # only for checking length
+        
+        if i in sample:   # sampling 
+            df_g_all.append(df_g)
+        else:
+            continue
+    df_g_concat=pd.concat(df_g_all)
+    
+    ### for the length adjustment ###
+    if len(df_g_concat)>len(df_ng_concat):
+        df_g_concat=df_g_concat[:len(df_ng_concat)] 
+    elif len(df_g_concat)<len(df_ng_concat):
+        df_ng_concat=df_ng_concat[:len(df_g_concat)]
+    assert len(df_g_concat)==len(df_ng_concat)
+    
+    df_g_ng_all=pd.concat([df_ng_concat,df_g_concat]).sample(frac=1).reset_index(drop=True)  # shuffling    
+    
+    ### for visualization purpose ###
+#     fig, ax = plt.subplots(1,1,figsize=(6,4))
+#     ax=sns.histplot(g_len_all, color="teal", element="step", bins=10, fill=False) #cumulative=True
+#     ax=sns.histplot(ng_len_all, color="orange", element="step", bins=4, fill=False)
+#     plt.title("Cumulative plot of genic/intergenic data size", fontsize=13)
+#     ax.set_xlabel("Length of data", fontsize=13)
+#     ax.legend(["genic","intergenic"])
+#     plt.show()   
+        
+    return df_g_ng_all
+
+
+# ### 3-3-6. Fine-tuning data: save files as .tsv
+
+# #### Function: `saveTF_gNg`
+# * Fine-tuning files for classifying genic and intergenic area already are saved at `"../database/fine_tune/genic_and_intergenic/"` (4mer only)
+# * Input: `df_g_ng_all` (Result from the function `prepFT_gNg`), `path`, `k`, `len_train`, `len_dev`
+# * Output: Files are saved at "`path/kmer/`" folder
+
+# In[98]:
+
+
+def saveTF_gNg(df_g_ng_all, path="../database/fine_tune/genic_and_intergenic/",k=4,len_train=30000,len_dev=1000):
+    dir_k=path+str(k)+"mer/"
+    df_g_ng_train=df_g_ng_all[:len_train]
+    df_g_ng_dev=df_g_ng_all[len_train:len_train+len_dev]    
+    
+    train_name=dir_k+"train.tsv"
+    dev_name=dir_k+"dev.tsv"
+    
+    df_g_ng_train.to_csv(train_name, sep="\t", index=False)
+    df_g_ng_dev.to_csv(dev_name, sep="\t", index=False)
+    
+    return print("train.tsv and dev.tsv Files are saved at '{}'.". format(dir_k))
 
 
 # ## 3-4. Count the number of 15th states in genic and non-genic region
@@ -1295,7 +1698,7 @@ def QnonQforChr(all_files=all_files,whole_gene_file=whole_gene_file):
 # * Output: Histogram of the numbers of gene per cell that contains/ don't contain 15th state in the all cell types
 # <br><br>
 # 
-# <img src="./desc_img/qnonq_hist1.png" width=400 height=150>
+# <img src="./desc_img/qnonq_hist1.png" width="400" height="150">
 
 # In[41]:
 
@@ -1333,7 +1736,7 @@ def QnonQforCellHistT1(q_cnt_lst, not_q_cnt_lst, bin_size=20):
 # * Output: Histogram of the numbers of gene per cell that contains/ don't contain 15th state in the all cell types that is grouped by bin (Well, I don't know why I wrote this code..)
 # <br><br>
 # 
-# <img src="./desc_img/qnonq_hist2.png" width=400 height=150>
+# <img src="./desc_img/qnonq_hist2.png" width="400" height="150">
 
 # In[42]:
 
@@ -1366,7 +1769,7 @@ def QnonQforCellHistT2(q_cnt_lst, not_q_cnt_lst,bin_size):
 # * Input: `q_cnt_lst` and `not_q_cnt_lst` (find them pickled at `"../database/temp_files/"`)
 # * Output: `q_cnt_data` (dataframe of the two lists) and the graph
 # 
-# <img src="./desc_img/qnonq_swarmp.png" width=400 height=150>
+# <img src="./desc_img/qnonq_swarmp.png" width="400" height="150">
 
 # In[43]:
 
@@ -1435,7 +1838,7 @@ def cntQinGene(css_gene_lst_all):
 # * For visualization of the result of the function `cntQinGene`.
 # * Input: `cnt_o_lst`, `gene_len_lst`, and `pro_o_lst` (result of `cntQinGene`), for more info, see that function.
 # * Output: Letter-value histogram of `cnt_o_lst` and `gene_len_lst`, and violin plot for `pro_o_lst`
-# <img src="./desc_img/cntQinGeneVis1.png" width=500 height=150>
+# <img src="./desc_img/cntQinGeneVis1.png" width="500" height="150">
 
 # In[45]:
 
@@ -1467,6 +1870,7 @@ def cntQinGeneVis1(cnt_o_lst, gene_len_lst, pro_o_lst):
 
 
 # # 4. CSS Pattern analysis
+# **[back to index](#Index)**
 
 # ## 4-1. For 15th-including data
 # 
@@ -1788,10 +2192,25 @@ def total_lst2kmer(total_lst,k):
 
 
 
-# In[61]:
+# # 5. Training result analysis
+# **[back to index](#Index)**
+
+# In[ ]:
 
 
-# !jupyter nbconvert --to script css_utility.ipynb
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
