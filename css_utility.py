@@ -4,11 +4,11 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[74]:
+# In[3]:
 
 
 #### To convert the file into .py
-#jupyter nbconvert --to script css_utility.ipynb
+#!jupyter nbconvert --to script css_utility.ipynb
 
 
 # In[2]:
