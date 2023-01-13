@@ -57,7 +57,12 @@ from tqdm.notebook import tqdm_notebook
 #         * [3-3-4. Cut the unit-length css into trainable size and kmerize it](#3-3-4.-Cut-the-unit-length-css-into-trainable-size-and-kmerize-it) 
 #         * [3-3-5. Fine-tuning data: Dataframe version](#3-3-5.-Fine-tuning-data:-Dataframe-version)
 #         * [3-3-6. Fine-tuning data: save files as .tsv](#3-3-6.-Fine-tuning-data:-save-files-as-.tsv) ->**fine-tuning data are saved**
-#     * [3-4. Count the number of 15th states in genic and non-genic region](#3-4.-Count-the-number-of-15th-states-in-genic-and-non-genic-region) 
+#     * [3-4. Count the number of 15th states in genic and non-genic region](#3-4.-Count-the-number-of-15th-states-in-genic-and-non-genic-region)         
+#     * [3-5. Complexity of CSS in genic area](#3-5.-Complexity-of-CSS-in-genic-area)
+#         * [3-5-1. Create a matrix to show the statistics](#3-5-1.-Create-a-matrix-to-show-the-statistics)
+#         * [3-5-2. Extract the complex and less complex css on gene](#3-5-2.-Extract-the-complex-and-less-complex-css-on-gene)
+#         * [3-5-3. Cut into Kmer and save](#3-5-3.-Cut-into-Kmer-and-save)
+#         * [3-5-4. Show the composition for each case](#3-5-4.-Show-the-composition-for-each-case)
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
 
@@ -1576,6 +1581,12 @@ def chr_css_CUT_Kmer(unit_css, chr_no, cut_thres, k):
     return splitted, kmerized_unit_css
 
 
+# In[ ]:
+
+
+
+
+
 # #### Function: `saveCUTs_all`
 # 
 # * Simply save the file created from the above fucntion: k-merized genic and intergenic unit-length css
@@ -1584,7 +1595,7 @@ def chr_css_CUT_Kmer(unit_css, chr_no, cut_thres, k):
 # > `saveCUTs_all(css_gene_unit_lst_all, 510, 3, gene=True)`
 # > saves the css on the genic region after 3-merization.
 
-# In[48]:
+# In[1]:
 
 
 def saveCUTs_all(unit_css, cut_thres, k, gene=True):
@@ -1604,10 +1615,8 @@ def saveCUTs_all(unit_css, cut_thres, k, gene=True):
         
         with open(f_name, "w") as f:
             f.write("\n".join(kmerized))
-    return #print("{}merized files for {} are saved at {}.".format(k,unit_css,path+kmer))
+    return print("{}merized files for {} are saved at {}.".format(k,unit_css,path+kmer))
 
-
-# 
 
 # ### 3-3-5. Fine-tuning data: Dataframe version
 
@@ -1975,6 +1984,222 @@ def cntQinGeneVis1(cnt_o_lst, gene_len_lst, pro_o_lst):
     return three_df   
 
 
+# ## 3-5. Complexity of CSS in genic area
+
+# **[back to index](#Index)**
+
+# ### 3-5-1. Create a matrix to show the statistics
+
+# #### Function: `complexity_overview_mat`
+# 
+# * Usage: Produce a dataframe describing the complexity of the CSS pattern
+# * Input: list of css (Here, `gene_css_all` which is pickled at `"../database/temp_files/"`)
+# * Columns: `["length","uniq","switch","uniq_pro","switch_pro"]`
+# * `length`: gene length
+# * `uniq`: How many unique states are 
+# * `switch`: How many times the states changed
+# * `uniq_pro`: Proportion of `uniq` per gene length
+# * `switch_pro`: Proportion of `switch` per gene length
+# * Output: dataframe
+
+# In[1]:
+
+
+def complexity_overview_mat(chr_gene_css):
+    abs_uniq_all=[]
+    abs_switch_all=[]
+    gene_len_all=[]
+    compl_uniq_all=[]
+    compl_swit_all=[]
+    for num in range(len(chr_gene_css)):
+        gene_css=chr_gene_css[num]
+        gene_css_len=len(gene_css)
+        css_uniq=len(set(gene_css)) # only the unique css (min=1, max=gene_css_len)
+        
+        tot_char=""
+        for i, char in enumerate(gene_css):
+            if i==0 or char!=gene_css[i-1]:
+                tot_char+=char
+            css_switch=len(tot_char) # num. of swtiching in css (min=1, max=gene_css_len)
+            complexity_uniq=css_uniq/gene_css_len
+            complexity_swit=css_switch/gene_css_len
+        
+        gene_len_all.append(gene_css_len)
+        abs_uniq_all.append(css_uniq)
+        abs_switch_all.append(css_switch)
+        compl_uniq_all.append(complexity_uniq)
+        compl_swit_all.append(complexity_swit)
+        
+    data=list(zip(gene_len_all,abs_uniq_all, abs_switch_all,compl_uniq_all,compl_swit_all))
+    df=pd.DataFrame(data,columns=["length","uniq","switch","uniq_pro","switch_pro"])
+    df=df[df["length"]>=2]  # remove when the length = 1 unit (=200 bps)
+    
+    return df
+
+
+# ### 3-5-2. Extract the complex and less complex css on gene
+
+# #### Function: `extract_complex_css`
+# 
+# * Usage: Return two lists (css on complex gene / less complex gene) 
+# * Input: list of css (Here, `gene_css_all` which is pickled as `"../database/temp_files/css_gene_unit_lst_all"`)
+# * Output: `comp_gene_css_all`,`less_comp_gene_css_all`
+# * Above output files are stored as pickle, at `"../database/temp_files/complexity` using following commands:
+# 
+# `with open("../database/temp_files/complexity/thres_mean/comp", "wb") as f:
+#     pickle.dump(comp_gene_css_all,f)`
+#     
+# `with open("../database/temp_files/complexity/thres_mean/less_comp", "wb") as g:
+#     pickle.dump(less_comp_gene_css_all,g)`
+# 
+
+# In[1]:
+
+
+# extract according to the complexity
+
+def extract_complex_css(gene_css_all, thres="mean"):
+    '''
+    Load the file first by `pickle.load(open("../database/temp_files/css_gene_unit_lst_all","rb"))`
+    This function will extract the css of gene which is defined as complex in css pattern.
+    '''
+    tot_gene_css=flatLst(gene_css_all) # flatten it from 24 chromosomes
+    tot_gene_css=[gene_css for gene_css in tot_gene_css if len(gene_css)>=2] # length<2 removed
+    
+    df=complexity_overview_mat(tot_gene_css) # from the process, length<2 was removed
+    # df columns=["length","uniq","switch","uniq_pro","switch_pro"]     
+    assert len(tot_gene_css)==len(df), "length of tot_gene_css and df do not match"
+    
+    df["css"]=tot_gene_css # add new column with css (per gene)
+        
+    comp_gene_css_all=[]
+    less_comp_gene_css_all=[]
+    
+    if thres=="mean":
+        thres_val=np.mean(df["switch_pro"])
+    
+    for i, css in enumerate(tot_gene_css):
+        if df["switch_pro"].iloc[i]>=thres_val:
+            comp_gene_css_all.append(df["css"].iloc[i])
+        else:
+            less_comp_gene_css_all.append(df["css"].iloc[i])
+        
+    return comp_gene_css_all,less_comp_gene_css_all
+
+
+# ### 3-5-3. Cut into Kmer and save
+
+# #### Function: `css_CUT_Kmer` (general form of `chr_css_CUT_Kmer`)
+# 
+# * Usage: For any list of CSS, cut them when it is longer than `cut_thres`, and make it `k`-mer
+# * Input: list of css (Here, `comp_gene_css_all` which is generated from the above fnt `extract_complex_css`)
+# * Output: `splitted` (raw splitted list),`kmerized_unit_css` (k-merized form)
+
+# In[2]:
+
+
+# Cut if it is longer than 510
+def css_CUT_Kmer(css, cut_thres=510, k=5):
+    """ 
+    A GENERAL version of `chr_css_CUT_Kmer`
+    Prepare kmer dataset for unit_css, as is if length<=510, else cut it to be length>510   
+    Usage: css_CUT_Kmer(css, cut_thres, k)
+    
+    - css: unit-length css (e.g. comp_gene_css_all)
+    - cut_thres: length of split, default=510
+    - k: kmer
+    
+    Output: 1. splitted (before kmerization) 2. kmerized_unit_css (after kmerization) 
+    """    
+    splitted=[] # bucket for the all the splitted strings   
+    for css_elm in css:
+        if len(css_elm) <k:  # if the length of css_elm is shorter than k (cannot create k-mer)
+            continue
+        elif len(css_elm) <=cut_thres:
+            splitted.append(css_elm)
+        else:  
+            prev=0
+            while True:
+                splitted.append(css_elm[prev:prev+cut_thres])
+                prev+=cut_thres
+                if prev>=len(css_elm)-1:
+                    break      
+            
+    kmerized_unit_css=[seq2kmer(item, k) for item in splitted] # k-merize here
+    
+    return splitted, kmerized_unit_css
+
+
+# #### Function: `save_as_txt` 
+# 
+# * Usage: simply save the list as txt file, under the path, with the designated file name.
+# * Input: list of css (Here, `comp_gene_css_all` which is generated from the fnt `extract_complex_css`)
+# * Remarks: This file includes the above function `css_CUT_Kmer`
+# * Output: None, just displaying that it is saved.
+
+# In[6]:
+
+
+def save_as_txt(css, path="../database/wo_telo/", filename="complex_gene_all", cut_thres=510, k=5):
+    
+    _, kmerized_unit_css=css_CUT_Kmer(css, cut_thres, k)
+    
+    full_path=path+filename+"_"+str(k)+".txt"
+    with open(full_path,"w") as save_file:
+        save_file.write("\n".join(kmerized_unit_css))
+    return print("{} is saved at {}".format(filename, path))   
+
+
+# ### 3-5-4. Show the composition for each case
+
+# #### Function: `css_composition_piechart` 
+# 
+# * Usage: After running `css_CUT_Kmer`, show the composition of CSS in either complex or less complex genic area
+# * Input: splitted_lst can be the first production of the function `css_CUT_Kmer`
+# * complexity: `True`=splitted (produced from `comp_gene_css_all`, `False`=less_splitted (produced from `less_comp_gene_css_all`) 
+# * show_pct: threshold to show the percentage in pie chart (default=5)
+# * Output: None, just displaying the pie chart.
+
+# In[3]:
+
+
+def css_composition_piechart(splitted_lst, complexity=True, show_pct=5):
+    """
+    Usage: css_composition_piechart(splitted_lst, complexity=True, show_pct=5)
+    Input: splitted_lst can be the first production of the function "css_CUT_Kmer"
+    complexity: True=splitted (produced from comp_gene_css_all, False=less_splitted (produced from less_comp_gene_css_all)
+    show_pct: threshold to show the percentage in pie chart
+    """
+    state_count = {chr(i): 0 for i in range(ord('A'), ord('O')+1)}
+    for elm in splitted_lst:
+        for state in elm:
+            if state in state_count:
+                state_count[state] += 1  # create a dictionary, value of which is the no. of state appeared overall
+    total = sum(state_count.values())
+    sizes = [i/sum(state_count.values())*100 for i in state_count.values()] # percentage of occupation
+    fig, ax = plt.subplots(figsize=(10, 10))
+
+    ax.pie(state_count.values(),colors=[state_col_dict[label] for label in data.keys()], autopct=lambda p: '{:.2f}%'.format(p) if p > show_pct else '')
+
+    if complexity:
+        title="Complex gene CS composition,"+" total:"+" "+str(total)
+    else:
+        title="Less complex gene CS composition,"+" total:"+" "+str(total)
+    
+    for t in ax.texts:
+        t.set_color("white")
+        t.set_fontsize(20)
+
+    ax.set_title(title,fontsize=20)
+    plt.show()
+
+
+# In[ ]:
+
+
+
+
+
 # # 4. CSS Pattern analysis
 # **[back to index](#Index)**
 
@@ -2301,10 +2526,36 @@ def total_lst2kmer(total_lst,k):
 # # 5. Training result analysis
 # **[back to index](#Index)**
 
-# In[ ]:
+# Writing ...
+
+# In[4]:
 
 
-
+def evalDFconcat(df_lst, col_name, col_rename, colormap="Set1"):
+    """
+    Input
+    (1) df_lst: a list of target dataframes
+    (2) col_name: the columns of interest
+    (3) col_rename: a list of columns for the concatenated dataframes
+    """
+    assert type(df_lst), "Input should be a list of dataframes"
+    assert type(col_rename), "col_rename should be a list"
+    assert len(df_lst)==len(col_rename), "Check the length of input list"
+    assert col_name in df_lst[0].columns, "'{}' is not in the column list of dataframe".format(col_name)
+    df_col_lst=[]
+    for num in range(len(df_lst)):       
+        df_col_lst.append(df_lst[num][col_name])
+    df_concat=pd.concat(df_col_lst, axis=1)
+    df_concat.columns=col_rename
+    
+    fig=plt.figure(figsize=(6,4))
+    p=sns.lineplot(data=df_concat, palette=colormap)
+    p.set_ylabel(col_name, fontsize=14)
+    p.set_xlabel("Iteration", fontsize=14)
+#     p.set_ylim(1.0,2.8)
+    p.legend(fontsize=14)
+    
+    return df_concat
 
 
 # In[ ]:
