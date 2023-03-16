@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[3]:
+# In[1]:
 
 
 #### To convert the file into .py
@@ -47,24 +47,32 @@ from tqdm.notebook import tqdm_notebook
 #         * [2-4-1. Real length CSS](#2-4-1.-Real-length-CSS)
 #         * [2-4-2. Unit-length CSS](#2-4-2.-Unit-length-CSS)
 #     * [2-5. Chromatin State Statistics](#2-5.-Chromatin-State-Statistics)
-# * **[3. Cutting the telomere: where to cut?](#3.-Cutting-the-telomere:-where-to-cut?)**
+# * **[3. Cutting the chromatin state (Dataset Preparation)](#3.-Cutting-the-chromatin-state-(Dataset-Preparation))**
 #     * [3-1. Quiescent state distribution](#3-1.-Quiescent-state-distribution)
-#     * [3-2. Cut the telomere region on CSS and save the file](#3-2.-Cut-the-telomere-region-on-CSS-and-save-the-file) -> **pretrain data are saved**
+#     * [3-2. Cut the telomere region on CSS and save the file](#3-2.-Cut-the-telomere-region-on-CSS-and-save-the-file) <font color="royalblue">-> **pretrain data are saved**</font>
 #     * [3-3. Cut the chromatin states : genic/non-genic area](#3-3.-Cut-the-chromatin-states-:-genic-or-non-genic-area)
 #         * [3-3-1. Genic area](#3-3-1.-Genic-area)
 #         * [3-3-2. Non-genic area (intergenic region)](#3-3-2.-Non-genic-area-(intergenic-region))
 #         * [3-3-3. Genic or Non-genic raw-length CSS to unit-length CSS](#3-3-3.-Genic-or-Non-genic-raw-length-CSS-to-unit-length-CSS)
-#         * [3-3-4. Cut the unit-length css into trainable size and kmerize it](#3-3-4.-Cut-the-unit-length-css-into-trainable-size-and-kmerize-it) 
+#             * [3-3-3-1. CSS for 57 Epigenomes Genic regions are saved.](#3-3-3-1.-CSS-for-57-Epigenomes-Genic-regions-are-saved.)
+#         * [3-3-4. Cut the unit-length css into trainable size and kmerize it](#3-3-4.-Cut-the-unit-length-css-into-trainable-size-and-kmerize-it) <font color="royalblue">-> **pretrain data are saved**</font>
 #         * [3-3-5. Fine-tuning data: Dataframe version](#3-3-5.-Fine-tuning-data:-Dataframe-version)
-#         * [3-3-6. Fine-tuning data: save files as .tsv](#3-3-6.-Fine-tuning-data:-save-files-as-.tsv) ->**fine-tuning data are saved**
+#         * [3-3-6. Fine-tuning data: save files as .tsv](#3-3-6.-Fine-tuning-data:-save-files-as-.tsv) <font color="orange"> -> **fine-tuning data are saved** </font>
 #     * [3-4. Count the number of 15th states in genic and non-genic region](#3-4.-Count-the-number-of-15th-states-in-genic-and-non-genic-region)         
 #     * [3-5. Complexity of CSS in genic area](#3-5.-Complexity-of-CSS-in-genic-area)
 #         * [3-5-1. Create a matrix to show the statistics](#3-5-1.-Create-a-matrix-to-show-the-statistics)
 #         * [3-5-2. Extract the complex and less complex css on gene](#3-5-2.-Extract-the-complex-and-less-complex-css-on-gene)
-#         * [3-5-3. Cut into Kmer and save](#3-5-3.-Cut-into-Kmer-and-save)
+#             * [3-5-2-1. CSS for 57 Epigenomes Complex and Less Complex Genic regions are saved.](#3-5-2-1.-CSS-for-57-Epigenomes-Complex-and-Less-Complex-Genic-regions-are-saved.)
+#         * [3-5-3. Cut into Kmer and save](#3-5-3.-Cut-into-Kmer-and-save) <font color="royalblue">-> **pretrain data are saved**</font>
 #         * [3-5-4. Show the composition for each case](#3-5-4.-Show-the-composition-for-each-case)
+#         * [3-5-5. Prepare and save Fine-tuning for Complex gene CSS and others](#3-5-5.-Prepare-and-save-Fine-tuning-for-Complex-gene-CSS-and-others) <font color="orange"> -> **fine-tuning data are saved**</font>
+#     * [3-6. Gene expression classification](#3-6.-Gene-expression-classification)
+#         * [3-6-1. Gene expression file into the list of dataframe](#3-6-1.-Gene-expression-file-into-the-list-of-dataframe)
+#         * [3-6-2. Matching to CSS](#3-6-2.-Matching-to-CSS)
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
+#     * [5-1. Evaluation](#5-1.-Evaluation)
+#     * [5-2. Motif](#5-2.-Motif)
 
 # **Frequently used functions**
 
@@ -775,7 +783,7 @@ def prop_data2df(path='../database/conserv_overlap/'):
 # temp_df, trans_df=prop_data2df(path='../database/conserv_overlap/')
 
 
-# # 3. Cutting the telomere: where to cut?
+# # 3. Cutting the chromatin state (Dataset Preparation)
 # **[back to index](#Index)**
 
 # ## 3-1. Quiescent state distribution
@@ -1529,6 +1537,63 @@ def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst
 # * `css_gene_unit_lst_all` : The unit-length css on the genic area
 # * `css_Ngene_unit_lst_all`: The unit-length css on the intergenic area
 
+# ### 3-3-3-1. CSS for 57 Epigenomes Genic regions are saved.
+
+# #### Function:` extGenic_byCell`
+# * Input: output path
+# * This function cut CSS of each cell type by Genic area, and reduce it as unit length
+# * Output: function has been already executed, and pickled at `../database/temp_files/whole_gene_unit/`
+#     * The saved file names are like `E003_css_gene_unit_lst_all.pkl`
+# * **Note** that it takes up to 10 hours to complete if you use macbook pro.
+
+# In[2]:
+
+
+# Save the whole gene area of the 57 epigenomes, in CSS unit sequences (total no. 56, because no E000 for CSS)
+# Following function has been already executed, and pickled at "../database/temp_files/whole_gene_unit/"
+
+def extGenic_byCell(output_path="../database/temp_files/whole_gene_unit/", verbose=True):
+    """
+    Extract the genic area CSS from the designated 57 epigenome in EG.name.txt
+    and save them at "../database/temp_files/whole_gene_unit/"
+    """
+    # note that EG.name.txt contains E000 (which is not in CSS bed file)
+    bed_file_path="../database/bed/unzipped/"
+    epi_name_path="../database/bed/gene_expression/EG.name.txt"
+
+    epi_name_df=pd.read_csv(epi_name_path, names=["epi_num","epi_name"], sep="\t", header=None, index_col=False)
+    epi_name_df=epi_name_df.dropna()
+    epi_num=epi_name_df["epi_num"].dropna().to_list() # number, 0th field
+    epi_name=epi_name_df["epi_name"].dropna().to_list() # name, 1st field
+    bed_file_lst=sorted(os.listdir(bed_file_path))
+    
+    # list comprehension for extract the bed files that corresponds to the target epigenome
+    epi_target_tuple=[(num, bed_file) for num in epi_num for bed_file in bed_file_lst if num in bed_file]
+    epi_target=[tup[1] for tup in epi_target_tuple]
+    path="../database/bed/unzipped/"
+    
+#     print(epi_name_df)
+    for epi in epi_target:
+        cell_type=epi_name_df.loc[epi_name_df["epi_num"]==epi[:4],"epi_name"].values[0]
+        if verbose: 
+            print("{}: {} is now processed ...".format(epi, cell_type))
+        
+        df_epi=bed2df_expanded(path+epi)  # create df of the css for the cell
+        css_epi_gene_lst_all=compGene2css(whole_gene_file,df_epi) # list of the css on the genic region
+        css_epi_gene_unit_lst_all=Convert2unitCSS_main(css_epi_gene_lst_all,unit=200) # make css to unit length 
+        # note that the above list is chromosome-wise list
+        
+        # total number of genes        
+        print("Total number of genes: {}".format(len(flatLst(css_epi_gene_unit_lst_all))))
+        
+        # pickle it!
+        epi_gene_css_name=output_path+epi[:4]+"_css_gene_unit_lst_all.pkl"
+        with open(epi_gene_css_name, "wb") as f:
+            pickle.dump(css_epi_gene_unit_lst_all,f)
+
+    return print("Files are pickled at {}.".format(output_path))   
+
+
 # ### 3-3-4. Cut the unit-length css into trainable size and kmerize it
 # 
 # #### Function: `chr_css_CUT_Kmer`
@@ -2087,6 +2152,73 @@ def extract_complex_css(gene_css_all, thres="mean"):
     return comp_gene_css_all,less_comp_gene_css_all
 
 
+# ### 3-5-2-1. CSS for 57 Epigenomes Complex and Less Complex Genic regions are saved.
+
+# In[4]:
+
+
+# Save the complex and less complex genic area of the 57 epigenomes, in CSS unit sequences
+# Following function has been already executed, and pickled at "../database/temp_files/complexity/thres_mean/byCellType/"
+
+def extCompGenic_byCell(output_path="../database/temp_files/complexity/", thres="mean", all_file=True, verbose=True, **kwargs):
+    """
+    This function extract CSS complex and less-complex genic region, according to the threshold.
+    (1) To process all the .pkl file in ../database/temp_files/whole_gene_unit/, set 'all_file=True'.
+        If you want to process only one file at a time, set e.g.) 'file=E003_css_gene_unit_lst_all.pkl'
+    """
+    
+    css_gene_path="../database/temp_files/whole_gene_unit/"
+    if thres=="mean":
+        output_path_mod=output_path+"thres_"+thres+"/byCellType/"
+    else:
+        print("No threshold other than 'mean'.")
+    
+    # File list of CSS on genic region for all cell types
+    files_under_folder=sorted(os.listdir(css_gene_path))
+    cell_gene_css_all=[file for file in files_under_folder if file.startswith('E') and file.endswith('.pkl')]
+    
+    if all_file:
+        if verbose: print("processing all files ...")
+        for epi_css in tqdm_notebook(cell_gene_css_all):             
+            epi_num=epi_css[:4] # e.g.) E003
+            if verbose: print("{} is now processed ...".format(epi_num))
+            file_path=css_gene_path+epi_css
+            with open(file_path,"rb") as f:
+                cell_gene_css=pickle.load(f)
+            comp_gene_css,less_comp_gene_css=extract_complex_css(cell_gene_css, thres=thres)
+            comp_name=output_path_mod+epi_num+"_comp_gene_css.pkl"
+            less_name=output_path_mod+epi_num+"_less_comp_gene_css.pkl"
+            with open(comp_name,"wb") as g:
+                pickle.dump(comp_gene_css, g)
+            with open(less_name,"wb") as h:
+                pickle.dump(less_comp_gene_css, h)  
+                           
+    elif len(kwargs)>0:
+        for file_key, file_name in kwargs.items():            
+            epi_num=file_name[:4]
+            file_path=css_gene_path+file_name
+            if verbose: print("all_file=False, processing single case for {}.".format(epi_num))
+            with open(file_path,"rb") as f:
+                cell_gene_css=pickle.load(f)
+            comp_gene_css,less_comp_gene_css=extract_complex_css(cell_gene_css, thres=thres)
+            comp_name=output_path_mod+epi_num+"_comp_gene_css.pkl"
+            less_name=output_path_mod+epi_num+"_less_comp_gene_css.pkl"
+            with open(comp_name,"wb") as g:
+                pickle.dump(comp_gene_css, g)
+            with open(less_name,"wb") as h:
+                pickle.dump(less_comp_gene_css, h)               
+    else:
+        raise ValueError("Set all_file=True, or desginate any file name to proceed!")
+    
+    return print("Results are stored at {}".format(output_path_mod))
+
+
+# In[ ]:
+
+
+
+
+
 # ### 3-5-3. Cut into Kmer and save
 
 # #### Function: `css_CUT_Kmer` (general form of `chr_css_CUT_Kmer`)
@@ -2147,7 +2279,7 @@ def save_as_txt(css, path="../database/wo_telo/", filename="complex_gene_all", c
     full_path=path+filename+"_"+str(k)+".txt"
     with open(full_path,"w") as save_file:
         save_file.write("\n".join(kmerized_unit_css))
-    return print("{} is saved at {}".format(filename, path))   
+    return print("{} is saved at {}".format(filename, path))  
 
 
 # ### 3-5-4. Show the composition for each case
@@ -2192,6 +2324,358 @@ def css_composition_piechart(splitted_lst, complexity=True, show_pct=5):
 
     ax.set_title(title,fontsize=20)
     plt.show()
+
+
+# ### 3-5-5. Prepare and save Fine-tuning for Complex gene CSS and others
+
+# #### Function: `prep_and_saveTF_CompNcomp` 
+# 
+# * Usage: Prerpare and save the fine-tuning data for **complex** and **less complex gene css**
+# * Input files are loaded inside the function, which are pickled at `"../database/temp_files/complexity/thres_mean/"`
+# * Output: None, just displaying the report that the file is saved.
+
+# In[3]:
+
+
+# now for compG and nonCompG (the function covers from prepration to save)
+def prep_and_saveTF_CompNcomp(condition="thres_mean", cut_thres=510, k=5, save_path="CompG_and_lessCompG",len_tr=20000, len_dev=1000):
+    """
+    prepare fine tuning data for [the complex gene css / less complex gene css]
+    """
+    print("* Project name: ", save_path)
+    print("* condition: ", condition)
+    print("* Cut threshold length: ", cut_thres)
+    print("* k-merization: ", k)
+    print("* train: dev = {} : {}".format(len_tr,len_dev))
+    
+    comp_path="../database/temp_files/complexity/"+condition+"/comp"
+    comp=pickle.load(open(comp_path, "rb"))
+    less_comp_path="../database/temp_files/complexity/"+condition+"/less_comp"
+    less_comp=pickle.load(open(less_comp_path, "rb"))
+    
+    # kmerization
+    _, comp_kmerized=css_CUT_Kmer(comp, cut_thres, k)
+    _, less_comp_kmerized=css_CUT_Kmer(less_comp, cut_thres, k)
+    
+    # make it dataframe
+    df_comp=pd.DataFrame(comp_kmerized, columns=["sequence"])
+    df_comp["label"]=1
+    df_less_comp=pd.DataFrame(less_comp_kmerized, columns=["sequence"])
+    df_less_comp["label"]=0
+    
+    # make them have the same length
+    if len(df_comp)>len(df_less_comp):
+        df_comp=df_comp[:len(df_less_comp)] 
+    elif len(df_comp)<len(df_less_comp):
+        df_less_comp=df_less_comp[:len(df_comp)]
+    assert len(df_comp)==len(df_less_comp), "Check the data length."
+    
+    # shuffling ...
+    df_comp_all=pd.concat([df_comp,df_less_comp]).sample(frac=1).reset_index(drop=True)  
+
+    # cutting into train and dev
+    assert len(df_comp_all)> len_tr+len_dev, "Not enough data length."
+    df_comp_train=df_comp_all[:len_tr]
+    df_comp_dev=df_comp_all[len_tr:len_tr+len_dev]    
+  
+    path="../database/fine_tune/"+save_path+"/"+str(k)+"mer/"
+    train_name=path+"train.tsv"
+    dev_name=path+"dev.tsv"
+    
+    df_comp_train.to_csv(train_name, sep="\t", index=False)
+    df_comp_dev.to_csv(dev_name, sep="\t", index=False)
+
+    return print("Fine-tuning data for {} are {}merized and saved at {}.".format(save_path,k,path))
+
+
+# #### Function: `prep_and_saveTF_CompNgene` 
+# 
+# * Usage: Prerpare and save the fine-tuning data for **complex** and **None gene css**
+# * Input files are loaded inside the function, which are pickled at `"../database/temp_files/complexity/thres_mean/"` for complex gene, and at `"../database/temp_files/css_Ngene_unit_lst_all"` for intergenic area (a.k.a. Ngene)
+# * Output: None, just displaying the report that the file is saved.
+
+# In[4]:
+
+
+# now,  for compG and non gene (the function covers from prepration to save)
+def prep_and_saveTF_CompNgene(condition="thres_mean", cut_thres=510, k=5, save_path="CompG_and_intergenic",len_tr=20000, len_dev=1000):
+    """
+    prepare fine tuning data for [the complex gene css / none gene css]
+    """
+    print("* Project name: ", save_path)
+    print("* condition: ", condition)
+    print("* Cut threshold length: ", cut_thres)
+    print("* k-merization: ", k)
+    print("* train: dev = {} : {}".format(len_tr,len_dev))
+    
+    comp_path="../database/temp_files/complexity/"+condition+"/comp"
+    comp=pickle.load(open(comp_path, "rb"))
+    Ngene_path="../database/temp_files/css_Ngene_unit_lst_all"
+    Ngene=pickle.load(open(Ngene_path, "rb"))
+    #flatten
+    Ngene=flatLst(Ngene)
+    
+    # kmerization
+    _, comp_kmerized=css_CUT_Kmer(comp, cut_thres, k)
+    _, Ngene_kmerized=css_CUT_Kmer(Ngene, cut_thres, k)
+    
+    # make it dataframe
+    df_comp=pd.DataFrame(comp_kmerized, columns=["sequence"])
+    df_comp["label"]=1
+    df_Ngene=pd.DataFrame(Ngene_kmerized, columns=["sequence"])
+    df_Ngene["label"]=0
+    
+    # make them have the same length
+    if len(df_comp)>len(df_Ngene):
+        df_comp=df_comp[:len(df_Ngene)] 
+    elif len(df_comp)<len(df_Ngene):
+        df_Ngene=df_Ngene[:len(df_comp)]
+    assert len(df_comp)==len(df_Ngene), "Check the data length."
+    
+    # shuffling ...
+    df_compNgene=pd.concat([df_comp,df_Ngene]).sample(frac=1).reset_index(drop=True)  
+
+    # cutting into train and dev
+    assert len(df_compNgene)> len_tr+len_dev, "Not enough data length."
+    df_compNgene_train=df_compNgene[:len_tr]
+    df_compNgene_dev=df_compNgene[len_tr:len_tr+len_dev]    
+  
+    path="../database/fine_tune/"+save_path+"/"+str(k)+"mer/"
+    train_name=path+"train.tsv"
+    dev_name=path+"dev.tsv"
+    
+    df_compNgene_train.to_csv(train_name, sep="\t", index=False)
+    df_compNgene_dev.to_csv(dev_name, sep="\t", index=False)
+
+    return print("Fine-tuning data for {} are {}merized and saved at {}.".format(save_path,k,path))
+
+
+# ## 3-6. Gene expression classification
+
+# For more difficult tasks, gene expression can be one of the criteria to prepare fine tuning data. First, using the gene expression level from RNA-seq, highly expressed 
+
+# ### 3-6-1. Gene expression file into the list of dataframe
+
+# #### Function: `Gexp_Gene2GLChr`
+# 
+# * Usage: After the gene expression files such as `gene_highlyexpressed.refFlat` are acquired by `/database/bed/gene_expression/classifygenes_ROADMAP_RPKM.py`, apply this function to obtain the list of dataframe per chromosome contains the transcription start and end indices.
+# * Input: gene expression (high/low/not) file
+# * Output: a chromosome-wise list of dataframe containing `TxStart` and `TxEnd`
+
+# In[1]:
+
+
+# function for preprocess the whole gene data and produce chromosome-wise gene lists
+# each element is dataframe
+
+def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/gene_highlyexpressed.refFlat'):
+    print("Extracting the gene file ...")
+    g_fn=exp_gene_file
+    g_df_raw=pd.read_csv(g_fn, sep='\t', index_col=False, header=0)
+    g_df=g_df_raw
+    g_df=g_df.iloc[:,1:]
+    g_df.rename(columns={"name":"gene_id"}, inplace=True)
+    g_df.rename(columns={"#geneName":"geneName"}, inplace=True)
+    g_df.rename(columns={"txStart":"TxStart"}, inplace=True) # to make it coherent to my previous codes
+    g_df.rename(columns={"txEnd":"TxEnd"}, inplace=True)
+#     g_df=g_df_raw.rename(columns={0:"geneName",1:"gene_id",2:"chrom",3:"strand",4:"txStart",5:"txEnd",
+#                                       6:"cdsStart",7:"cdsEnd",8:"exonCount",9:"exonStart",10:"exonEnds",
+#                                       11:"gene type",12:"transcript type",13:"reference transcript name",
+#                                       14:"reference transcription id"})
+    ## string to the list of "int", for exon start/end ##
+    g_df_temp=g_df # copy for processing
+    exon_start_int_lst=[]
+    for i, str_lst in enumerate(g_df_temp["exonStarts"]):
+        int_lst=[int(elm) for elm in str_lst.replace("[","").replace("]","").split(",")]
+        assert g_df_temp["exonCount"][i]==len(int_lst) # make sure the no. element in exon start = count
+        exon_start_int_lst.append(int_lst)    
+    g_df_temp["exonStarts"]=exon_start_int_lst
+
+    exon_end_int_lst=[]
+    for i, str_lst in enumerate(g_df_temp["exonEnds"]):
+        int_lst=[int(elm) for elm in str_lst.replace("[","").replace("]","").split(",")]
+        assert g_df_temp["exonCount"][i]==len(int_lst) # make sure the no. element in exon start = count
+        exon_end_int_lst.append(int_lst)    
+    g_df_temp["exonEnds"]=exon_end_int_lst    
+    g_df=g_df_temp # and make it back the original name
+        
+    g_df=g_df[["geneName","gene_id","chrom","TxStart","TxEnd"]] # extract these only
+    
+    # Remove other than regular chromosomes
+    chr_lst=['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10',
+             'chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19',
+             'chr20','chr21','chr22','chrX','chrY']
+    g_df=g_df.loc[g_df["chrom"].isin(chr_lst)]
+    
+    # Create a list of chromosome-wise dataframe 
+    g_df_chr_lst=[]
+    for num in range(len(chr_lst)):
+        chr_num=chr_lst[num]
+        g_chr_df='g_'+chr_num  # name it as "g_"
+        locals()[g_chr_df]=g_df[g_df["chrom"]==chr_num]
+        g_chr_df=locals()[g_chr_df]
+        g_chr_df=g_chr_df.sort_values("TxStart")
+        g_df_chr_lst.append(g_chr_df)
+        
+    # Remove the overlapped area (using removeOverlapDF function in css_utility.py)
+    g_df_chr_collapsed_lst=[]
+    for g_df_chr in g_df_chr_lst:
+        g_df_chr_collapsed=removeOverlapDF(g_df_chr)
+        assert len(g_df_chr)>=len(g_df_chr_collapsed)
+        g_df_chr_collapsed_lst.append(g_df_chr_collapsed)
+    print("Done!")
+    
+    return g_df_chr_collapsed_lst  # list of dataframe
+
+
+# ### 3-6-2. Matching to CSS
+
+# #### Function: `comp_expGene2css`
+# 
+# * Usage: modified from `compGene2css`, Use it like  `css_gene_lst_all=comp_expGene2css("../database/bed/gene_expression/gene_highlyexpressed.refFlat",df_e050)`
+# * Input: 
+#     * (highly/low/not) expressed gene, such as `"../database/bed/gene_expression/gene_highlyexpressed.refFlat"`
+#     * df, acquired from css created by bed2df_expanded
+# * Output
+#     * list of chromosome-wise list that contains the css at (highly/low/not) genic area only.
+# * **caution!** Do not forget to conduct `Convert2unitCSS_main(css_gene_lst_all, unit=200)`, to convert the result into 200-bps unit length
+
+# In[ ]:
+
+
+def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_expanded
+    """
+    modified from `compGene2css`
+    Input: Reference gene file, df (CSS)
+    Output: list of chromosome-wise list that contains the css at (expressed) genic area only.
+    """
+    g_lst_chr=Gexp_Gene2GLChr(exp_gene_file)
+#     g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
+    css_lst_chr=df2longcss(df) # list of long css per chromosome
+    total_chr=len(g_lst_chr)
+    
+    print("Matching to the chromatin state sequence data ...")
+    css_gene_lst_all=[]
+    for i in tqdm_notebook(range(total_chr)):
+        css=css_lst_chr[i]   # long css of i-th chromosome
+        gene_df=g_lst_chr[i] # gene df of i-th chromosome
+        
+        css_gene_lst_chr=[]
+        for j in range(len(gene_df)):
+            g_start=gene_df["TxStart"].iloc[j]-1  # python counts form 0
+            g_end=gene_df["TxEnd"].iloc[j]+1      # python excludes the end
+            
+            css_gene=css[g_start:g_end]           # cut the gene area only
+            css_gene_lst_chr.append(css_gene)     # store in the list
+          
+        css_gene_lst_all.append(css_gene_lst_chr)  # list of list
+    
+    assert len(css_gene_lst_all)==total_chr
+    
+    # remove chromosome if it is empty (e.g. chrY for female)
+    css_gene_lst_all=[elm for elm in css_gene_lst_all if elm!=[]] 
+            
+    print("Done!")
+    return css_gene_lst_all ## this is the original length! reduce it at Convert2unitCSS_main(css_lst_all, unit=200)!
+
+
+# ### 3-6-2-1. CSS for various gene expression cases are saved.
+
+# #### Function `extExpGenic_byCell_1`
+# * Expressed genic region, highly expressed genic region `refFlat` data are saved. To complete, `extExpGenic_byCell_2` should be written.
+# * Input: output path
+# * This function was executed and the result is already saved.
+# * To check the result, visit the output path.
+
+# In[7]:
+
+
+def extExpGenic_byCell_1(output_path="../database/temp_files/expressed/byCellType/refFlat/", all_file=True, verbose=True, exp=0, high_exp=50, **kwargs):
+    """
+    RUN THE SECOND function 'extExpGenic_byCell_2' after running this function.
+    This function extract CSS expressed genic region, mainly for "expressed" and "highly-expressed"
+    (1) To process all the  ... set 'all_file=True'.
+        If you want to process only one file at a time, set e.g.) all_file=False, file="E050_15_coreMarks_stateno.bed"
+    (2) Current version is only for expressed/ highly expressed cases.
+    (3) Outputs are e.g.) "E112_gene_expressed.refFlat", "E112_gene_highlyexpressed.refFlat" at output path
+    """
+    
+    path="../database/bed/gene_expression/"
+    script="classifygenes_ROADMAP_RPKM.py"
+    epi_rpkm_tsv="57epigenomes.RPKM.pc.tsv"
+    gene_ref="chr.gene.refFlat"
+    original_path="~/Work/chromatin_state/NSP/"
+    
+    save_path="./byCellType/refFlat/"
+#     css_bed_path="../database/bed/unzipped/"
+
+    if all_file:
+        css_gene_path="../database/temp_files/whole_gene_unit/"
+        # File list of CSS on genic region for all cell types
+        files_under_folder=sorted(os.listdir(css_gene_path))
+        cell_gene_css_all=[file for file in files_under_folder if file.startswith('E') and file.endswith('.pkl')]
+        
+#         all_css_bed_file=sorted(os.listdir(css_bed_path)) # all css bed file, we need to choose the target
+#         # list comprehension to choose the targets (57 epigenomes)    
+#         target_cell_gene_css=[css_bed for css_bed in all_css_bed_file for epi in cell_gene_css_all if css_bed[:4]==epi[:4]]
+        
+        if verbose: print("processing all files ...")
+        for epi_css in tqdm_notebook(cell_gene_css_all):             
+            epi_num=epi_css[:4] # e.g.) E003
+            
+            if verbose: print("{} is now processed ...".format(epi_num))
+            file_path=css_bed_path+epi_css
+#             df=bed2df_expanded(file_path)  # css df
+
+            ######## Running the script at working path and come back to the original path #########
+            get_ipython().run_line_magic('cd', '-q {path}')
+            get_ipython().run_line_magic('run', '{script} --thre_expressed {exp} --thre_highlyexpressed {high_exp} {epi_rpkm_tsv} {epi_num} {gene_ref}')
+
+            exp_file_name=save_path+epi_num+"_"+"gene_expressed.refFlat"
+            hexp_file_name=save_path+epi_num+"_"+"gene_highlyexpressed.refFlat"
+            get_ipython().run_line_magic('mv', '"gene_expressed.refFlat" {exp_file_name}')
+            get_ipython().run_line_magic('mv', '"gene_highlyexpressed.refFlat" {hexp_file_name}')
+            get_ipython().run_line_magic('cd', '-q {original_path}')
+            ########################################################################################
+                
+        
+    elif len(kwargs)>0:       
+        for file_key, file_name in kwargs.items():            
+            epi_num=file_name[:4]
+            if verbose: print("all_file=False, processing single case for {}.".format(epi_num))
+
+            file_path=css_bed_path+file_name
+#             df=bed2df_expanded(file_path)  # css df for the designated file
+            
+            ######## Running the script at working path and come back to the original path #########
+            get_ipython().run_line_magic('cd', '-q {path}')
+            get_ipython().run_line_magic('run', '{script} --thre_expressed {exp} --thre_highlyexpressed {high_exp} {epi_rpkm_tsv} {epi_num} {gene_ref}')
+
+            exp_file_name=save_path+epi_num+"_"+"gene_expressed.refFlat"
+            hexp_file_name=save_path+epi_num+"_"+"gene_highlyexpressed.refFlat"
+            get_ipython().run_line_magic('mv', '"gene_expressed.refFlat" {exp_file_name}')
+            get_ipython().run_line_magic('mv', '"gene_highlyexpressed.refFlat" {hexp_file_name}')
+            get_ipython().run_line_magic('cd', '-q {original_path}')
+            ########################################################################################
+            
+    else:
+        raise ValueError("Set all_file=True, or desginate any file name to proceed!")
+    assert os.getcwd()[-3:]=="NSP", "Check the current working directory."
+    
+    return print("Results are stored at {}, and current working directory is : {}".format(output_path, os.getcwd()))
+                           
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
@@ -2526,7 +3010,7 @@ def total_lst2kmer(total_lst,k):
 # # 5. Training result analysis
 # **[back to index](#Index)**
 
-# Writing ...
+# ## 5-1. Evaluation
 
 # In[4]:
 
@@ -2556,6 +3040,218 @@ def evalDFconcat(df_lst, col_name, col_rename, colormap="Set1"):
     p.legend(fontsize=14)
     
     return df_concat
+
+
+# #### Function: `evalPre_by_folder` 
+# 
+# * Usage: Create a dataframe and show the result plot of pretraining 
+# * Input: path of the pretraining result, basically under the folder `../database/pretrain/`
+# * User input: `"all"` or a list of integer, such as `[0,1,2]`, as you can select from the list this function shows. 
+# * Output: Plot of perplexity
+
+# In[5]:
+
+
+def evalPre_by_folder(path,target='all',colormap="Set1", ylim=6.5):
+    """
+    path: the directory you have the pretrain result (eval_results.txt)
+          Multiple files can be processed.
+    target: if designated as "all", it considers all the files. 
+            Otherwise, a list containing the numbers of the file you want to analyze should be given.
+    """
+    file_list=[os.path.join(path, file) for file in sorted(os.listdir(path))]
+    print("\n".join(file_list))
+
+    target = input("Enter 'all' to process all files or a list of file numbers to process (ex. [1,2,3]): ")
+
+    if target == 'all':
+        target = 'all'
+    else:
+        try:
+            target = ast.literal_eval(target)
+            if not all(isinstance(i, int) for i in target):
+                raise ValueError("Invalid input, target should be 'all' or a list of integers.")
+            for i in target:
+                if i > len(file_list):
+                    raise ValueError("Invalid file number")
+        except (ValueError, SyntaxError):
+            raise ValueError("Invalid input, target should be 'all' or a list of integers in the format [1,2,3].")
+
+    file_df_all=[]
+    if target=='all':        
+        for i, file in enumerate(file_list):
+            f_name=re.search(r'eval_results_(.*).txt', file).group(1)
+            file_df=pd.read_csv(file, header=None, names=["perplexity"])
+            file_df.rename(columns={'perplexity': f_name}, inplace=True)
+            file_df_all.append(file_df)
+        result_df = pd.concat(file_df_all, axis=1)
+        
+    elif type(target)==list and type(target[0])==int:
+        for i in target:
+            f_name=re.search(r'eval_results_(.*).txt', file_list[i]).group(1)
+            file_df=pd.read_csv(file_list[i], header=None, names=["perplexity"])
+            file_df.rename(columns={'perplexity': f_name}, inplace=True)
+            file_df_all.append(file_df)
+        result_df = pd.concat(file_df_all, axis=1)
+        
+    fig=plt.figure(figsize=(6,4))
+    p=sns.lineplot(data=result_df, palette=colormap)
+    p.set_xlabel("Iternation", fontsize=13)
+    p.set_ylim([0.5, ylim])
+    
+    return result_df    
+
+
+# #### Function: `pred_prob_overall` 
+# 
+# * Usage: Create a dataframe for prediction result and show the result plot (confusion matrix, violin plot)
+# * Input: path of the prediction result file (`pred_results.npy`) and the labeled file (`dev.tsv`)
+#     * `dev_path="../database/fine_tune/CompG_and_lessCompG/4mer/dev.tsv"`
+#     * `pred_path="../database/ft_result/pred/4_compless/pred_results.npy"`
+# * Output: Two dataframes (`high_pred`: label 1 and its prediction ,`low_pred`: label 0 and its prediction)
+
+# In[1]:
+
+
+def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgreen","skyblue","teal","royalblue"]):
+    pred=np.load(pred_path)
+    dev=pd.read_csv(dev_path, sep="\t")
+    dev["pred"]=pred
+    dev["pred_bool"]=None
+    df=dev
+    
+    assert type(color2_lst) and len(color2_lst)==4, "enter a list of 4 elements, as color names"
+    
+    # confusion matrix #
+    for i in range(len(df)):
+        if df["pred"].at[i]>=0.5 :
+            df["pred_bool"].at[i]=1
+        else:
+            df["pred_bool"].at[i]=0
+    assert df["pred_bool"].isnull().any()==False, "Check the pred_bool"
+    cf_matrix=confusion_matrix(df["label"],df["pred_bool"].astype(bool))
+
+    group_names = ['True Neg','False Pos','False Neg','True Pos']
+    group_counts = ["{0:0.0f}".format(value) for value in cf_matrix.flatten()]
+    group_percentages = ["({0:.2%})".format(value) for value in cf_matrix.flatten()/np.sum(cf_matrix)]
+    labels = [f"{v1}\n{v2}\n{v3}" for v1, v2, v3 in zip(group_names,group_counts,group_percentages)]
+    labels = np.asarray(labels).reshape(2,2)
+    
+    # confusion matrix visualization
+    sns.heatmap(cf_matrix, annot=labels, annot_kws={'size': 16}, fmt='', cmap=color1)
+    print(classification_report(df["label"], df["pred_bool"].astype(bool)))
+    
+    high_prob, low_prob=[],[]
+    label_1, label_0=[],[]
+    high_1, high_0=[],[]
+    low_1, low_0=[],[]
+
+    for i in range(len(df)):
+        # high_prob is defined as larger than 0.5       
+        if df["pred"].iloc[i]>=0.5:
+            high_prob.append(df["pred"].iloc[i])
+            label_1.append(df["label"].iloc[i])
+            if df["label"].iloc[i]==1:  # predition is higher than 0.5(=true), and label is 1 (=true): true positive
+                high_1.append(df["pred"].iloc[i])
+            else:
+                high_0.append(df["pred"].iloc[i])    
+        else:
+            low_prob.append(df["pred"].iloc[i])
+            label_0.append(df["label"].iloc[i])
+            if df["label"].iloc[i]==0: # predition is lower than 0.5(=false), and label is 0 (=false): true negative
+                low_0.append(df["pred"].iloc[i])
+            else:
+                low_1.append(df["pred"].iloc[i])
+
+#     print("false positive: {} |  false negative: {}".format(false_positive,false_negative))
+    high_pred=pd.DataFrame({'label': label_1, 'pred': high_prob})
+    low_pred=pd.DataFrame({'label': label_0, 'pred': low_prob})
+
+    fig=plt.figure(figsize=(8,8))
+    plt.subplots_adjust(wspace=0.5, hspace=0.5)
+    plt.subplot(2, 2, 1)
+    sns.violinplot(data=high_prob, color=color2_lst[0])
+    plt.title('High Probability', fontsize=13)
+    plt.xticks([])
+    plt.xlabel("predition >= 0.5", fontsize=13)
+    plt.ylabel("Prediction", fontsize=13)
+
+    plt.subplot(2, 2, 2)
+    sns.violinplot(data=low_prob, color=color2_lst[1])
+    plt.title('Low Probability', fontsize=13)
+    plt.xticks([])
+    plt.xlabel("predition < 0.5", fontsize=13)
+    plt.ylabel("Prediction", fontsize=13)
+    
+    plt.subplot(2, 2, 3)
+    sns.violinplot(data=high_1, color=color2_lst[2])
+    plt.title('True positive', fontsize=13)
+    plt.xticks([])
+    plt.xlabel("For label 1", fontsize=13)
+    plt.ylabel("Prediction", fontsize=13)
+    
+    plt.subplot(2, 2, 4)
+    sns.violinplot(data=low_0, color=color2_lst[3])
+    plt.title('True negative', fontsize=13)
+    plt.xticks([])
+    plt.xlabel("For label 0", fontsize=13)
+    plt.ylabel("Prediction", fontsize=13)
+
+    plt.show()
+
+    return high_pred,low_pred
+
+
+# ## 5-2. Motif
+
+# #### Function `motif_df_initProcessing`
+# 
+# * Usage: Initial processing for motif dataframe, created by `motif_utils.py`. Adding the columns like '
+# * Input: motif dataframe 
+
+# In[1]:
+
+
+def motif_df_initProcessing(motif_df="../database/motif/compNg_condw24min5ins3_df.csv"):
+    fname=motif_df
+    hparam=r'cond(\d+)?|w(\d+)|min(\d+)|ins(\d+)'
+    matches=re.findall(hparam,fname)
+    numbers=[num for match in matches for num in match if num]
+    if not matches[0][0]: # if no number after cond (which is actually cond1 AND cond2)
+        cond='_'  # replace it with underscore
+        win=numbers[0]
+        min_len=numbers[1]
+        min_ins=numbers[2]
+    else:   
+        cond=numbers[0]
+        win=numbers[1]
+        min_len=numbers[2]
+        min_ins=numbers[3]
+    
+    print("condition: {}, windows: {}, min_length: {}, min_instance: {}".format(cond,win,min_len,min_ins))
+    
+    # add columns "pro_x" and "length" to the dataframe
+    df=pd.read_csv(motif_df, engine='python')
+    df_sorted=df.sort_values(by="p")   # sort by p-value, ascending order
+    df_sorted["pro_x"]=df_sorted["x"]/df_sorted["n"] # add columns for proportional x over n
+    df_sorted["length"]=[len(motif) for motif in df_sorted['motif'].tolist()] # and for length
+    
+    max_motif_len=max(df_sorted["length"])
+    min_motif_len=min(df_sorted["length"])
+    print("Total found motif number (p-val<0.05): {}".format(len(df_sorted)))
+    print("max motif length: {}, min motif length: {}".format(max_motif_len,min_motif_len))
+    
+    # list of colored motif
+    motif_lst=df_sorted["motif"].tolist()
+    colored_motif=[colored_css_str_as_is(motif) for motif in motif_lst]
+    
+    return df_sorted, colored_motif   
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
