@@ -7,11 +7,11 @@
 # In[1]:
 
 
-#### To convert the file into .py
-#!jupyter nbconvert --to script css_utility.ipynb
+# ### To convert the file into .py
+# !jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[2]:
+# In[1]:
 
 
 import os
@@ -30,6 +30,7 @@ import pickle
 import seaborn as sns
 from tqdm import tqdm
 from tqdm.notebook import tqdm_notebook
+import glob
 
 
 # ## Index
@@ -69,9 +70,14 @@ from tqdm.notebook import tqdm_notebook
 #     * [3-6. Gene expression classification](#3-6.-Gene-expression-classification)
 #         * [3-6-1. Gene expression file into the list of dataframe](#3-6-1.-Gene-expression-file-into-the-list-of-dataframe)
 #         * [3-6-2. Matching to CSS](#3-6-2.-Matching-to-CSS)
+#             * [3-6-2-1. CSS for various gene expression cases are saved.](#3-6-2-1.-CSS-for-various-gene-expression-cases-are-saved.)
+#         * [3-6-3. Cut into Kmer and save](#3-6-3.-Cut-into-Kmer-and-save)<font color="royalblue">-> **pretrain data are saved**</font>
+#         * [3-6-4. Fine-tuning data](#3-6-4.-Fine-tuning-data) <font color="orange"> -> **fine-tuning data are saved** </font>
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
 #     * [5-1. Evaluation](#5-1.-Evaluation)
+#         * [5-1-2. Pretrain evaluation](#5-1-2.-Pretrain-evaluation)
+#         * [5-1-3. Fine tuning evaluation](#5-1-3.-Fine-tuning-evaluation)
 #     * [5-2. Motif](#5-2.-Motif)
 
 # **Frequently used functions**
@@ -2468,6 +2474,7 @@ def prep_and_saveTF_CompNgene(condition="thres_mean", cut_thres=510, k=5, save_p
 # function for preprocess the whole gene data and produce chromosome-wise gene lists
 # each element is dataframe
 
+### this function should be modified in the path. (and sync it to the piri and harp as well)
 def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/gene_highlyexpressed.refFlat'):
     print("Extracting the gene file ...")
     g_fn=exp_gene_file
@@ -2487,7 +2494,7 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/gene_highlyex
     exon_start_int_lst=[]
     for i, str_lst in enumerate(g_df_temp["exonStarts"]):
         int_lst=[int(elm) for elm in str_lst.replace("[","").replace("]","").split(",")]
-        assert g_df_temp["exonCount"][i]==len(int_lst) # make sure the no. element in exon start = count
+        assert g_df_temp["exonCount"][i]==len(int_lst) # make sure the no. element in exon st count
         exon_start_int_lst.append(int_lst)    
     g_df_temp["exonStarts"]=exon_start_int_lst
 
@@ -2540,7 +2547,7 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/gene_highlyex
 #     * list of chromosome-wise list that contains the css at (highly/low/not) genic area only.
 # * **caution!** Do not forget to conduct `Convert2unitCSS_main(css_gene_lst_all, unit=200)`, to convert the result into 200-bps unit length
 
-# In[ ]:
+# In[1]:
 
 
 def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_expanded
@@ -2666,16 +2673,353 @@ def extExpGenic_byCell_1(output_path="../database/temp_files/expressed/byCellTyp
                            
 
 
-# In[ ]:
+# #### Function `extExpGenic_byCell_2`
+# * Expressed genic region, highly expressed genic region's css data are saved.
+# * Input: output path
+# * This function was executed and the result is already saved.
+# * To check the result, visit the output path.
+
+# In[2]:
 
 
+def extExpGenic_byCell_2(output_path="../database/temp_files/expressed/byCellType/",all_file=True, verbose=True, **kwargs):
+    """
+    
+    """
+    ref_path="../database/bed/gene_expression/byCellType/refFlat/"
+    ref_file_all=sorted(os.listdir(ref_path))
+    ref_hexp_all=[elm for elm in ref_file_all if 'high' in elm and elm.startswith('E')]
+    ref_exp_all=[elm for elm in ref_file_all if elm not in ref_hexp_all and elm.startswith('E')]
+    
+    css_gene_path="../database/temp_files/whole_gene_unit/"
+    css_bed_path="../database/bed/unzipped/"
+    css_bed_file_all=sorted(os.listdir(css_bed_path))    
+
+    if all_file:
+        if verbose: print("processing all files ...")
+        for epi_css in tqdm_notebook(ref_hexp_all):
+            epi_num=epi_css[:4]
+            if verbose: print("{} is now processed ...".format(epi_num))
+            # preparing df from bed
+            target_bed=[elm for elm in css_bed_file_all if elm[:4]==epi_num]
+            bed_path=css_bed_path+target_bed[0]
+            df=bed2df_expanded(bed_path)
+            # preparing ref from exp_refs
+            target_hexp_ref=[elm for elm in ref_hexp_all if elm[:4]==epi_num]
+            target_exp_ref=[elm for elm in ref_exp_all if elm[:4]==epi_num]
+            hexp=ref_path+target_hexp_ref[0]
+            exp=ref_path+target_exp_ref[0]
+            
+            css_hexp_gene_lst=comp_expGene2css(hexp,df)
+            css_exp_gene_lst=comp_expGene2css(exp,df)
+            css_hexp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_hexp_gene_lst, unit=200))
+            css_exp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_exp_gene_lst, unit=200))
+
+            with open(output_path+"highly_expressed/"+epi_num+"_highly_exp_gene_css.pkl","wb") as f:
+                pickle.dump(css_hexp_gene_unit_lst,f)
+            with open(output_path+"expressed/"+epi_num+"_exp_gene_css.pkl","wb") as g:
+                pickle.dump(css_exp_gene_unit_lst,g)
+            
+#     elif len(kwargs)>0:
+    elif "file" in kwargs:
+        file_name=kwargs["file"]
+#         for file_key, file_name in kwargs.items():            
+        epi_num=file_name[:4]
+        if verbose: print("all_file=False, processing single case for {}.".format(epi_num))
+        # preparing df from bed
+        target_bed=[elm for elm in css_bed_file_all if elm[:4]==epi_num]
+        bed_path=css_bed_path+target_bed[0]
+        df=bed2df_expanded(bed_path)
+        # preparing ref from exp_refs
+        target_hexp_ref=[elm for elm in ref_hexp_all if elm[:4]==epi_num]
+        target_exp_ref=[elm for elm in ref_exp_all if elm[:4]==epi_num]
+        hexp=ref_path+target_hexp_ref[0]
+        exp=ref_path+target_exp_ref[0]
+
+        css_hexp_gene_lst=comp_expGene2css(hexp,df)
+        css_exp_gene_lst=comp_expGene2css(exp,df)
+        css_hexp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_hexp_gene_lst, unit=200))
+        css_exp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_exp_gene_lst, unit=200))
+
+        with open(output_path+"highly_expressed/"+epi_num+"_highly_exp_gene_css.pkl","wb") as f:
+            pickle.dump(css_hexp_gene_unit_lst,f)
+        with open(output_path+"expressed/"+epi_num+"_exp_gene_css.pkl","wb") as g:
+            pickle.dump(css_exp_gene_unit_lst,g)
+
+    else:
+        raise ValueError("Set all_file=True, or desginate any file name to proceed!")
+    return
 
 
+# #### Function `extNOTexp_Genic_byCell`
+# * NOT expressed genic region's css data are saved.
+# * Input: output path
+# * This function was executed and the result is already saved.
+# * To check the result, visit the output path.
 
-# In[ ]:
+# In[8]:
 
 
+def extNOTexp_Genic_byCell(output_path="../database/temp_files/expressed/byCellType/not_expressed/", all_file=True, verbose=True, **kwargs):
+  # This function only compares the whole genic with expressed genic and subtract them.
+  # Perhaps should be changed later?
+    css_exp_path="../database/temp_files/expressed/byCellType/expressed/"
+    css_whole="../database/temp_files/whole_gene_unit/"
+    whole_gene_files=sorted(glob.glob(css_whole+"*.pkl"))
+    exp_gene_files=sorted(glob.glob(css_exp_path+"*.pkl"))
 
+    if all_file: 
+        if verbose: print("processing all files ...")
+        for gene_file in tqdm_notebook(whole_gene_files):
+            pattern=r'E[0-9]+'
+            epi_num=re.findall(pattern, gene_file)[0] # e.g.) 'E003'
+            # take expressed gene list for the same cell type
+            exp_gene_file=[file for file in exp_gene_files if epi_num in file][0]
+            with open(gene_file,"rb") as f:
+                whole_gene=flatLst(pickle.load(f))
+            with open(exp_gene_file, "rb") as g:
+                exp_gene=pickle.load(g)
+            not_exp_gene_all=[]
+            not_exp_gene=[gene for gene in whole_gene if gene not in exp_gene]
+            not_exp_gene_all.append(not_exp_gene)
+            with open(output_path+epi_num+"_not_exp_gene_css.pkl","wb") as h:
+                pickle.dump(not_exp_gene,h)
+    
+    elif "file" in kwargs:
+        exp_gene_file=kwargs["file"]    
+        epi_num=exp_gene_file[:4]
+        exp_gene_file_w_path=css_exp_path+exp_gene_file
+        assert epi_num[0]=="E", "File name should start with 'E'. Remove any path before the file name."
+        if verbose: print("all_file=False, processing single case for {}.".format(epi_num))
+        
+        gene_file=[elm for elm in whole_gene_files if epi_num in elm][0]        
+        with open(gene_file,"rb") as f:
+            whole_gene=flatLst(pickle.load(f))
+        with open(exp_gene_file_w_path, "rb") as g:
+            exp_gene=pickle.load(g)
+        not_exp_gene=[gene for gene in whole_gene if gene not in exp_gene]
+        with open(output_path+epi_num+"_not_exp_gene_css.pkl","wb") as h:
+            pickle.dump(not_exp_gene,h)
+    else:
+        pass
+    return print("files are saved at {}".format(output_path))
+
+
+# ### 3-6-3. Cut into Kmer and save
+
+# #### Function `save_kmers`
+# * Input: output path, k for kmerization, kwargs should include "kind"
+# * Usage: e.g.) `save_kmers(k=4,kind="whole_gene")`
+# * Output: none, **note** that this function is already executed and `.txt` files for the pretraining have been saved. Visit the output path indicated in the function.
+
+# In[3]:
+
+
+def save_kmers(output_path="../database/pretrain/",k=4,**kwargs):
+    input_path="../database/temp_files/"
+    epi_num_lst=pd.read_csv("../database/temp_files/whole_gene_unit/epigenome_lst.txt", header=None, names=["num"])
+    epi_num=epi_num_lst["num"].tolist()
+    for num in tqdm_notebook(epi_num):   
+        if 'kind' in kwargs:
+            gene_type=kwargs["kind"]
+            if gene_type=="whole_gene":
+                file_name=input_path+gene_type+"_unit/"+num+"_css_gene_unit_lst_all.pkl"
+            elif gene_type=="not_expressed":
+                file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_not_exp_gene_css.pkl"
+            elif gene_type=="expressed":
+                file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_exp_gene_css.pkl"
+            elif gene_type=="highly_expressed":
+                file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_highly_exp_gene_css.pkl"
+            else:
+                pass
+            with open(file_name, "rb") as f:
+                target=pickle.load(f)
+                ####### whole_gene is not flat list #######
+                if gene_type=="whole_gene":
+                    target=flatLst(target)
+                ###########################################
+                _, kmerized_unit_css=css_CUT_Kmer(target, k=k)
+            output_path_mod=output_path+"expressed/"+str(k)+"mer/"+gene_type+"/"+num+"_"+gene_type+".txt"
+            with open(output_path_mod,"w") as g:
+                g.write("\n".join(kmerized_unit_css))
+           
+    return 
+    
+
+
+# ### 3-6-4. Fine-tuning data
+
+# #### Function: `prep_and_saveTF`
+# * Save the fine-tuning data for gene expression
+# * Three different bionary classifications are possible: exp vs. not exp, highly exp vs. exp, highly exp vs. not exp
+# * Can be used with following inputs, for example:
+#     <blockquote>
+#     input_path="../database/temp_files/expressed/byCellType/" <br>
+#     output_path="../database/fine_tune/Gexp_or_not/4mer/" <br>
+#     cl1="expressed" <br>
+#     cl2="not_expressed" <br>
+#     epi_num_lst=["E003","E128"] <br>
+#     </blockquote>
+# * This function already executed for the above conditions. See `../database/fine_tune/`
+
+# In[1]:
+
+
+# For saving gene expression fine-tuning data
+def prep_and_saveTF(input_path, output_path, cl1, cl2, epi_num_lst, cut_thres=510, k=4, len_tr=20000, len_dev=1000):
+    """
+    * Generallized function for preparing fine tuning data.
+    * cl1 and cl2 refer to the name of class you want to classify in binary classification.
+    * This function considers the path for cl1 and cl2 are under the input path.
+    * cl1 and cl2 are any of "expressed", "highly_expressed", "not_expressed" 
+    * epi_num_lst should contain the name of epigenomes like "E003"
+    """
+    print("* Input path: ", input_path)
+    print("* Binary classification for '{}' and '{}'".format(cl1, cl2))
+    print("* Output path: ", output_path)
+    print("* Cut threshold length: ", cut_thres)
+    print("* k-merization: ", k)
+    print("* train: dev = {} : {}".format(len_tr,len_dev))
+    
+    cl1_path=input_path+cl1+"/"
+    cl2_path=input_path+cl2+"/"
+    
+    cl1_concat=[]
+    cl2_concat=[]
+    
+    suffix_dict = {}
+    for cl in [cl1, cl2]:
+        if "highly" in cl:
+            suffix_dict[cl] = "_highly_exp_gene_css.pkl"
+        elif "not" in cl:
+            suffix_dict[cl] = "_not_exp_gene_css.pkl"
+        else:
+            suffix_dict[cl] = "_exp_gene_css.pkl"
+    
+    for cl, concat_lst in [(cl1, cl1_concat), (cl2, cl2_concat)]:
+        for epi_num in epi_num_lst:
+            file_path = input_path + cl + "/" + epi_num + suffix_dict[cl]
+            concat_lst.extend(pickle.load(open(file_path, "rb")))
+    
+    # kmerization
+    _, cl1_kmerized=css_CUT_Kmer(cl1_concat, cut_thres, k)
+    _, cl2_kmerized=css_CUT_Kmer(cl2_concat, cut_thres, k)
+    
+    # make it dataframe
+    df_cl1=pd.DataFrame(cl1_kmerized, columns=["sequence"])
+    df_cl1["label"]=1
+    df_cl2=pd.DataFrame(cl2_kmerized, columns=["sequence"])
+    df_cl2["label"]=0
+    
+    # make them have the same length
+    if len(df_cl1)>len(df_cl2):
+        df_cl1=df_cl1[:len(df_cl2)] 
+    elif len(df_cl1)<len(df_cl2):
+        df_cl2=df_cl2[:len(df_cl1)]
+    assert len(df_cl1)==len(df_cl2), "Check the data length."
+    
+    # shuffling ...
+    df_all=pd.concat([df_cl1,df_cl2]).sample(frac=1).reset_index(drop=True)  
+
+    # cutting into train and dev
+    assert len(df_all)> len_tr+len_dev, "Not enough data length."
+    df_train=df_all[:len_tr]
+    df_dev=df_all[len_tr:len_tr+len_dev]    
+  
+    #path="../database/fine_tune/"+save_path+"/"+str(k)+"mer/"
+    train_name=output_path+"train.tsv"
+    dev_name=output_path+"dev.tsv"
+    
+    df_train.to_csv(train_name, sep="\t", index=False)
+    df_dev.to_csv(dev_name, sep="\t", index=False)
+
+    return print("Fine-tuning data for {} and {} (epigenome no. {}) are {}merized and saved at {}.".format(cl1, cl2, epi_num_lst, k, output_path))
+
+
+# ### 3-6-5. Pie chart statistics: generalized verion
+
+# #### Funtion `css_composition_piechart_Gen`
+# * Input: path for .pkl or the list of "splitted" acquired directly from the function `css_CUT_Kmer` 
+#     * Either one of the path for .pkl or splitted shold be provided. 
+# * Usage
+#     * Create a piechar to show the composition of each state in a certain list of css.
+#     * e.g.) `css_composition_piechart_Gen(load_pkl=True, pkl_path="../database/temp_files/expressed/byCellType/highly_expressed/",show_pct=5, title="highly_expressed")`
+# * Output: Just a piechart for showing the composition of the css list.
+
+# In[4]:
+
+
+#Generalized version, for splitted (the result of css_CUT_Kmer) or from the pkl file saved 
+# e.g.) css_composition_piechart_Gen(load_pkl=True, pkl_path="../database/temp_files/expressed/byCellType/highly_expressed/",show_pct=5, title="highly_expressed")
+def css_composition_piechart_Gen(load_pkl=True, pkl_path=None, splitted=None, show_pct=5, **kwargs):
+    """
+    Usage: css_composition_piechart using the data from either .pkl or splitted (after running css_CUT_Kmer)
+    Input: .pkl file path or2for , splitted_lst can be the first production of the function "css_CUT_Kmer"
+    show_pct: threshold to show the percentage in pie chart
+    """
+    ### case 1. when you load .pkl which is usually stored at ../database/temp_files
+    if load_pkl:
+        if pkl_path is None:
+            raise ValueError("Path for the folder including .pkl files is required if load_pkl is True.")
+        else:
+            pkl_files = sorted([f for f in os.listdir(pkl_path) if f.endswith('.pkl')])
+            css_concat=[]
+            for pkl_file in pkl_files:
+                with open(pkl_path + pkl_file, "rb") as f:
+                    css = pickle.load(f)
+                    if isinstance(css[0], list):
+                        css_flat = flatLst(css)
+                        css_concat.extend(css_flat)
+                    else:
+                        css_concat.extend(css)
+        splitted=css_concat
+
+    ### case 2. when you use splitted, the first one of the results from the function css_CUT_kmer
+    else:
+        if splitted is None:
+            raise ValueError("Splitted is required. Run the css_CUT_Kmer first.")
+    
+    splitted_lst=splitted
+    num_elm=len(splitted_lst)
+    print("total {} of fragments.".format(num_elm))
+    
+    state_count = {chr(i): 0 for i in range(ord('A'), ord('O')+1)}
+    for elm in splitted_lst:
+        for state in elm:
+            if state in state_count:
+                state_count[state] += 1  # create a dictionary, value of which is the no. of state appeared overall
+    total = sum(state_count.values())
+    sizes = [i/sum(state_count.values())*100 for i in state_count.values()] # percentage of occupation
+    fig, (ax1, ax2) = plt.subplots(1,2,figsize=(12, 6))
+
+    ax1.pie(state_count.values(),colors=[state_col_dict[label] for label in state_count.keys()], autopct=lambda p: '{:.2f}%'.format(p) if p > show_pct else '')
+
+    if "title" in kwargs:
+        ax1.set_title(kwargs["title"], fontsize=15)
+    
+    for t in ax1.texts:
+        t.set_color("white")
+        t.set_fontsize(15)
+        
+    # print the list of percentages and states
+    # uncomment this if you want to use text rather than picture-table
+#     for state, size in zip(state_count.keys(), sizes):
+#         num_states = int(round(size * total / 100))
+#         print(f"{state}. {num_states} ({size:.2f}%)")
+
+    # Hide axis
+    ax2.axis('off')
+
+    # Create table
+    table = ax2.table(cellText=list(zip(state_count.keys(), [f"{size:.2f}" for size in sizes])),
+                     colLabels=['State', 'Proportion'],
+                     cellLoc='center', loc='center')
+    table.auto_set_font_size(False)
+    table.set_fontsize(12)
+    table.scale(0.5, 1)
+    
+    plt.show()
+    
 
 
 # In[ ]:
@@ -3012,6 +3356,8 @@ def total_lst2kmer(total_lst,k):
 
 # ## 5-1. Evaluation
 
+# ### 5-1-2. Pretrain evaluation
+
 # In[4]:
 
 
@@ -3100,6 +3446,102 @@ def evalPre_by_folder(path,target='all',colormap="Set1", ylim=6.5):
     p.set_ylim([0.5, ylim])
     
     return result_df    
+
+
+# ### 5-1-3. Fine tuning evaluation
+
+# The result of fine-tuning is provided by a `eval_result.txt` file by default, which contains acc (accuracy), auc (area under curve), mcc (Matthew's correlation coefficient), f1 score, precision, and recall. Those files can be saved with different names which contain the different experimental condition. 
+# 
+# The series of functions below are the unit functions for internal use, or simple use.
+
+#  #### Function: `evalFT_df`
+#  * Create dataframe from the raw file `eval_result.txt`
+
+# In[5]:
+
+
+def evalFT_df(path):
+    """
+    Unit function for eval_result.txt obtained after the fine tuning
+    """
+    df=pd.read_csv(path, index_col=False, sep="\s", header=None, engine='python')
+    df.columns=["k","acc","auc","f1","mcc","precision","recall"]
+    return df
+
+
+# #### Function `evalFT_fig`
+# * Draw af figure for a single `eval_result.txt` file at the designated path. 
+# * Inputs
+#     * `path` : path of the raw file
+#     * `target` : any of `[acc","auc","f1","mcc","precision","recall"]` as a string, or a sub-list can be accepted
+#     * `kwargs` : title can be added.
+
+# In[6]:
+
+
+def evalFT_fig(path, target="auc", figsize=(4,2.5), colormap="Set1", **kwargs):
+    """
+    Unit function for drawing the figure only
+    "target" should be designated, either string or a list of strings
+    """
+    df=evalFT_df(path)
+    fig=plt.figure(figsize=figsize)
+    plt.ylim([0,1])
+    plt.ylabel("metrics")
+    plt.xlabel("iterations")
+    color_lst=sns.color_palette(colormap)
+    line_lst=["-","--",":"]
+
+    if "title" in kwargs:
+        title=kwargs["title"]
+        plt.title(title)
+    
+    if not isinstance(target,list):
+        sns.lineplot(df[target], label=target)
+        plt.legend(loc="lower right")
+        auc_avg=np.mean(df["auc"].iloc[-10:])
+        plt.text(2, 0.1, "final 10 AUC avg. "+str(round(auc_avg,3)))
+    else:
+        for i, tar in enumerate(target):
+            sns.lineplot(df[tar], label=tar, linestyle=line_lst[i], color=color_lst[i])
+            plt.legend(loc="lower right")
+            auc_avg=np.mean(df["auc"].iloc[-10:])
+            plt.text(2, 0.1, "final 10 AUC avg. "+str(round(auc_avg,3)))
+    
+    return 
+
+
+# #### Function `evalFT_overview`
+# * Show the result of evaluation in a figure
+# * Input:
+#     * `path_all` : either one or multiple paths
+#     * `target`: any of `[acc","auc","f1","mcc","precision","recall"]` as a string, or a sub-list can be accepted
+
+# In[7]:
+
+
+def evalFT_overview(path_all,target,colormap="Set1", show_depth=-3):
+    
+    if not isinstance(path_all,list):
+        evalFT_fig(path, target=target, figsize=(4,2.5), colormap=colormap)
+    else:
+        for i, path in enumerate(path_all):
+            file_name_lst=os.path.splitext(path)[0].split("/")[show_depth:]
+            title='   '.join(file_name_lst)
+            evalFT_fig(path, target=target, colormap=colormap, title=title)           
+    return 
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # #### Function: `pred_prob_overall` 
