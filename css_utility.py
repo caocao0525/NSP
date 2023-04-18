@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[1]:
+# In[10]:
 
 
 # ### To convert the file into .py
@@ -2464,18 +2464,19 @@ def prep_and_saveTF_CompNgene(condition="thres_mean", cut_thres=510, k=5, save_p
 
 # #### Function: `Gexp_Gene2GLChr`
 # 
+# * This function only checks a single file.
 # * Usage: After the gene expression files such as `gene_highlyexpressed.refFlat` are acquired by `/database/bed/gene_expression/classifygenes_ROADMAP_RPKM.py`, apply this function to obtain the list of dataframe per chromosome contains the transcription start and end indices.
 # * Input: gene expression (high/low/not) file
 # * Output: a chromosome-wise list of dataframe containing `TxStart` and `TxEnd`
 
-# In[1]:
+# In[14]:
 
 
 # function for preprocess the whole gene data and produce chromosome-wise gene lists
 # each element is dataframe
 
-### this function should be modified in the path. (and sync it to the piri and harp as well)
-def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/gene_highlyexpressed.refFlat'):
+### this function is not essential, but just to check by create df from .refFlat
+def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/E050/gene_highlyexpressed.refFlat'):
     print("Extracting the gene file ...")
     g_fn=exp_gene_file
     g_df_raw=pd.read_csv(g_fn, sep='\t', index_col=False, header=0)
@@ -2588,24 +2589,27 @@ def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_
 
 # ### 3-6-2-1. CSS for various gene expression cases are saved.
 
-# #### Function `extExpGenic_byCell_1`
-# * Expressed genic region, highly expressed genic region `refFlat` data are saved. To complete, `extExpGenic_byCell_2` should be written.
+# #### Function `extExpGenic_byCell_1_ver01`
+# * From the css bed file for each cell, expressed genic region and highly expressed genic region `refFlat` data are saved by running the "classifygenes_ROADMAP_RPKM.py". To complete, execute `extExpGenic_byCell_2`.
 # * Input: output path
-# * This function was executed and the result is already saved.
-# * To check the result, visit the output path.
+# * Usage example: `extExpGenic_byCell_1_ver01(output_path="../database/temp_files/expressed/byCellType/refFlat/", all_file=False, high_only=True, verbose=True, exp=0, high_exp=10, file="E050_15_coreMarks_stateno.bed")`
+# * In `ver01`, the argument `high_only` is added to produce highly_expressed case only, as the "expressed" is the same (rpkm > 0)
+# * This function was executed and the result is already saved. See `../database/bed/gene_expression/byCellType/refFlat/rpkm10`
 
-# In[7]:
+# In[13]:
 
 
-def extExpGenic_byCell_1(output_path="../database/temp_files/expressed/byCellType/refFlat/", all_file=True, verbose=True, exp=0, high_exp=50, **kwargs):
+def extExpGenic_byCell_1_ver01(output_path="../database/temp_files/expressed/byCellType/refFlat/", all_file=True, high_only=True, verbose=True, exp=0, high_exp=50, **kwargs):
     """
     RUN THE SECOND function 'extExpGenic_byCell_2' after running this function.
     This function extract CSS expressed genic region, mainly for "expressed" and "highly-expressed"
     (1) To process all the  ... set 'all_file=True'.
         If you want to process only one file at a time, set e.g.) all_file=False, file="E050_15_coreMarks_stateno.bed"
-    (2) Current version is only for expressed/ highly expressed cases.
+    (2) High_only = True will only produce the highly expressed cases (default) 
     (3) Outputs are e.g.) "E112_gene_expressed.refFlat", "E112_gene_highlyexpressed.refFlat" at output path
     """
+    
+    output_path_mod=output_path+"rpkm"+str(high_exp)+"/"
     
     path="../database/bed/gene_expression/"
     script="classifygenes_ROADMAP_RPKM.py"
@@ -2613,8 +2617,8 @@ def extExpGenic_byCell_1(output_path="../database/temp_files/expressed/byCellTyp
     gene_ref="chr.gene.refFlat"
     original_path="~/Work/chromatin_state/NSP/"
     
-    save_path="./byCellType/refFlat/"
-#     css_bed_path="../database/bed/unzipped/"
+    save_path="./byCellType/refFlat/"+"rpkm"+str(high_exp)+"/"
+    css_bed_path="../database/bed/unzipped/"
 
     if all_file:
         css_gene_path="../database/temp_files/whole_gene_unit/"
@@ -2638,7 +2642,8 @@ def extExpGenic_byCell_1(output_path="../database/temp_files/expressed/byCellTyp
             get_ipython().run_line_magic('cd', '-q {path}')
             get_ipython().run_line_magic('run', '{script} --thre_expressed {exp} --thre_highlyexpressed {high_exp} {epi_rpkm_tsv} {epi_num} {gene_ref}')
 
-            exp_file_name=save_path+epi_num+"_"+"gene_expressed.refFlat"
+            if not high_only:
+                exp_file_name=save_path+epi_num+"_"+"gene_expressed.refFlat"
             hexp_file_name=save_path+epi_num+"_"+"gene_highlyexpressed.refFlat"
             get_ipython().run_line_magic('mv', '"gene_expressed.refFlat" {exp_file_name}')
             get_ipython().run_line_magic('mv', '"gene_highlyexpressed.refFlat" {hexp_file_name}')
@@ -2658,7 +2663,8 @@ def extExpGenic_byCell_1(output_path="../database/temp_files/expressed/byCellTyp
             get_ipython().run_line_magic('cd', '-q {path}')
             get_ipython().run_line_magic('run', '{script} --thre_expressed {exp} --thre_highlyexpressed {high_exp} {epi_rpkm_tsv} {epi_num} {gene_ref}')
 
-            exp_file_name=save_path+epi_num+"_"+"gene_expressed.refFlat"
+            if not high_only:
+                exp_file_name=save_path+epi_num+"_"+"gene_expressed.refFlat"
             hexp_file_name=save_path+epi_num+"_"+"gene_highlyexpressed.refFlat"
             get_ipython().run_line_magic('mv', '"gene_expressed.refFlat" {exp_file_name}')
             get_ipython().run_line_magic('mv', '"gene_highlyexpressed.refFlat" {hexp_file_name}')
@@ -2669,28 +2675,35 @@ def extExpGenic_byCell_1(output_path="../database/temp_files/expressed/byCellTyp
         raise ValueError("Set all_file=True, or desginate any file name to proceed!")
     assert os.getcwd()[-3:]=="NSP", "Check the current working directory."
     
-    return print("Results are stored at {}, and current working directory is : {}".format(output_path, os.getcwd()))
+    return print("Results are stored at {}, and current working directory is : {}".format(output_path_mod, os.getcwd()))
                            
 
 
-# #### Function `extExpGenic_byCell_2`
+# #### Function `extExpGenic_byCell_2_ver01`
 # * Expressed genic region, highly expressed genic region's css data are saved.
-# * Input: output path
+# * Input: output path, `high_only` for selecting whether just "expressed" will be included. `high_exp` is for designating the RPKM
+# * Output: output folder name will be like `rpkm50`
 # * This function was executed and the result is already saved.
 # * To check the result, visit the output path.
 
-# In[2]:
+# In[17]:
 
 
-def extExpGenic_byCell_2(output_path="../database/temp_files/expressed/byCellType/",all_file=True, verbose=True, **kwargs):
+def extExpGenic_byCell_2_ver01(output_path="../database/temp_files/expressed/byCellType/",all_file=True, high_only=True, high_exp=50, verbose=True, **kwargs):
     """
-    
+    Should be executed after extExpGenic_byCell_1_ver01
+    modified the previous version to make it applicalbe to highly_expressed only extraction
+    with high_only=True, highly expressed gene according to the high_exp value (RPKM) are extracted.
     """
-    ref_path="../database/bed/gene_expression/byCellType/refFlat/"
-    ref_file_all=sorted(os.listdir(ref_path))
-    ref_hexp_all=[elm for elm in ref_file_all if 'high' in elm and elm.startswith('E')]
-    ref_exp_all=[elm for elm in ref_file_all if elm not in ref_hexp_all and elm.startswith('E')]
+    exp_ref_path="../database/bed/gene_expression/byCellType/refFlat/"
+    hexp_ref_path=exp_ref_path+"rpkm"+str(high_exp)+"/"
     
+    ref_exp_file_all=sorted(os.listdir(exp_ref_path))
+    ref_hexp_file_all=sorted(os.listdir(hexp_ref_path))
+    
+    ref_exp_all=[elm for elm in ref_exp_file_all if '_expressed' in elm and elm.startswith('E')]
+    ref_hexp_all=[elm for elm in ref_hexp_file_all if 'high' in elm and elm.startswith('E')]
+      
     css_gene_path="../database/temp_files/whole_gene_unit/"
     css_bed_path="../database/bed/unzipped/"
     css_bed_file_all=sorted(os.listdir(css_bed_path))    
@@ -2707,20 +2720,20 @@ def extExpGenic_byCell_2(output_path="../database/temp_files/expressed/byCellTyp
             # preparing ref from exp_refs
             target_hexp_ref=[elm for elm in ref_hexp_all if elm[:4]==epi_num]
             target_exp_ref=[elm for elm in ref_exp_all if elm[:4]==epi_num]
-            hexp=ref_path+target_hexp_ref[0]
-            exp=ref_path+target_exp_ref[0]
-            
-            css_hexp_gene_lst=comp_expGene2css(hexp,df)
-            css_exp_gene_lst=comp_expGene2css(exp,df)
-            css_hexp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_hexp_gene_lst, unit=200))
-            css_exp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_exp_gene_lst, unit=200))
+            hexp=hexp_ref_path+target_hexp_ref[0]
+            exp=exp_ref_path+target_exp_ref[0]
 
-            with open(output_path+"highly_expressed/"+epi_num+"_highly_exp_gene_css.pkl","wb") as f:
+            if not high_only:  # extract just 'expressed' case if high_only is False (default=True)
+                css_exp_gene_lst=comp_expGene2css(exp,df)
+                css_exp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_exp_gene_lst, unit=200))
+                with open(output_path+"expressed/"+epi_num+"_exp_gene_css.pkl","wb") as g:
+                    pickle.dump(css_exp_gene_unit_lst,g)
+                    
+            css_hexp_gene_lst=comp_expGene2css(hexp,df)
+            css_hexp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_hexp_gene_lst, unit=200))
+            with open(output_path+"rpkm"+str(high_exp)+"_highly_expressed/"+epi_num+"_highly_exp_gene_css.pkl","wb") as f:
                 pickle.dump(css_hexp_gene_unit_lst,f)
-            with open(output_path+"expressed/"+epi_num+"_exp_gene_css.pkl","wb") as g:
-                pickle.dump(css_exp_gene_unit_lst,g)
             
-#     elif len(kwargs)>0:
     elif "file" in kwargs:
         file_name=kwargs["file"]
 #         for file_key, file_name in kwargs.items():            
@@ -2733,18 +2746,19 @@ def extExpGenic_byCell_2(output_path="../database/temp_files/expressed/byCellTyp
         # preparing ref from exp_refs
         target_hexp_ref=[elm for elm in ref_hexp_all if elm[:4]==epi_num]
         target_exp_ref=[elm for elm in ref_exp_all if elm[:4]==epi_num]
-        hexp=ref_path+target_hexp_ref[0]
-        exp=ref_path+target_exp_ref[0]
+        hexp=hexp_ref_path+target_hexp_ref[0]
+        exp=exp_ref_path+target_exp_ref[0]
+        
+        if not high_only:  # extract just 'expressed' case if high_only is False (default=True)
+            css_exp_gene_lst=comp_expGene2css(exp,df)
+            css_exp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_exp_gene_lst, unit=200))
+            with open(output_path+"expressed/"+epi_num+"_exp_gene_css.pkl","wb") as g:
+                pickle.dump(css_exp_gene_unit_lst,g)
 
         css_hexp_gene_lst=comp_expGene2css(hexp,df)
-        css_exp_gene_lst=comp_expGene2css(exp,df)
         css_hexp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_hexp_gene_lst, unit=200))
-        css_exp_gene_unit_lst=flatLst(Convert2unitCSS_main(css_exp_gene_lst, unit=200))
-
-        with open(output_path+"highly_expressed/"+epi_num+"_highly_exp_gene_css.pkl","wb") as f:
+        with open(output_path+"rpkm"+str(high_exp)+"_highly_expressed/"+epi_num+"_highly_exp_gene_css.pkl","wb") as f:
             pickle.dump(css_hexp_gene_unit_lst,f)
-        with open(output_path+"expressed/"+epi_num+"_exp_gene_css.pkl","wb") as g:
-            pickle.dump(css_exp_gene_unit_lst,g)
 
     else:
         raise ValueError("Set all_file=True, or desginate any file name to proceed!")
@@ -2807,18 +2821,26 @@ def extNOTexp_Genic_byCell(output_path="../database/temp_files/expressed/byCellT
 
 # ### 3-6-3. Cut into Kmer and save
 
-# #### Function `save_kmers`
+# #### Function `save_kmers_ver01`
+# * **Note** that this function for highly_expressed case is not useful because the pretrain is conducted fro whole_cell
 # * Input: output path, k for kmerization, kwargs should include "kind"
 # * Usage: e.g.) `save_kmers(k=4,kind="whole_gene")`
 # * Output: none, **note** that this function is already executed and `.txt` files for the pretraining have been saved. Visit the output path indicated in the function.
 
-# In[3]:
+# In[18]:
 
 
-def save_kmers(output_path="../database/pretrain/",k=4,**kwargs):
+def save_kmers_ver01(output_path="../database/pretrain/expressed/", high_exp=50, k=4,**kwargs):
+    """
+    "kind" for kwargs can be chosen among ("whold_gene","not_expressed","expressed", "highly_expressed")
+    if "kind" is highly_expressed, RPKM value should be provided as high_exp.
+    But this is not very meaningful, because pretrain is conducted with whole_gene only...
+    """
     input_path="../database/temp_files/"
     epi_num_lst=pd.read_csv("../database/temp_files/whole_gene_unit/epigenome_lst.txt", header=None, names=["num"])
     epi_num=epi_num_lst["num"].tolist()
+    if high_exp:
+        print("The threshold for highly expressed is set as RPKM={}".format(high_exp))
     for num in tqdm_notebook(epi_num):   
         if 'kind' in kwargs:
             gene_type=kwargs["kind"]
@@ -2828,8 +2850,9 @@ def save_kmers(output_path="../database/pretrain/",k=4,**kwargs):
                 file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_not_exp_gene_css.pkl"
             elif gene_type=="expressed":
                 file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_exp_gene_css.pkl"
+            ### note that there is subfolder for highly expressed case
             elif gene_type=="highly_expressed":
-                file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_highly_exp_gene_css.pkl"
+                file_name=input_path+"expressed/byCellType/"+"rpkm"+str(high_exp)+"_"+gene_type+"/"+num+"_highly_exp_gene_css.pkl"
             else:
                 pass
             with open(file_name, "rb") as f:
@@ -2839,43 +2862,49 @@ def save_kmers(output_path="../database/pretrain/",k=4,**kwargs):
                     target=flatLst(target)
                 ###########################################
                 _, kmerized_unit_css=css_CUT_Kmer(target, k=k)
-            output_path_mod=output_path+"expressed/"+str(k)+"mer/"+gene_type+"/"+num+"_"+gene_type+".txt"
-            with open(output_path_mod,"w") as g:
-                g.write("\n".join(kmerized_unit_css))
-           
+            
+        if gene_type=="highly_expressed":
+            output_path_mod=output_path+str(k)+"mer/"+"rpkm"+str(high_exp)+"_"+gene_type+"/"+num+"_"+gene_type+".txt"
+        else:
+            output_path_mod=output_path+str(k)+"mer/"+gene_type+"/"+num+"_"+gene_type+".txt"
+        with open(output_path_mod,"w") as g:
+            g.write("\n".join(kmerized_unit_css))           
     return 
+    
     
 
 
 # ### 3-6-4. Fine-tuning data
 
-# #### Function: `prep_and_saveTF`
+# #### Function: `prep_and_saveTF_ver01`
 # * Save the fine-tuning data for gene expression
-# * Three different bionary classifications are possible: exp vs. not exp, highly exp vs. exp, highly exp vs. not exp
+# * Three different binary classifications are possible: exp vs. not exp, rpkmNN_highly exp vs. exp, rpkmNN_highly exp vs. not exp
 # * Can be used with following inputs, for example:
 #     <blockquote>
 #     input_path="../database/temp_files/expressed/byCellType/" <br>
-#     output_path="../database/fine_tune/Gexp_or_not/4mer/" <br>
+#     output_path="../database/fine_tune/gene_exp/4mer/Gexp_or_not" <br>
 #     cl1="expressed" <br>
 #     cl2="not_expressed" <br>
 #     epi_num_lst=["E003","E128"] <br>
 #     </blockquote>
-# * This function already executed for the above conditions. See `../database/fine_tune/`
+# * This function already executed for the above conditions. See `../database/fine_tune/gene_exp/4mer`
 
-# In[1]:
+# In[19]:
 
 
 # For saving gene expression fine-tuning data
-def prep_and_saveTF(input_path, output_path, cl1, cl2, epi_num_lst, cut_thres=510, k=4, len_tr=20000, len_dev=1000):
+def prep_and_saveTF_ver01(input_path, output_path, cl1, cl2, epi_num_lst, cut_thres=510, k=4, len_tr=20000, len_dev=1000):
     """
     * Generallized function for preparing fine tuning data.
+    * Input path will be in the temp_files
     * cl1 and cl2 refer to the name of class you want to classify in binary classification.
-    * This function considers the path for cl1 and cl2 are under the input path.
-    * cl1 and cl2 are any of "expressed", "highly_expressed", "not_expressed" 
-    * epi_num_lst should contain the name of epigenomes like "E003"
+    * cl1 and cl2 are any of "expressed", "not_expressed", "rpkmNN_highly_expressed" (NN is number)
+    * epi_num_lst should contain the name of epigenomes like "E003." If you need more, then add like ["E003", "E004", ...]
     """
     print("* Input path: ", input_path)
     print("* Binary classification for '{}' and '{}'".format(cl1, cl2))
+#     ans= "yes" if incl_hexp else "no"
+#     print("* Including highly expressed case: {}".format(ans))
     print("* Output path: ", output_path)
     print("* Cut threshold length: ", cut_thres)
     print("* k-merization: ", k)
@@ -2890,6 +2919,7 @@ def prep_and_saveTF(input_path, output_path, cl1, cl2, epi_num_lst, cut_thres=51
     suffix_dict = {}
     for cl in [cl1, cl2]:
         if "highly" in cl:
+#             rpkm_no=re.search(r'rpkm(\d+)',cl).group(1) # no.. this is not required. already inside the name of cl1 an cl2
             suffix_dict[cl] = "_highly_exp_gene_css.pkl"
         elif "not" in cl:
             suffix_dict[cl] = "_not_exp_gene_css.pkl"
@@ -2927,13 +2957,23 @@ def prep_and_saveTF(input_path, output_path, cl1, cl2, epi_num_lst, cut_thres=51
     df_dev=df_all[len_tr:len_tr+len_dev]    
   
     #path="../database/fine_tune/"+save_path+"/"+str(k)+"mer/"
-    train_name=output_path+"train.tsv"
-    dev_name=output_path+"dev.tsv"
+    
+    by_tr_len=str("{:.0f}".format(len_tr/1000))
+    output_path_mod=output_path+"tr_len_"+by_tr_len+"k/"
+    
+    # create a destination folder if it does not exist.
+    if os.path.exists(output_path_mod):
+        raise ValueError("Folder already exists:{}".format(otuput_path_mod))
+    else:
+        os.makedirs(output_path_mod)
+    
+    train_name=output_path_mod+"train.tsv"
+    dev_name=output_path_mod+"dev.tsv"
     
     df_train.to_csv(train_name, sep="\t", index=False)
     df_dev.to_csv(dev_name, sep="\t", index=False)
 
-    return print("Fine-tuning data for {} and {} (epigenome no. {}) are {}merized and saved at {}.".format(cl1, cl2, epi_num_lst, k, output_path))
+    return print("Fine-tuning data for {} and {} (epigenome no. {}) are {}merized and saved at {}.".format(cl1, cl2, epi_num_lst, k, output_path_mod))
 
 
 # ### 3-6-5. Pie chart statistics: generalized verion
