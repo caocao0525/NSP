@@ -2233,13 +2233,13 @@ def extCompGenic_byCell(output_path="../database/temp_files/complexity/", thres=
 # * Input: list of css (Here, `comp_gene_css_all` which is generated from the above fnt `extract_complex_css`)
 # * Output: `splitted` (raw splitted list),`kmerized_unit_css` (k-merized form)
 
-# In[2]:
+# In[1]:
 
 
 # Cut if it is longer than 510
 def css_CUT_Kmer(css, cut_thres=510, k=5):
     """ 
-    A GENERAL version of `chr_css_CUT_Kmer`
+    A GENERAL version of `chr_css_CUT_Kmer` and updated to remove any nan in sequence
     Prepare kmer dataset for unit_css, as is if length<=510, else cut it to be length>510   
     Usage: css_CUT_Kmer(css, cut_thres, k)
     
@@ -2262,10 +2262,49 @@ def css_CUT_Kmer(css, cut_thres=510, k=5):
                 prev+=cut_thres
                 if prev>=len(css_elm)-1:
                     break      
-            
-    kmerized_unit_css=[seq2kmer(item, k) for item in splitted] # k-merize here
+
+    kmerized_unit_css_raw=[seq2kmer(item, k) for item in splitted] # k-merize here
+    
+    ### this part is updated to prevent any empty string to be generated ###
+    kmerized_unit_css=[item for item in kmerized_unit_css_raw if item!=""]
+    ########################################################################
     
     return splitted, kmerized_unit_css
+
+
+# In[2]:
+
+
+# # Cut if it is longer than 510
+# def css_CUT_Kmer(css, cut_thres=510, k=5):
+#     """ 
+#     A GENERAL version of `chr_css_CUT_Kmer`
+#     Prepare kmer dataset for unit_css, as is if length<=510, else cut it to be length>510   
+#     Usage: css_CUT_Kmer(css, cut_thres, k)
+    
+#     - css: unit-length css (e.g. comp_gene_css_all)
+#     - cut_thres: length of split, default=510
+#     - k: kmer
+    
+#     Output: 1. splitted (before kmerization) 2. kmerized_unit_css (after kmerization) 
+#     """    
+#     splitted=[] # bucket for the all the splitted strings   
+#     for css_elm in css:
+#         if len(css_elm) <k:  # if the length of css_elm is shorter than k (cannot create k-mer)
+#             continue
+#         elif len(css_elm) <=cut_thres:
+#             splitted.append(css_elm)
+#         else:  
+#             prev=0
+#             while True:
+#                 splitted.append(css_elm[prev:prev+cut_thres])
+#                 prev+=cut_thres
+#                 if prev>=len(css_elm)-1:
+#                     break      
+            
+#     kmerized_unit_css=[seq2kmer(item, k) for item in splitted] # k-merize here
+    
+#     return splitted, kmerized_unit_css
 
 
 # #### Function: `save_as_txt` 
