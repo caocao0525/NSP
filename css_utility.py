@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[10]:
+# In[5]:
 
 
 # ### To convert the file into .py
@@ -3002,7 +3002,7 @@ def prep_and_saveTF_ver01(input_path, output_path, cl1, cl2, epi_num_lst, cut_th
     
     # create a destination folder if it does not exist.
     if os.path.exists(output_path_mod):
-        raise ValueError("Folder already exists:{}".format(otuput_path_mod))
+        raise ValueError("Folder already exists:{}".format(output_path_mod))
     else:
         os.makedirs(output_path_mod)
     
