@@ -4,14 +4,14 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[5]:
+# In[28]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[1]:
+# In[26]:
 
 
 import os
@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt
 from motif_utils import seq2kmer
 from motif_utils import kmer2seq
 from scipy.stats import norm
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 import random
 import collections
 import operator
@@ -31,6 +33,9 @@ import seaborn as sns
 from tqdm import tqdm
 from tqdm.notebook import tqdm_notebook
 import glob
+from wordcloud import WordCloud
+import stylecloud
+from collections import Counter
 
 
 # ## Index
@@ -378,27 +383,27 @@ all_cell_pickles[0]
 
 # ## 2-2. Prerequisite dictionaries
 
-# In[13]:
+# In[10]:
 
 
 state_dict={1:"A", 2:"B", 3:"C", 4:"D", 5:"E",6:"F",7:"G",8:"H" ,
                 9:"I" ,10:"J",11:"K", 12:"L", 13:"M", 14:"N", 15:"O"}
 
 
-# In[14]:
+# In[11]:
 
 
 css_name=['TssA','TssAFlnk','TxFlnk','Tx','TxWk','EnhG','Enh','ZNF/Rpts',
           'Het','TssBiv','BivFlnk','EnhBiv','ReprPC','ReprPcWk','Quies']
 
 
-# In[15]:
+# In[12]:
 
 
 css_dict=dict(zip(list(state_dict.values()), css_name))  # css_dict={"A":"TssA", "B":"TssAFlnk", ... }
 
 
-# In[16]:
+# In[13]:
 
 
 # color dict update using the info from https://egg2.wustl.edu/roadmap/web_portal/chr_state_learning.html
@@ -422,7 +427,7 @@ css_color_dict={'TssA':(255,0,0), # Red
 
 # ### 2-2-1. Function to convert RGB into decimal RGB
 
-# In[17]:
+# In[14]:
 
 
 def colors2color_dec(css_color_dict):
@@ -434,19 +439,33 @@ def colors2color_dec(css_color_dict):
     return color_dec_list
 
 
-# In[18]:
+# **scale 0 to 1**
+
+# In[15]:
 
 
 state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dict)))
 
 
-# In[19]:
+# **scale 0 to 255**
+
+# In[16]:
 
 
 state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values())))
 
 
-# In[20]:
+# **hexacode**
+
+# In[17]:
+
+
+hexa_state_col_dict={letter: "#{:02x}{:02x}{:02x}".format(*rgb) for letter,rgb in state_col_255_dict.items()}
+
+
+# **name instead of alphabets**
+
+# In[18]:
 
 
 css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
@@ -3602,7 +3621,7 @@ def evalFT_fig(path, target="auc", figsize=(4,2.5), colormap="Set1", **kwargs):
 def evalFT_overview(path_all,target,colormap="Set1", show_depth=-3):
     
     if not isinstance(path_all,list):
-        evalFT_fig(path, target=target, figsize=(4,2.5), colormap=colormap)
+        evalFT_fig(path_all, target=target, figsize=(4,2.5), colormap=colormap)
     else:
         for i, path in enumerate(path_all):
             file_name_lst=os.path.splitext(path)[0].split("/")[show_depth:]
@@ -3767,6 +3786,40 @@ def motif_df_initProcessing(motif_df="../database/motif/compNg_condw24min5ins3_d
     colored_motif=[colored_css_str_as_is(motif) for motif in motif_lst]
     
     return df_sorted, colored_motif   
+
+
+# #### Function `create_motif_wordcloud`
+# 
+# * Usage: create a word cloud using `wordcloud` package for representing the frequency of each motif
+# * Input: path of the motif (where the file name is like `motif_AAAAA_3_txt`
+# * Output: word cloud of the motif
+
+# In[23]:
+
+
+def create_motif_wordcloud(path, color_map="viridis"):
+    target=[word for word in path.split("/")[-2:] if word !=""][0]
+    print("target", target)
+    file_lst=[os.path.join(path,file) for file in os.listdir(path) if ".txt" in file]
+    motifs={}
+    for file_name in file_lst:
+        motif, num_txt=file_name.split("/")[-1].split("_")[1:3]
+        freq=num_txt.split(".")[0]
+        motifs[motif]=int(freq)
+    print("motifs = ", motifs)
+    wc=WordCloud(width=800, height=400, background_color="white", colormap=color_map)
+    wordcloud=wc.generate_from_frequencies(motifs)
+    plt.figure(figsize=(6,2), facecolor=None)
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis("off")
+    plt.tight_layout(pad=0)
+    plt.show()
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
