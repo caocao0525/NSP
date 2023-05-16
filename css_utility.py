@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[28]:
+# In[38]:
 
 
 # ### To convert the file into .py
@@ -2398,7 +2398,7 @@ def css_composition_piechart(splitted_lst, complexity=True, show_pct=5):
 # * Input files are loaded inside the function, which are pickled at `"../database/temp_files/complexity/thres_mean/"`
 # * Output: None, just displaying the report that the file is saved.
 
-# In[3]:
+# In[34]:
 
 
 # now for compG and nonCompG (the function covers from prepration to save)
@@ -2880,7 +2880,7 @@ def extNOTexp_Genic_byCell(output_path="../database/temp_files/expressed/byCellT
 # ### 3-6-3. Cut into Kmer and save
 
 # #### Function `save_kmers_ver01`
-# * **Note** that this function for highly_expressed case is not useful because the pretrain is conducted fro whole_cell
+# * **Note** that this function for highly_expressed case is not useful because the pretrain is conducted for whole_cell
 # * Input: output path, k for kmerization, kwargs should include "kind"
 # * Usage: e.g.) `save_kmers(k=4,kind="whole_gene")`
 # * Output: none, **note** that this function is already executed and `.txt` files for the pretraining have been saved. Visit the output path indicated in the function.
@@ -3574,10 +3574,10 @@ def evalFT_df(path):
 #     * `target` : any of `[acc","auc","f1","mcc","precision","recall"]` as a string, or a sub-list can be accepted
 #     * `kwargs` : title can be added.
 
-# In[6]:
+# In[35]:
 
 
-def evalFT_fig(path, target="auc", figsize=(4,2.5), colormap="Set1", **kwargs):
+def evalFT_fig(path, iteration=60, target="auc", figsize=(4,2.5), colormap="Set1", **kwargs):
     """
     Unit function for drawing the figure only
     "target" should be designated, either string or a list of strings
@@ -3595,15 +3595,15 @@ def evalFT_fig(path, target="auc", figsize=(4,2.5), colormap="Set1", **kwargs):
         plt.title(title)
     
     if not isinstance(target,list):
-        sns.lineplot(df[target], label=target)
+        sns.lineplot(df[target][:iteration], label=target)
         plt.legend(loc="lower right")
-        auc_avg=np.mean(df["auc"].iloc[-10:])
+        auc_avg=np.mean(df["auc"][:iteration].iloc[-10:])
         plt.text(2, 0.1, "final 10 AUC avg. "+str(round(auc_avg,3)))
     else:
         for i, tar in enumerate(target):
-            sns.lineplot(df[tar], label=tar, linestyle=line_lst[i], color=color_lst[i])
+            sns.lineplot(df[tar][:iteration], label=tar, linestyle=line_lst[i], color=color_lst[i])
             plt.legend(loc="lower right")
-            auc_avg=np.mean(df["auc"].iloc[-10:])
+            auc_avg=np.mean(df["auc"][:iteration].iloc[-10:])
             plt.text(2, 0.1, "final 10 AUC avg. "+str(round(auc_avg,3)))
     
     return 
@@ -3615,18 +3615,18 @@ def evalFT_fig(path, target="auc", figsize=(4,2.5), colormap="Set1", **kwargs):
 #     * `path_all` : either one or multiple paths
 #     * `target`: any of `[acc","auc","f1","mcc","precision","recall"]` as a string, or a sub-list can be accepted
 
-# In[7]:
+# In[36]:
 
 
-def evalFT_overview(path_all,target,colormap="Set1", show_depth=-3):
+def evalFT_overview(path_all,iteration, target,colormap="Set1", show_depth=-3):
     
     if not isinstance(path_all,list):
-        evalFT_fig(path_all, target=target, figsize=(4,2.5), colormap=colormap)
+        evalFT_fig(path_all,iteration=iteration, target=target, figsize=(4,2.5), colormap=colormap)
     else:
         for i, path in enumerate(path_all):
             file_name_lst=os.path.splitext(path)[0].split("/")[show_depth:]
             title='   '.join(file_name_lst)
-            evalFT_fig(path, target=target, colormap=colormap, title=title)           
+            evalFT_fig(path, iteration=iteration, target=target, colormap=colormap, title=title)           
     return 
 
 
@@ -3650,7 +3650,99 @@ def evalFT_overview(path_all,target,colormap="Set1", show_depth=-3):
 #     * `pred_path="../database/ft_result/pred/4_compless/pred_results.npy"`
 # * Output: Two dataframes (`high_pred`: label 1 and its prediction ,`low_pred`: label 0 and its prediction)
 
-# In[1]:
+# In[30]:
+
+
+# def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgreen","skyblue","teal","royalblue"]):
+#     pred=np.load(pred_path)
+#     dev=pd.read_csv(dev_path, sep="\t")
+#     dev["pred"]=pred
+#     dev["pred_bool"]=None
+#     df=dev
+    
+#     assert type(color2_lst) and len(color2_lst)==4, "enter a list of 4 elements, as color names"
+    
+#     # confusion matrix #
+#     for i in range(len(df)):
+#         if df["pred"].at[i]>=0.5 :
+#             df["pred_bool"].at[i]=1
+#         else:
+#             df["pred_bool"].at[i]=0
+#     assert df["pred_bool"].isnull().any()==False, "Check the pred_bool"
+#     cf_matrix=confusion_matrix(df["label"],df["pred_bool"].astype(bool))
+
+#     group_names = ['True Neg','False Pos','False Neg','True Pos']
+#     group_counts = ["{0:0.0f}".format(value) for value in cf_matrix.flatten()]
+#     group_percentages = ["({0:.2%})".format(value) for value in cf_matrix.flatten()/np.sum(cf_matrix)]
+#     labels = [f"{v1}\n{v2}\n{v3}" for v1, v2, v3 in zip(group_names,group_counts,group_percentages)]
+#     labels = np.asarray(labels).reshape(2,2)
+    
+#     # confusion matrix visualization
+#     sns.heatmap(cf_matrix, annot=labels, annot_kws={'size': 16}, fmt='', cmap=color1)
+#     print(classification_report(df["label"], df["pred_bool"].astype(bool)))
+    
+#     high_prob, low_prob=[],[]
+#     label_1, label_0=[],[]
+#     high_1, high_0=[],[]
+#     low_1, low_0=[],[]
+
+#     for i in range(len(df)):
+#         # high_prob is defined as larger than 0.5       
+#         if df["pred"].iloc[i]>=0.5:
+#             high_prob.append(df["pred"].iloc[i])
+#             label_1.append(df["label"].iloc[i])
+#             if df["label"].iloc[i]==1:  # predition is higher than 0.5(=true), and label is 1 (=true): true positive
+#                 high_1.append(df["pred"].iloc[i])
+#             else:
+#                 high_0.append(df["pred"].iloc[i])    
+#         else:
+#             low_prob.append(df["pred"].iloc[i])
+#             label_0.append(df["label"].iloc[i])
+#             if df["label"].iloc[i]==0: # predition is lower than 0.5(=false), and label is 0 (=false): true negative
+#                 low_0.append(df["pred"].iloc[i])
+#             else:
+#                 low_1.append(df["pred"].iloc[i])
+
+# #     print("false positive: {} |  false negative: {}".format(false_positive,false_negative))
+#     high_pred=pd.DataFrame({'label': label_1, 'pred': high_prob})
+#     low_pred=pd.DataFrame({'label': label_0, 'pred': low_prob})
+
+#     fig=plt.figure(figsize=(8,8))
+#     plt.subplots_adjust(wspace=0.5, hspace=0.5)
+#     plt.subplot(2, 2, 1)
+#     sns.violinplot(data=high_prob, color=color2_lst[0])
+#     plt.title('High Probability', fontsize=13)
+#     plt.xticks([])
+#     plt.xlabel("predition >= 0.5", fontsize=13)
+#     plt.ylabel("Prediction", fontsize=13)
+
+#     plt.subplot(2, 2, 2)
+#     sns.violinplot(data=low_prob, color=color2_lst[1])
+#     plt.title('Low Probability', fontsize=13)
+#     plt.xticks([])
+#     plt.xlabel("predition < 0.5", fontsize=13)
+#     plt.ylabel("Prediction", fontsize=13)
+    
+#     plt.subplot(2, 2, 3)
+#     sns.violinplot(data=high_1, color=color2_lst[2])
+#     plt.title('True positive', fontsize=13)
+#     plt.xticks([])
+#     plt.xlabel("For label 1", fontsize=13)
+#     plt.ylabel("Prediction", fontsize=13)
+    
+#     plt.subplot(2, 2, 4)
+#     sns.violinplot(data=low_0, color=color2_lst[3])
+#     plt.title('True negative', fontsize=13)
+#     plt.xticks([])
+#     plt.xlabel("For label 0", fontsize=13)
+#     plt.ylabel("Prediction", fontsize=13)
+
+#     plt.show()
+
+#     return high_pred,low_pred
+
+
+# In[31]:
 
 
 def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgreen","skyblue","teal","royalblue"]):
