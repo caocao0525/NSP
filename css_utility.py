@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
+# %%
 
 # # Utilities
 # Various functions to process the initial data
 
-# In[38]:
+# %%
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[26]:
+# %%
 
 
 import os
@@ -87,7 +88,7 @@ from collections import Counter
 
 # **Frequently used functions**
 
-# In[3]:
+# %%
 
 
 def flatLst(lst):
@@ -95,7 +96,7 @@ def flatLst(lst):
     return flatten_lst
 
 
-# In[4]:
+# %%
 
 
 def file_list_maker(path, files):
@@ -106,7 +107,7 @@ def file_list_maker(path, files):
     return all_files
 
 
-# In[75]:
+# %%
 
 
 def colored_css_str_as_is(sub_str):   # convert space into space
@@ -149,7 +150,7 @@ def colored_css_str_as_is(sub_str):   # convert space into space
 #         > (1) `sed 's/>//g' genome.fa > genome_mod.fa` : find `>` and remove it then save as `genome.fa`<br>
 #         > (2) `awk '$1 ~/^chr/{close(name);name=$1;next}{print $1>name}' genome_mod.fa` : find string starting `chr` form `genome_mod.fa` and save the 1st field (=the base string) as reading the file. 
 
-# In[5]:
+# %%
 
 
 # load the file from local
@@ -165,7 +166,7 @@ whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'
 # 
 # * This fuction is used in the function `compGene2css` [jump](#compGene2css) which generates **`css_gene_lst_all`**, the list of list that contains the chromatin states for genic region per chromosome.
 
-# In[6]:
+# %%
 
 
 # function for preprocess the whole gene data and produce chromosome-wise gene lists
@@ -204,7 +205,7 @@ def whGene2GLChr(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 # 
 # * Prerequisite file: chromosome-wise separated reference genome file.
 
-# In[7]:
+# %%
 
 
 # prerequisite file load
@@ -220,7 +221,7 @@ chr1=chr_list[0]
 # * **Output**: Two elements (`all_n_index` (list) and  `n_dist_df`(dataframe)). <br> `all_n_index` is just a list of all the indices where 'N's are located, while `n_dist_df` accomodates 'start', 'end', and 'count' as columns.
 # * **Note** that the 'N' here stands for 50 bases. (resolution=50 bases)
 
-# In[8]:
+# %%
 
 
 def chrNdist(chr_file=chr1):
@@ -282,7 +283,7 @@ def chrNdist(chr_file=chr1):
 # 
 # <img src="./desc_img/all_chr_Ndist.png" width="500" height="250" />
 
-# In[9]:
+# %%
 
 
 def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalization=True):
@@ -342,7 +343,7 @@ def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalizat
 # * Location: (local linux DLBOX2, macpro ->) `/database/bed/unzipped`  (server ->) `euph:/work/ChIP-seq/ROADMAP/byFileType/chromhmmSegmentations/ChmmModels/coreMarks/jointModel/final/*_15_coreMarks_dense.bed`
 # * Structure: tab-delimited, 4 columns (chromosome numner, start, end, and state number)
 
-# In[10]:
+# %%
 
 
 # create a pickle for a cell-wise dataframe
@@ -369,13 +370,13 @@ all_files=file_list_maker(path, bed_files)
 all_cell_pickles=file_list_maker(pickle_path, pickle_files)
 
 
-# In[11]:
+# %%
 
 
 all_files[0]
 
 
-# In[12]:
+# %%
 
 
 all_cell_pickles[0]
@@ -383,27 +384,27 @@ all_cell_pickles[0]
 
 # ## 2-2. Prerequisite dictionaries
 
-# In[10]:
+# %%
 
 
 state_dict={1:"A", 2:"B", 3:"C", 4:"D", 5:"E",6:"F",7:"G",8:"H" ,
                 9:"I" ,10:"J",11:"K", 12:"L", 13:"M", 14:"N", 15:"O"}
 
 
-# In[11]:
+# %%
 
 
 css_name=['TssA','TssAFlnk','TxFlnk','Tx','TxWk','EnhG','Enh','ZNF/Rpts',
           'Het','TssBiv','BivFlnk','EnhBiv','ReprPC','ReprPcWk','Quies']
 
 
-# In[12]:
+# %%
 
 
 css_dict=dict(zip(list(state_dict.values()), css_name))  # css_dict={"A":"TssA", "B":"TssAFlnk", ... }
 
 
-# In[13]:
+# %%
 
 
 # color dict update using the info from https://egg2.wustl.edu/roadmap/web_portal/chr_state_learning.html
@@ -427,7 +428,7 @@ css_color_dict={'TssA':(255,0,0), # Red
 
 # ### 2-2-1. Function to convert RGB into decimal RGB
 
-# In[14]:
+# %%
 
 
 def colors2color_dec(css_color_dict):
@@ -441,7 +442,7 @@ def colors2color_dec(css_color_dict):
 
 # **scale 0 to 1**
 
-# In[15]:
+# %%
 
 
 state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dict)))
@@ -449,7 +450,7 @@ state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dic
 
 # **scale 0 to 255**
 
-# In[16]:
+# %%
 
 
 state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values())))
@@ -457,7 +458,7 @@ state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values
 
 # **hexacode**
 
-# In[17]:
+# %%
 
 
 hexa_state_col_dict={letter: "#{:02x}{:02x}{:02x}".format(*rgb) for letter,rgb in state_col_255_dict.items()}
@@ -465,7 +466,7 @@ hexa_state_col_dict={letter: "#{:02x}{:02x}{:02x}".format(*rgb) for letter,rgb i
 
 # **name instead of alphabets**
 
-# In[18]:
+# %%
 
 
 css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
@@ -473,7 +474,7 @@ css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
 
 # ## 2-3. Generate CSS .bed to dataframe
 
-# In[21]:
+# %%
 
 
 # create dataframe from bed file
@@ -494,7 +495,7 @@ def bed2df_as_is(filename):
     return df
 
 
-# In[22]:
+# %%
 
 
 def bed2df_expanded(filename):
@@ -518,7 +519,7 @@ def bed2df_expanded(filename):
     return df 
 
 
-# In[23]:
+# %%
 
 
 def total_df_maker(all_files):
@@ -538,7 +539,7 @@ def total_df_maker(all_files):
 # * Functions for analyzing an individual dataframe
 # * CSS here refers Chromatin state sequence
 
-# In[24]:
+# %%
 
 
 def numchr(df):
@@ -546,7 +547,7 @@ def numchr(df):
     return df["chromosome"].nunique()    
 
 
-# In[25]:
+# %%
 
 
 # create a large piece of string of the whole state_seq_full 
@@ -564,7 +565,7 @@ def df2css_allchr(df):
 
 # #### Create CSS chromosome-wise
 
-# In[26]:
+# %%
 
 
 # first, learn where one chromosome ends in the df
@@ -600,7 +601,7 @@ def df2chr_index(df):
 
 # #### Create df cut by each chromosome
 
-# In[27]:
+# %%
 
 
 def df2chr_df(df):
@@ -625,7 +626,7 @@ def df2chr_df(df):
 
 # #### Create CSS chromosome-wise, string only
 
-# In[28]:
+# %%
 
 
 # create a list of dataframes, each of which contains the name of chromosome and chromosome-wise string of state_seq_full
@@ -651,7 +652,7 @@ def df2css_chr(df):
     return df2col_chr_list    
 
 
-# In[29]:
+# %%
 
 
 def df2css_chr_str(df):
@@ -681,7 +682,7 @@ def df2css_chr_str(df):
 # * chromosome-wise list
 # * real length
 
-# In[30]:
+# %%
 
 
 # make a long string of the css (not using unit, but the real length)
@@ -714,7 +715,7 @@ def df2longcss(df):
 # * chromosome-wise list
 # * unit length (chromatin is annotated per 200 bp)
 
-# In[31]:
+# %%
 
 
 # make a long string of the css (unit length, not the real length)
@@ -749,7 +750,7 @@ def df2unitcss(df):
 # * Mostly for visualization
 #     <img src="./desc_img/prop_data2df.png" width="500">
 
-# In[32]:
+# %%
 
 
 def prop_data2df(path='../database/conserv_overlap/'):
@@ -802,7 +803,7 @@ def prop_data2df(path='../database/conserv_overlap/'):
     return temp_df, trans_df
 
 
-# In[33]:
+# %%
 
 
 # temp_df, trans_df=prop_data2df(path='../database/conserv_overlap/')
@@ -819,7 +820,7 @@ def prop_data2df(path='../database/conserv_overlap/'):
 # * Input: df, chromosome number
 # * Output: `q_index` index of genome (not normalized) where Quiescent states are found.
 
-# In[34]:
+# %%
 
 
 # index list for O state in unit-length css sequence:
@@ -850,7 +851,7 @@ def UnitCSS_Q_Dist(df, chr_no=1):
 # * Graph (distribution histogram)
 # <img src="./desc_img/all_chr_UnitCSS_Q_Dist.png" width="400" height="150">
 
-# In[35]:
+# %%
 
 
 def all_chr_UnitCSS_Q_Dist(df,normalization=True):
@@ -927,7 +928,7 @@ def all_chr_UnitCSS_Q_Dist(df,normalization=True):
 # >*Output message* <br>
 # >unit-length css of chr1 cut randomly(weighted range:5-510) for 3mer was saved at '../database/wo_telo/'
 
-# In[36]:
+# %%
 
 
 ###############################
@@ -998,7 +999,7 @@ def chr_cssWOtelo_ranCUT_Kmer(df,chr_no,num1=5,num2=510, k=3, weight_rn=False, v
 # 
 # * Conduct the same work but now cell-wise, not chromosome-wise
 
-# In[1]:
+# %%
 
 
 ###############################
@@ -1082,7 +1083,7 @@ def cell_cssWOtelo_ranCUT_Kmer(all_file_path=all_files, cell_num=0, num1=5,num2=
 # * Input: data path, k (of kmer), color, bins, dna or not (default=false)
 # 
 
-# In[37]:
+# %%
 
 
 def dataLengCompo(path, k, color="teal", bins=15, dna=False):
@@ -1121,7 +1122,7 @@ def dataLengCompo(path, k, color="teal", bins=15, dna=False):
 # * Output: `css_gene_lst_all` list of list that css for genic region per chromosome (which can be utilized very frequently after this)
 # * The output is pickled as `"../database/temp_files/css_gene_lst_all"`
 
-# In[38]:
+# %%
 
 
 def compGene2css(whole_gene_file,df):   # note that the result is also overlapped css... 
@@ -1160,7 +1161,7 @@ def compGene2css(whole_gene_file,df):   # note that the result is also overlappe
 # 
 # <img src="./desc_img/countGeneCss.png" width="600" height="300">
 
-# In[39]:
+# %%
 
 
 def countGeneCss(css_gene_lst_all):
@@ -1212,7 +1213,7 @@ def countGeneCss(css_gene_lst_all):
 #     
 # <img src="./desc_img/gene_dup_start_end_vis.png" width="500" height="200">
 
-# In[40]:
+# %%
 
 
 # function to visualize how many genes are sharing the start and end position on genome
@@ -1288,7 +1289,7 @@ def count_samePos(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 # * `removeOverlapDF`: function used inside the main function.
 # * To acquire final collapsed gene table, run `gene_removeDupl`
 
-# In[41]:
+# %%
 
 
 def removeOverlapDF(test_df):    
@@ -1349,7 +1350,7 @@ def removeOverlapDF(test_df):
     return gene_collapsed_df
 
 
-# In[42]:
+# %%
 
 
 def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
@@ -1368,7 +1369,7 @@ def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 # * Input: `whole_gene_file` and `df` (from the css bed file)
 # * Output: `css_Ngene_lst_all` The CSS on the non-genic region
 
-# In[43]:
+# %%
 
 
 def compNonGene2css(whole_gene_file,df):
@@ -1429,7 +1430,7 @@ def compNonGene2css(whole_gene_file,df):
 # 
 # <img src="./desc_img/countNgeneCss.png" width="600" height="300">
 
-# In[44]:
+# %%
 
 
 def countNgeneCss(css_Ngene_lst_all):
@@ -1485,7 +1486,7 @@ def countNgeneCss(css_Ngene_lst_all):
 #     1. `let_str_lst_all`: The list of string that only shows the sequence of the css 
 #     2. `unit_cnt_lst_all`: The list of list of unit-length of each state in the list `let_str_lst_all`
 
-# In[45]:
+# %%
 
 
 # the idea is to separate, count, combine
@@ -1534,7 +1535,7 @@ def long2unitCSS(long_css_lst, unit=200):
 # * Input: `css_gene_lst_all` or `css_Ngene_lst_all`, the raw-length css on genic and non-genic regions, and the unit (default=200, as the css are annotated per )
 # * Output: `css_unit_lst_all`, the list of chromosome-wise list of unit-length css.
 
-# In[46]:
+# %%
 
 
 def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst_all or css_Ngene_lst_all
@@ -1571,7 +1572,7 @@ def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst
 #     * The saved file names are like `E003_css_gene_unit_lst_all.pkl`
 # * **Note** that it takes up to 10 hours to complete if you use macbook pro.
 
-# In[2]:
+# %%
 
 
 # Save the whole gene area of the 57 epigenomes, in CSS unit sequences (total no. 56, because no E000 for CSS)
@@ -1634,7 +1635,7 @@ def extGenic_byCell(output_path="../database/temp_files/whole_gene_unit/", verbo
 #        
 # * The reason why the above code for saving is not included is because it takes too much time.. dunno why
 
-# In[47]:
+# %%
 
 
 # Cut the unit-length string (input: unit-css, not df)
@@ -1671,7 +1672,7 @@ def chr_css_CUT_Kmer(unit_css, chr_no, cut_thres, k):
     return splitted, kmerized_unit_css
 
 
-# In[ ]:
+# %%
 
 
 
@@ -1685,7 +1686,7 @@ def chr_css_CUT_Kmer(unit_css, chr_no, cut_thres, k):
 # > `saveCUTs_all(css_gene_unit_lst_all, 510, 3, gene=True)`
 # > saves the css on the genic region after 3-merization.
 
-# In[1]:
+# %%
 
 
 def saveCUTs_all(unit_css, cut_thres, k, gene=True):
@@ -1715,7 +1716,7 @@ def saveCUTs_all(unit_css, cut_thres, k, gene=True):
 # * Input: `path` (for the specific task), `k`, `sampling_no` (number of chromosome you want to pick as a random no.)
 # * Output: `df_g_ng_all` the dataframe containing same amount of genic/non-genic css strips
 
-# In[49]:
+# %%
 
 
 # preparing the dataframe-version for generating train and dev dataset
@@ -1785,7 +1786,7 @@ def prepFT_gNg(path="../database/fine_tune/genic_and_intergenic/", k=4, sampling
 # * Input: `df_g_ng_all` (Result from the function `prepFT_gNg`), `path`, `k`, `len_train`, `len_dev`
 # * Output: Files are saved at "`path/kmer/`" folder
 
-# In[50]:
+# %%
 
 
 def saveTF_gNg(df_g_ng_all, path="../database/fine_tune/genic_and_intergenic/",k=4,len_train=30000,len_dev=1000):
@@ -1812,7 +1813,7 @@ def saveTF_gNg(df_g_ng_all, path="../database/fine_tune/genic_and_intergenic/",k
 # * Output: `q_cnt_lst` (The number of gene that contains 15th state) / `not_q_cnt_lst` (genes do not have 15th state)
 # * Note that you need to flatten it when use
 
-# In[51]:
+# %%
 
 
 # for cell-wise count : how many 15th-including genes are there per cell
@@ -1850,7 +1851,7 @@ def QnonQforCell(all_files=all_files,whole_gene_file=whole_gene_file):
 # #### Function: `QnonQforChr`
 # * Similar to `QnonQforCell`, but it is a flatten version
 
-# In[52]:
+# %%
 
 
 # for chromosome-wise list of list -> flatten list
@@ -1904,7 +1905,7 @@ def QnonQforChr(all_files=all_files,whole_gene_file=whole_gene_file):
 # 
 # <img src="./desc_img/qnonq_hist1.png" width="400" height="150">
 
-# In[53]:
+# %%
 
 
 # draw a histogram type1 (group by data)
@@ -1942,7 +1943,7 @@ def QnonQforCellHistT1(q_cnt_lst, not_q_cnt_lst, bin_size=20):
 # 
 # <img src="./desc_img/qnonq_hist2.png" width="400" height="150">
 
-# In[54]:
+# %%
 
 
 # draw a histogram type2 (group by bin)
@@ -1975,7 +1976,7 @@ def QnonQforCellHistT2(q_cnt_lst, not_q_cnt_lst,bin_size):
 # 
 # <img src="./desc_img/qnonq_swarmp.png" width="400" height="150">
 
-# In[55]:
+# %%
 
 
 def QnonQforCellSwarmp(q_cnt_lst, not_q_cnt_lst):
@@ -1999,7 +2000,7 @@ def QnonQforCellSwarmp(q_cnt_lst, not_q_cnt_lst):
 #     2. `gene_len_lst`: 15th state-including gene length
 #     3. `pro_o_lst`: Proportion of 15th state in the 15th state-including gene
 
-# In[3]:
+# %%
 
 
 # generate three lists: 15th state-including gene count, gene length, proportion of 15th state per gene
@@ -2044,7 +2045,7 @@ def cntQinGene(css_gene_lst_all):
 # * Output: Letter-value histogram of `cnt_o_lst` and `gene_len_lst`, and violin plot for `pro_o_lst`
 # <img src="./desc_img/cntQinGeneVis1.png" width="500" height="150">
 
-# In[4]:
+# %%
 
 
 def cntQinGeneVis1(cnt_o_lst, gene_len_lst, pro_o_lst):
@@ -2092,7 +2093,7 @@ def cntQinGeneVis1(cnt_o_lst, gene_len_lst, pro_o_lst):
 # * `switch_pro`: Proportion of `switch` per gene length
 # * Output: dataframe
 
-# In[1]:
+# %%
 
 
 def complexity_overview_mat(chr_gene_css):
@@ -2143,7 +2144,7 @@ def complexity_overview_mat(chr_gene_css):
 #     pickle.dump(less_comp_gene_css_all,g)`
 # 
 
-# In[1]:
+# %%
 
 
 # extract according to the complexity
@@ -2179,7 +2180,7 @@ def extract_complex_css(gene_css_all, thres="mean"):
 
 # ### 3-5-2-1. CSS for 57 Epigenomes Complex and Less Complex Genic regions are saved.
 
-# In[4]:
+# %%
 
 
 # Save the complex and less complex genic area of the 57 epigenomes, in CSS unit sequences
@@ -2238,7 +2239,7 @@ def extCompGenic_byCell(output_path="../database/temp_files/complexity/", thres=
     return print("Results are stored at {}".format(output_path_mod))
 
 
-# In[ ]:
+# %%
 
 
 
@@ -2252,7 +2253,7 @@ def extCompGenic_byCell(output_path="../database/temp_files/complexity/", thres=
 # * Input: list of css (Here, `comp_gene_css_all` which is generated from the above fnt `extract_complex_css`)
 # * Output: `splitted` (raw splitted list),`kmerized_unit_css` (k-merized form)
 
-# In[1]:
+# %%
 
 
 # Cut if it is longer than 510
@@ -2291,7 +2292,7 @@ def css_CUT_Kmer(css, cut_thres=510, k=5):
     return splitted, kmerized_unit_css
 
 
-# In[2]:
+# %%
 
 
 # # Cut if it is longer than 510
@@ -2333,7 +2334,7 @@ def css_CUT_Kmer(css, cut_thres=510, k=5):
 # * Remarks: This file includes the above function `css_CUT_Kmer`
 # * Output: None, just displaying that it is saved.
 
-# In[6]:
+# %%
 
 
 def save_as_txt(css, path="../database/wo_telo/", filename="complex_gene_all", cut_thres=510, k=5):
@@ -2356,7 +2357,7 @@ def save_as_txt(css, path="../database/wo_telo/", filename="complex_gene_all", c
 # * show_pct: threshold to show the percentage in pie chart (default=5)
 # * Output: None, just displaying the pie chart.
 
-# In[3]:
+# %%
 
 
 def css_composition_piechart(splitted_lst, complexity=True, show_pct=5):
@@ -2398,7 +2399,7 @@ def css_composition_piechart(splitted_lst, complexity=True, show_pct=5):
 # * Input files are loaded inside the function, which are pickled at `"../database/temp_files/complexity/thres_mean/"`
 # * Output: None, just displaying the report that the file is saved.
 
-# In[34]:
+# %%
 
 
 # now for compG and nonCompG (the function covers from prepration to save)
@@ -2458,7 +2459,7 @@ def prep_and_saveTF_CompNcomp(condition="thres_mean", cut_thres=510, k=5, save_p
 # * Input files are loaded inside the function, which are pickled at `"../database/temp_files/complexity/thres_mean/"` for complex gene, and at `"../database/temp_files/css_Ngene_unit_lst_all"` for intergenic area (a.k.a. Ngene)
 # * Output: None, just displaying the report that the file is saved.
 
-# In[4]:
+# %%
 
 
 # now,  for compG and non gene (the function covers from prepration to save)
@@ -2527,7 +2528,7 @@ def prep_and_saveTF_CompNgene(condition="thres_mean", cut_thres=510, k=5, save_p
 # * Input: gene expression (high/low/not) file
 # * Output: a chromosome-wise list of dataframe containing `TxStart` and `TxEnd`
 
-# In[14]:
+# %%
 
 
 # function for preprocess the whole gene data and produce chromosome-wise gene lists
@@ -2606,7 +2607,7 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/E050/gene_hig
 #     * list of chromosome-wise list that contains the css at (highly/low/not) genic area only.
 # * **caution!** Do not forget to conduct `Convert2unitCSS_main(css_gene_lst_all, unit=200)`, to convert the result into 200-bps unit length
 
-# In[1]:
+# %%
 
 
 def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_expanded
@@ -2654,7 +2655,7 @@ def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_
 # * In `ver01`, the argument `high_only` is added to produce highly_expressed case only, as the "expressed" is the same (rpkm > 0)
 # * This function was executed and the result is already saved. See `../database/bed/gene_expression/byCellType/refFlat/rpkm10`
 
-# In[13]:
+# %%
 
 
 def extExpGenic_byCell_1_ver01(output_path="../database/temp_files/expressed/byCellType/refFlat/", all_file=True, high_only=True, verbose=True, exp=0, high_exp=50, **kwargs):
@@ -2744,7 +2745,7 @@ def extExpGenic_byCell_1_ver01(output_path="../database/temp_files/expressed/byC
 # * This function was executed and the result is already saved.
 # * To check the result, visit the output path.
 
-# In[17]:
+# %%
 
 
 def extExpGenic_byCell_2_ver01(output_path="../database/temp_files/expressed/byCellType/",all_file=True, high_only=True, high_exp=50, verbose=True, **kwargs):
@@ -2829,7 +2830,7 @@ def extExpGenic_byCell_2_ver01(output_path="../database/temp_files/expressed/byC
 # * This function was executed and the result is already saved.
 # * To check the result, visit the output path.
 
-# In[8]:
+# %%
 
 
 def extNOTexp_Genic_byCell(output_path="../database/temp_files/expressed/byCellType/not_expressed/", all_file=True, verbose=True, **kwargs):
@@ -2885,7 +2886,7 @@ def extNOTexp_Genic_byCell(output_path="../database/temp_files/expressed/byCellT
 # * Usage: e.g.) `save_kmers(k=4,kind="whole_gene")`
 # * Output: none, **note** that this function is already executed and `.txt` files for the pretraining have been saved. Visit the output path indicated in the function.
 
-# In[18]:
+# %%
 
 
 def save_kmers_ver01(output_path="../database/pretrain/expressed/", high_exp=50, k=4,**kwargs):
@@ -2947,7 +2948,7 @@ def save_kmers_ver01(output_path="../database/pretrain/expressed/", high_exp=50,
 #     </blockquote>
 # * This function already executed for the above conditions. See `../database/fine_tune/gene_exp/4mer`
 
-# In[19]:
+# %%
 
 
 # For saving gene expression fine-tuning data
@@ -3044,7 +3045,7 @@ def prep_and_saveTF_ver01(input_path, output_path, cl1, cl2, epi_num_lst, cut_th
 #     * e.g.) `css_composition_piechart_Gen(load_pkl=True, pkl_path="../database/temp_files/expressed/byCellType/highly_expressed/",show_pct=5, title="highly_expressed")`
 # * Output: Just a piechart for showing the composition of the css list.
 
-# In[4]:
+# %%
 
 
 #Generalized version, for splitted (the result of css_CUT_Kmer) or from the pkl file saved 
@@ -3120,7 +3121,7 @@ def css_composition_piechart_Gen(load_pkl=True, pkl_path=None, splitted=None, sh
     
 
 
-# In[ ]:
+# %%
 
 
 
@@ -3138,20 +3139,20 @@ def css_composition_piechart_Gen(load_pkl=True, pkl_path=None, splitted=None, sh
 # > `len(all_unit_css[0])` =1246253
 # <!-- * Start from the process [3-2. Cut the telomere region on CSS and save the file](#3-2.-Cut-the-telomere-region-on-CSS-and-save-the-file) -->
 
-# In[58]:
+# %%
 
 
 ## but it must be a distribution where 15th states covers almost of the entire area. 
 ## So I stopped here, because basic statistics are known from 4-2. For 15th-less data
 
 
-# In[ ]:
+# %%
 
 
 
 
 
-# In[ ]:
+# %%
 
 
 
@@ -3163,7 +3164,7 @@ def css_composition_piechart_Gen(load_pkl=True, pkl_path=None, splitted=None, sh
 # The variable of the above list is now called chr_css_list.<br>
 # Following functions will analyze the statistics of the each strings.
 
-# In[59]:
+# %%
 
 
 def css_list2count(df, chr_css_list):
@@ -3186,7 +3187,7 @@ def css_list2count(df, chr_css_list):
     return count_all
 
 
-# In[60]:
+# %%
 
 
 def draw_count_barplot_incl15(count_all, chr_no):
@@ -3202,7 +3203,7 @@ def draw_count_barplot_incl15(count_all, chr_no):
     ax0=ax0.set_ylabel("Counts", fontsize=14)
 
 
-# In[61]:
+# %%
 
 
 def draw_count_barplot_wo15(count_all, chr_no):
@@ -3218,7 +3219,7 @@ def draw_count_barplot_wo15(count_all, chr_no):
     ax0.set_ylabel("Counts", fontsize=14)  
 
 
-# In[62]:
+# %%
 
 
 def colored_css_str(sub_str):
@@ -3237,7 +3238,7 @@ def colored_css_str(sub_str):
 # **Frequently used function!** <br>
 # To convert any string into colored string according to the color palette for CSS.
 
-# In[63]:
+# %%
 
 
 def colored_css_str_as_is(sub_str):   # convert space into space
@@ -3262,7 +3263,7 @@ def colored_css_str_as_is(sub_str):   # convert space into space
 # 2. create a whole list of css without 15th state, using a all-chromosome df (df2wo15list)
 # 3. calculate the length of each element of the generated list, and analyze the statistics
 
-# In[64]:
+# %%
 
 
 def df2inbetweeen_lst(df):
@@ -3285,7 +3286,7 @@ def df2inbetweeen_lst(df):
     return lst
 
 
-# In[65]:
+# %%
 
 
 def df2wo15list(df):
@@ -3297,7 +3298,7 @@ def df2wo15list(df):
     return total_lst   # total_lst here consists of the connected-patterns betweeen 15th state
 
 
-# In[66]:
+# %%
 
 
 def css_elm_stat(total_lst):# graph of the length distribution 
@@ -3315,7 +3316,7 @@ def css_elm_stat(total_lst):# graph of the length distribution
     plt.ylabel("Count", fontsize=14)
 
 
-# In[67]:
+# %%
 
 
 def lst2let_compose(total_lst):# graph of the number of letter composed for a pattern
@@ -3338,7 +3339,7 @@ def lst2let_compose(total_lst):# graph of the number of letter composed for a pa
     plt.ylabel("Count", fontsize=14)
 
 
-# In[68]:
+# %%
 
 
 def custom_colorlist(data_dict):
@@ -3358,7 +3359,7 @@ def custom_colorlist(data_dict):
     return colormap_list
 
 
-# In[69]:
+# %%
 
 
 def lst2solo_compose(total_lst):# graph of a solo pattern frequency
@@ -3410,7 +3411,7 @@ def lst2solo_compose(total_lst):# graph of a solo pattern frequency
 
 # #### make a kmer and save as a sample
 
-# In[70]:
+# %%
 
 
 def total_lst2kmer(total_lst,k):
@@ -3422,13 +3423,13 @@ def total_lst2kmer(total_lst,k):
     return total_kmer_lst
 
 
-# In[71]:
+# %%
 
 
 # total_kmer_lst=total_lst2kmer(total_lst,6)
 
 
-# In[72]:
+# %%
 
 
 # file_name02="../database/test_data/6_tr01.txt"
@@ -3437,13 +3438,13 @@ def total_lst2kmer(total_lst,k):
 # g.close()
 
 
-# In[ ]:
+# %%
 
 
 
 
 
-# In[ ]:
+# %%
 
 
 
@@ -3456,7 +3457,7 @@ def total_lst2kmer(total_lst,k):
 
 # ### 5-1-2. Pretrain evaluation
 
-# In[4]:
+# %%
 
 
 def evalDFconcat(df_lst, col_name, col_rename, colormap="Set1"):
@@ -3493,7 +3494,7 @@ def evalDFconcat(df_lst, col_name, col_rename, colormap="Set1"):
 # * User input: `"all"` or a list of integer, such as `[0,1,2]`, as you can select from the list this function shows. 
 # * Output: Plot of perplexity
 
-# In[5]:
+# %%
 
 
 def evalPre_by_folder(path,target='all',colormap="Set1", ylim=6.5):
@@ -3555,7 +3556,7 @@ def evalPre_by_folder(path,target='all',colormap="Set1", ylim=6.5):
 #  #### Function: `evalFT_df`
 #  * Create dataframe from the raw file `eval_result.txt`
 
-# In[5]:
+# %%
 
 
 def evalFT_df(path):
@@ -3574,7 +3575,7 @@ def evalFT_df(path):
 #     * `target` : any of `[acc","auc","f1","mcc","precision","recall"]` as a string, or a sub-list can be accepted
 #     * `kwargs` : title can be added.
 
-# In[35]:
+# %%
 
 
 def evalFT_fig(path, iteration=60, target="auc", figsize=(4,2.5), colormap="Set1", **kwargs):
@@ -3615,7 +3616,7 @@ def evalFT_fig(path, iteration=60, target="auc", figsize=(4,2.5), colormap="Set1
 #     * `path_all` : either one or multiple paths
 #     * `target`: any of `[acc","auc","f1","mcc","precision","recall"]` as a string, or a sub-list can be accepted
 
-# In[36]:
+# %%
 
 
 def evalFT_overview(path_all,iteration, target,colormap="Set1", show_depth=-3):
@@ -3630,13 +3631,13 @@ def evalFT_overview(path_all,iteration, target,colormap="Set1", show_depth=-3):
     return 
 
 
-# In[ ]:
+# %%
 
 
 
 
 
-# In[ ]:
+# %%
 
 
 
@@ -3650,7 +3651,7 @@ def evalFT_overview(path_all,iteration, target,colormap="Set1", show_depth=-3):
 #     * `pred_path="../database/ft_result/pred/4_compless/pred_results.npy"`
 # * Output: Two dataframes (`high_pred`: label 1 and its prediction ,`low_pred`: label 0 and its prediction)
 
-# In[30]:
+# %%
 
 
 # def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgreen","skyblue","teal","royalblue"]):
@@ -3742,7 +3743,7 @@ def evalFT_overview(path_all,iteration, target,colormap="Set1", show_depth=-3):
 #     return high_pred,low_pred
 
 
-# In[31]:
+# %%
 
 
 def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgreen","skyblue","teal","royalblue"]):
@@ -3841,7 +3842,7 @@ def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgree
 # * Usage: Initial processing for motif dataframe, created by `motif_utils.py`. Adding the columns like '
 # * Input: motif dataframe 
 
-# In[1]:
+# %%
 
 
 def motif_df_initProcessing(motif_df="../database/motif/compNg_condw24min5ins3_df.csv"):
@@ -3886,7 +3887,7 @@ def motif_df_initProcessing(motif_df="../database/motif/compNg_condw24min5ins3_d
 # * Input: path of the motif (where the file name is like `motif_AAAAA_3_txt`
 # * Output: word cloud of the motif
 
-# In[23]:
+# %%
 
 
 def create_motif_wordcloud(path, color_map="viridis"):
@@ -3908,31 +3909,31 @@ def create_motif_wordcloud(path, color_map="viridis"):
     plt.show()
 
 
-# In[ ]:
+# %%
 
 
 
 
 
-# In[ ]:
+# %%
 
 
 
 
 
-# In[ ]:
+# %%
 
 
 
 
 
-# In[ ]:
+# %%
 
 
 
 
 
-# In[ ]:
+# %%
 
 
 
