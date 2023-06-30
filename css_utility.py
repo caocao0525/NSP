@@ -4,14 +4,14 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[40]:
+# In[18]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[26]:
+# In[4]:
 
 
 import os
@@ -78,6 +78,7 @@ from collections import Counter
 #             * [3-6-2-1. CSS for various gene expression cases are saved.](#3-6-2-1.-CSS-for-various-gene-expression-cases-are-saved.)
 #         * [3-6-3. Cut into Kmer and save](#3-6-3.-Cut-into-Kmer-and-save)<font color="royalblue">-> **pretrain data are saved**</font>
 #         * [3-6-4. Fine-tuning data](#3-6-4.-Fine-tuning-data) <font color="orange"> -> **fine-tuning data are saved** </font>
+#     * [3-7. Enhancer classification](#3-7.-Enhancer-classification)
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
 #     * [5-1. Evaluation](#5-1.-Evaluation)
@@ -345,7 +346,7 @@ def all_chr_Ndist(ref_genome_path='../database/hg19/genome_per_chr/', normalizat
 # In[10]:
 
 
-# create a pickle for a cell-wise dataframe
+# create a pickle for a cell-wise dataframe (should be modified to correct the cell ID)
 def total_df2pickle(total_df_list):
     for num, df_cell in enumerate(tqdm.notebook.tqdm(total_df_list)):
         path="../database/cell_pickle/"
@@ -362,7 +363,7 @@ def total_df2pickle(total_df_list):
 path='../database/bed/unzipped/'
 bed_files=os.listdir(path)
 
-pickle_path='../database/cell_pickle'
+pickle_path='../database/cell_pickle/'
 pickle_files=os.listdir(pickle_path)
             
 all_files=file_list_maker(path, bed_files)
@@ -379,6 +380,62 @@ all_files[0]
 
 
 all_cell_pickles[0]
+
+
+# #### Updated the pickled df to match the cell ID
+# * The following function has been conducted and no need to run
+# * Output path is `../database/roadmap/df_pickled/`
+
+# In[5]:
+
+
+path_unzipped="../database/bed/unzipped/" ## unzipped bed file (chromatin state annotation file for ROADMAP)
+unzipped_epi=sorted(os.listdir(path_unzipped))
+unzipped_epi_files=[os.path.join(path_unzipped,file) for file in unzipped_epi]
+
+def unzipped_to_df(unzipped_epi_files, output_path="../database/roadmap/df_pickled/"):
+    for file in unzipped_epi_files:
+        cell_id=file.split("/")[-1][:4]
+        output_name=output_path+cell_id+"_df_pickled.pkl"
+        df=bed2df_expanded(file)
+        df.to_pickle(output_name)
+    return print("done!")
+# unzipped_to_df(unzipped_epi_files, output_path="../database/roadmap/df_pickled/")
+
+
+# * The following function has been conducted and no need to run
+# * Input path: (df_pickled_path=) `../database/roadmap/df_pickled/`
+# * Output path: `../database/roadmap/css_pickled/`
+
+# In[19]:
+
+
+def pickled_df2unit_css(df_pickled_path, output_path="../database/roadmap/css_unit_pickled/",verbose=True):
+    
+    def load_pickled_df(df_pickled_file):
+        with open(df_pickled_file, "rb") as f:
+            df = pickle.load(f)
+        unit_css = df2unitcss(df)
+        return unit_css   
+        df_pickled_files = [os.path.join(df_pickled_path, df) for df in sorted(os.listdir(df_pickled_path))]      
+    
+    for file in df_pickled_files:
+        cell_id = file.split("/")[-1][:4]
+        output_name = output_path + cell_id + "_css_pickled.pkl"           
+        unit_css=load_pickled_df(file)
+        with open(output_name, 'wb') as g:
+            pickle.dump(unit_css, g)          
+        if verbose:
+            print(cell_id+" is done")
+
+    return print("All done!")
+# pickled_df2unit_css(df_pickled_path,output_path="../database/roadmap/css_pickled/")
+
+
+# In[ ]:
+
+
+
 
 
 # ## 2-2. Prerequisite dictionaries
@@ -1124,12 +1181,50 @@ def dataLengCompo(path, k, color="teal", bins=15, dna=False):
 # In[38]:
 
 
-def compGene2css(whole_gene_file,df):   # note that the result is also overlapped css... 
+# def compGene2css(whole_gene_file,df):   # note that the result is also overlapped css... >>rewrite it with gene_removeDupl!
+#     """
+#     Input: Reference gene file, df (CSS)
+#     Output: list of chromosome-wise list that contains the css at genic area only.
+#     """
+#     g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
+#     css_lst_chr=df2longcss(df) # list of long css per chromosome
+#     total_chr=len(g_lst_chr)
+    
+#     css_gene_lst_all=[]
+#     for i in tqdm_notebook(range(total_chr)):
+#         css=css_lst_chr[i]   # long css of i-th chromosome
+#         gene_df=g_lst_chr[i] # gene df of i-th chromosome
+        
+#         css_gene_lst_chr=[]
+#         for j in range(len(gene_df)):
+#             g_start=gene_df["TxStart"].iloc[j]-1  # python counts form 0
+#             g_end=gene_df["TxEnd"].iloc[j]+1      # python excludes the end
+            
+#             css_gene=css[g_start:g_end]           # cut the gene area only
+#             css_gene_lst_chr.append(css_gene)     # store in the list
+          
+#         css_gene_lst_all.append(css_gene_lst_chr)  # list of list
+    
+#     assert len(css_gene_lst_all)==total_chr
+#     return css_gene_lst_all
+
+
+# In[7]:
+
+
+def compGene2css(whole_gene_file,df):   # fixed June. 29. 2023
     """
     Input: Reference gene file, df (CSS)
     Output: list of chromosome-wise list that contains the css at genic area only.
     """
-    g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
+#     g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
+    
+    ########### new fancy gene table without overlap ###########
+#     g_lst_chr=gene_removeDupl(whole_gene_file) #### fixed June. 29. 2023
+    g_df_chr_lst=whGene2GLChr(whole_gene_file) #### fixed June. 29. 2023
+    g_lst_chr=merge_intervals(g_df_chr_lst) #### fixed June. 29. 2023
+    ############################################################
+    
     css_lst_chr=df2longcss(df) # list of long css per chromosome
     total_chr=len(g_lst_chr)
     
@@ -1362,16 +1457,60 @@ def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
     return new_gene_lst_all # list of chromosome-wise dataframe for collapsed gene table
 
 
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+#### Merging the gene table #### modified June. 29. 2023
+
+def merge_intervals(df_list):
+    merged_list = []  # List to hold merged DataFrames
+
+    for df in df_list:
+        # Sort by 'TxStart'
+        df = df.sort_values(by='TxStart')
+
+        # Initialize an empty list to store the merged intervals
+        merged = []
+
+        # Iterate through the rows in the DataFrame
+        for _, row in df.iterrows():
+            # If the list of merged intervals is empty, or the current interval does not overlap with the previous one,
+            # append it to the list
+            if not merged or merged[-1]['TxEnd'] < row['TxStart']:
+                merged.append({'TxStart': row['TxStart'], 'TxEnd': row['TxEnd']})  # Only keep 'TxStart' and 'TxEnd'
+            else:
+                # Otherwise, there is an overlap, so we merge the current and previous intervals
+                merged[-1]['TxEnd'] = max(merged[-1]['TxEnd'], row['TxEnd'])
+
+        # Convert the merged intervals back into a DataFrame and append it to the list
+        merged_list.append(pd.DataFrame(merged))
+
+    return merged_list  # a list of DF, containing only TxStart and TxEnd
+
+
+# In[ ]:
+
+
+
+
+
 # #### Function: `compNonGene2css`
 # * This function extracts the css on the non-genic (intergenic) area of the genome.
 # * The function `gene_removeDupl` was used here, for extracting the non-genic region index.
 # * Input: `whole_gene_file` and `df` (from the css bed file)
 # * Output: `css_Ngene_lst_all` The CSS on the non-genic region
 
-# In[43]:
+# In[12]:
 
 
-def compNonGene2css(whole_gene_file,df):
+##### fixed June 29. 2023
+def compNonGene2css(whole_gene_file,df): 
     """
     Input: Reference gene file, df (CSS)
     Output: list of chromosome-wise list that contains the css at "non-genic" area only.
@@ -1380,7 +1519,9 @@ def compNonGene2css(whole_gene_file,df):
     print("Extracting the CSS on the intergenic region ...")
 
     ########### new fancy gene table without overlap ###########
-    new_gene_lst_all=gene_removeDupl(whole_gene_file)
+#     new_gene_lst_all=gene_removeDupl(whole_gene_file) ##### fixed June 29. 2023
+    g_df_chr_lst=whGene2GLChr(whole_gene_file)  ##### fixed June 29. 2023
+    new_gene_lst_all=merge_intervals(g_df_chr_lst) ##### fixed June 29. 2023
     ############################################################
     
     css_lst_chr=df2longcss(df) # list of long css per chromosome
@@ -1537,6 +1678,30 @@ def long2unitCSS(long_css_lst, unit=200):
 # In[46]:
 
 
+# def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst_all or css_Ngene_lst_all
+#     """
+#     Input: css_gene_lst_all or css_Ngene_lst_all, the list of chromosome-wise list of the css in genic, intergenic regions.
+#     Output: css_gene_unit_lst_all or css_Ngene_unit_lst_all
+#     """
+#     print("Converting css from the raw length into unit-length ... ")
+#     css_unit_lst_all=[]
+#     for chr_no in tqdm_notebook(range(len(css_lst_all))):
+#         css_chr_lst=css_lst_all[chr_no]
+#         css_chr_unit_lst=[]
+#         let_str_lst_all, unit_cnt_lst_all=long2unitCSS(css_chr_lst, unit=unit)
+#         unit_css_lst=['']*len(let_str_lst_all)
+#         for i, let_str in enumerate(let_str_lst_all):
+#             for j in range(len(let_str)-1):
+#                 unit_css_lst[i]+=let_str[j]*unit_cnt_lst_all[i][j] # only unit will be multiplied!
+#         unit_css_lst=[css for css in unit_css_lst if css!='']  # remove the empty element
+#         css_unit_lst_all.append(unit_css_lst)
+#     print("Done!")
+#     return css_unit_lst_all
+
+
+# In[14]:
+
+
 def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst_all or css_Ngene_lst_all
     """
     Input: css_gene_lst_all or css_Ngene_lst_all, the list of chromosome-wise list of the css in genic, intergenic regions.
@@ -1550,7 +1715,8 @@ def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst
         let_str_lst_all, unit_cnt_lst_all=long2unitCSS(css_chr_lst, unit=unit)
         unit_css_lst=['']*len(let_str_lst_all)
         for i, let_str in enumerate(let_str_lst_all):
-            for j in range(len(let_str)-1):
+#             for j in range(len(let_str)-1):   ###fixed 29. June. 2023, not yet good to go
+            for j in range(len(let_str)): ###fixed 29. June. 2023
                 unit_css_lst[i]+=let_str[j]*unit_cnt_lst_all[i][j] # only unit will be multiplied!
         unit_css_lst=[css for css in unit_css_lst if css!='']  # remove the empty element
         css_unit_lst_all.append(unit_css_lst)
@@ -2356,7 +2522,7 @@ def save_as_txt(css, path="../database/wo_telo/", filename="complex_gene_all", c
 # * show_pct: threshold to show the percentage in pie chart (default=5)
 # * Output: None, just displaying the pie chart.
 
-# In[3]:
+# In[1]:
 
 
 def css_composition_piechart(splitted_lst, complexity=True, show_pct=5):
@@ -2375,7 +2541,7 @@ def css_composition_piechart(splitted_lst, complexity=True, show_pct=5):
     sizes = [i/sum(state_count.values())*100 for i in state_count.values()] # percentage of occupation
     fig, ax = plt.subplots(figsize=(10, 10))
 
-    ax.pie(state_count.values(),colors=[state_col_dict[label] for label in data.keys()], autopct=lambda p: '{:.2f}%'.format(p) if p > show_pct else '')
+    ax.pie(state_count.values(),colors=[state_col_dict[label] for label in state_count.keys()], autopct=lambda p: '{:.2f}%'.format(p) if p > show_pct else '')
 
     if complexity:
         title="Complex gene CS composition,"+" total:"+" "+str(total)
@@ -2932,6 +3098,44 @@ def save_kmers_ver01(output_path="../database/pretrain/expressed/", high_exp=50,
     
 
 
+# #### Function `save_kmers`
+# * The simplest version?
+# * usage: `save_kmers(k=4,kind="whole_gene")`
+
+# In[1]:
+
+
+def save_kmers(output_path="../database/pretrain/",k=4,**kwargs):
+    input_path="../database/temp_files/"
+    epi_num_lst=pd.read_csv("../database/temp_files/whole_gene_unit/epigenome_lst.txt", header=None, names=["num"])
+    epi_num=epi_num_lst["num"].tolist()
+    for num in tqdm_notebook(epi_num):   
+        if 'kind' in kwargs:
+            gene_type=kwargs["kind"]
+            if gene_type=="whole_gene":
+                file_name=input_path+gene_type+"_unit/"+num+"_css_gene_unit_lst_all.pkl"
+            elif gene_type=="not_expressed":
+                file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_not_exp_gene_css.pkl"
+            elif gene_type=="expressed":
+                file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_exp_gene_css.pkl"
+            elif gene_type=="highly_expressed":
+                file_name=input_path+"expressed/byCellType/"+gene_type+"/"+num+"_highly_exp_gene_css.pkl"
+            else:
+                pass
+            with open(file_name, "rb") as f:
+                target=pickle.load(f)
+                ####### whole_gene is not flat list #######
+                if gene_type=="whole_gene":
+                    target=flatLst(target)
+                ###########################################
+                _, kmerized_unit_css=css_CUT_Kmer(target, k=k)
+            output_path_mod=output_path+"expressed/"+str(k)+"mer/"+gene_type+"/"+num+"_"+gene_type+".txt"
+            with open(output_path_mod,"w") as g:
+                g.write("\n".join(kmerized_unit_css))
+           
+    return 
+
+
 # ### 3-6-4. Fine-tuning data
 
 # #### Function: `prep_and_saveTF_ver01`
@@ -3118,6 +3322,53 @@ def css_composition_piechart_Gen(load_pkl=True, pkl_path=None, splitted=None, sh
     
     plt.show()
     
+
+
+# ## 3-7. Enhancer classification
+# **[back to index](#Index)**
+
+# ### 3-7-1. Pretrain dataset
+
+# #### Funtion `cutKmerByCell`
+# * Input: file path of a bed file like`"../database/temp_files/whole_genome/byCellType/E001_whole_css_wo_telo.txt"`)
+# * Output: randomly cut from 5 to 510, without telomere, filtered to have longer than k, css list
+# * Further work: save it as follows
+# > `with open(output_path,"w") as save_file: `<br>
+# >  <hspace> `save_file.write("\n".join(filtered_kmerized_unit_css))`
+
+# In[2]:
+
+
+def cutKmerByCell(unzipped_bed_file_path,k=4):
+    df=bed2df_expanded(path)
+    unit_css=df2unitcss(df)
+    assert isinstance(unit_css[0], str) 
+    if len(unit_css[0])>=50 and len(unit_css[-1])>50:
+        unit_css[0]=unit_css[0][50:] # cut the telomere
+        unit_css[-1]=unit_css[-1][:-50] # cut the telomere
+        
+    _, kmerized_unit_css=css_CUT_Kmer(unit_css, cut_thres=510, k=k)
+    
+    filtered_kmerized_unit_css=[item for item in kmerized_unit_css if len(item)>=k]
+    return filtered_kmerized_unit_css
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
@@ -3704,13 +3955,14 @@ def dict_df_target_2_bar_graph(dict_df_target):
 
 # #### Function: `pred_prob_overall` 
 # 
+# * **updated** for showing the results for separated cases (for the visualization purpose)
 # * Usage: Create a dataframe for prediction result and show the result plot (confusion matrix, violin plot)
 # * Input: path of the prediction result file (`pred_results.npy`) and the labeled file (`dev.tsv`)
 #     * `dev_path="../database/fine_tune/CompG_and_lessCompG/4mer/dev.tsv"`
 #     * `pred_path="../database/ft_result/pred/4_compless/pred_results.npy"`
 # * Output: Two dataframes (`high_pred`: label 1 and its prediction ,`low_pred`: label 0 and its prediction)
 
-# In[30]:
+# In[31]:
 
 
 # def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgreen","skyblue","teal","royalblue"]):
@@ -3802,15 +4054,17 @@ def dict_df_target_2_bar_graph(dict_df_target):
 #     return high_pred,low_pred
 
 
-# In[31]:
+# In[4]:
 
 
-def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgreen","skyblue","teal","royalblue"]):
+def pred_prob_overall(dev_path,pred_path, file_id, color1="Blues",color2_lst=["yellowgreen","skyblue","teal","royalblue"]):
     pred=np.load(pred_path)
     dev=pd.read_csv(dev_path, sep="\t")
     dev["pred"]=pred
     dev["pred_bool"]=None
     df=dev
+    
+    file_output_path="../database/figs/"
     
     assert type(color2_lst) and len(color2_lst)==4, "enter a list of 4 elements, as color names"
     
@@ -3825,12 +4079,26 @@ def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgree
 
     group_names = ['True Neg','False Pos','False Neg','True Pos']
     group_counts = ["{0:0.0f}".format(value) for value in cf_matrix.flatten()]
-    group_percentages = ["({0:.2%})".format(value) for value in cf_matrix.flatten()/np.sum(cf_matrix)]
+#     group_percentages = ["({0:.2%})".format(value) for value in cf_matrix.flatten()/np.sum(cf_matrix)]
+#     labels = [f"{v1}\n{v2}\n{v3}" for v1, v2, v3 in zip(group_names,group_counts,group_percentages)]
+#     labels = np.asarray(labels).reshape(2,2)
+########## for visualize with normalization per case####################
+    group_percentages = []
+    for i in range(cf_matrix.shape[0]):
+        for value in cf_matrix[i]:
+            group_percentages.append("({0:.2%})".format(value / cf_matrix[i].sum()))
+
     labels = [f"{v1}\n{v2}\n{v3}" for v1, v2, v3 in zip(group_names,group_counts,group_percentages)]
     labels = np.asarray(labels).reshape(2,2)
+######################################################################
     
     # confusion matrix visualization
     sns.heatmap(cf_matrix, annot=labels, annot_kws={'size': 16}, fmt='', cmap=color1)
+    
+    ############### save the figure 1 ###############
+    file_name1=file_output_path+file_id+'_confusion_matrix.pdf'
+    plt.savefig(file_name1, format='pdf', bbox_inches='tight')
+    #################################################
     print(classification_report(df["label"], df["pred_bool"].astype(bool)))
     
     high_prob, low_prob=[],[]
@@ -3888,10 +4156,40 @@ def pred_prob_overall(dev_path,pred_path, color1="Blues",color2_lst=["yellowgree
     plt.xticks([])
     plt.xlabel("For label 0", fontsize=13)
     plt.ylabel("Prediction", fontsize=13)
+    
+    ############### save the figure 2 ###############
+    file_name2=file_output_path+file_id+'_violinplot.pdf'
+    plt.savefig(file_name2, format='pdf', bbox_inches='tight')
+    #################################################
 
     plt.show()
 
     return high_pred,low_pred
+
+
+# #### Function `dev_conv`
+# 
+# * Auxiliary function for creating dataframe with original sequence from `dev.tsv`
+# * Input: file path for `dev.tsv`
+# * Output: dataframe that accommodates the original sequence, before the kmerization
+
+# In[5]:
+
+
+def dev_conv(dev_file_path):
+    dev_df=pd.read_csv(dev_file_path,sep="\t")
+    dev_df.fillna(" ", inplace=True) # change the nan into empty string
+    assert dev_df["sequence"].isnull().sum()==0, "check the dev file for nan values"
+    
+    def kmer2seq_or_space(seq):
+        if seq == " ":
+            return " "
+        else:
+            return kmer2seq(seq)
+    
+    dev_df["ori_seq"] = dev_df["sequence"].apply(kmer2seq_or_space)
+
+    return dev_df
 
 
 # ## 5-2. Motif
@@ -3940,6 +4238,8 @@ def motif_df_initProcessing(motif_df="../database/motif/compNg_condw24min5ins3_d
     return df_sorted, colored_motif   
 
 
+# ### 5-2-1. Motif visualization
+
 # #### Function `create_motif_wordcloud`
 # 
 # * Usage: create a word cloud using `wordcloud` package for representing the frequency of each motif
@@ -3968,16 +4268,47 @@ def create_motif_wordcloud(path, color_map="viridis"):
     plt.show()
 
 
-# In[ ]:
+# #### Function `motif_vis`
+# 
+# * Usage: create and save a motif on the attention matrix with colored text (for motif only)
+# * Input: file_name (e.g. "compNg") and the path for dev.tsv and prediction attention matrix, motif, an instance include motif 
+# * Output: pdf file saved at "../database/figs/"
+
+# In[6]:
 
 
-
-
-
-# In[ ]:
-
-
-
+def motif_vis(file_name, dev_path, atten_path, motif_str, motif_inst):
+    """
+    input examples) 
+     (1) dev_path = "../database/fine_tune/CompG_and_intergenic/4mer/dev.tsv"
+     (2) atten_path = "../database/ft_result/pred/4_compNg/atten.npy"
+    output: attention matrix segment which shows the motif on it
+    """
+    dev_df=dev_conv(dev_path)
+    atten_mat=np.load(atten_path)
+    for i, seq in enumerate(dev_df["ori_seq"].to_list()):
+        if motif_inst in seq and dev_df["label"].iloc[i]==1:
+            if len(seq)>81:
+                seq=seq[:81]  # cut for visualization purpose
+            print(motif_str, i, len(seq), seq, "\n")
+            
+            letters=seq
+            
+            figure=plt.figure(figsize=(35,2))
+            ax =sns.heatmap(data=atten_mat[i:i+1], cmap="viridis")
+            sequence = motif_str
+            sequence_indices = [i for i in range(len(letters)) if letters.startswith(sequence, i)]
+            for j, letter in enumerate(letters):
+                if j in sequence_indices or j-1 in sequence_indices or j-2 in sequence_indices or j-3 in sequence_indices or j-4 in sequence_indices:
+                    ax.text(j + 0.5, -0.2, letter, ha='center', va='center', color=state_col_dict[letter], weight='bold', fontsize=30)
+                else:
+                    ax.text(j + 0.5, -0.2, letter, ha='center', va='center',fontsize=16)
+           
+            plt.tight_layout()
+            output_path="../database/figs/motif_vis_"+file_name+"_"+motif_str+"_in_"+motif_inst+".pdf"
+            plt.savefig(output_path, format='pdf')
+            
+            plt.show()
 
 
 # In[ ]:
