@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[18]:
+# In[22]:
 
 
 # ### To convert the file into .py
@@ -1247,6 +1247,12 @@ def compGene2css(whole_gene_file,df):   # fixed June. 29. 2023
     return css_gene_lst_all
 
 
+# In[ ]:
+
+
+
+
+
 # #### Function: `countGeneCss`
 # * How many css data strips are in the Non-genic (intergenic) region?
 # * How long each css data strips are in the Non-genic (intergenic) region?
@@ -1506,7 +1512,7 @@ def merge_intervals(df_list):
 # * Input: `whole_gene_file` and `df` (from the css bed file)
 # * Output: `css_Ngene_lst_all` The CSS on the non-genic region
 
-# In[12]:
+# In[20]:
 
 
 ##### fixed June 29. 2023
@@ -1533,9 +1539,10 @@ def compNonGene2css(whole_gene_file,df):
         css=css_lst_chr[i]   # long css of i-th chromosome
         gene_df=new_gene_lst_all[i] # gene df of i-th chromosome
         
-        assert gene_df["TxStart"].iloc[0]>=1, "Gene starts from the very first location at {}-th chromosome.".format(i)
-        assert gene_df["TxEnd"].iloc[-1]<=len(css), "Gene ends at the very last location at {}-th chromosome.".format(i)  
-                
+#         assert gene_df["TxStart"].iloc[0]>=1, "Gene starts from the very first location at {}-th chromosome.".format(i)
+#         assert gene_df["TxEnd"].iloc[-1]<=len(css), "Gene ends at the very last location at {}-th chromosome.".format(i)  
+        ### asertion was removed because it produces an error when trying to apply to cells without Y chr.        
+    
         css_Ngene_lst_chr=[]        
         for j in range(len(gene_df)):
             if j==0:
