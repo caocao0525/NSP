@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[22]:
+# In[32]:
 
 
 # ### To convert the file into .py
@@ -743,14 +743,40 @@ def df2css_chr_str(df):
 
 # make a long string of the css (not using unit, but the real length)
 
+# def df2longcss(df):
+#     df_lst_chr=df2chr_df(df)
+#     # remove the microchondria DNA from df_lst_chr
+#     if df_lst_chr[-3]["chromosome"].iloc[0]=="chrM":
+#         del df_lst_chr[-3]
+#         assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+#     else:   
+#         assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+    
+#     all_css=[]
+#     for i in range(len(df_lst_chr)):
+#         df_chr=df_lst_chr[i]
+#         css_chr=''
+#         for j in range(len(df_chr)):
+#             css_chr+=df_chr["length"].iloc[j]*df_chr["state_seq"].iloc[j]
+#         all_css.append(css_chr)  
+#     return all_css
+
+
+# In[28]:
+
+
+# make a long string of the css (not using unit, but the real length)
+# modified 4.July 2023, to support the case where ChromosomeM is not at -3, but -2
+
 def df2longcss(df):
     df_lst_chr=df2chr_df(df)
     # remove the microchondria DNA from df_lst_chr
     if df_lst_chr[-3]["chromosome"].iloc[0]=="chrM":
         del df_lst_chr[-3]
         assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
-    else:   
-        assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+    elif df_lst_chr[-2]["chromosome"].iloc[0]=="chrM":
+        del df_lst_chr[-2]
+#         assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
     
     all_css=[]
     for i in range(len(df_lst_chr)):
@@ -1247,10 +1273,43 @@ def compGene2css(whole_gene_file,df):   # fixed June. 29. 2023
     return css_gene_lst_all
 
 
-# In[ ]:
+# #### Function: `pickled_df2gene_unit_css`
+# 
+# * This function is already executed and no need to rerun.
+# * This function saves the all genic region in ROADMAP data in unit css 
+# * Input: `df_pickled_path="../database/roadmap/df_pickled/"`, `output_path="../database/roadmap/"`
+# * The output is pickled under the output path
+
+# In[25]:
 
 
+def pickled_df2gene_unit_css(df_pickled_path="../database/roadmap/df_pickled/", output_path="../database/roadmap/", verbose=True):
+    """
+    Save unit CSS into Genic, for the entire 127 epigenomes
+    """
+    df_pickled_files = [os.path.join(df_pickled_path, df) for df in sorted(os.listdir(df_pickled_path))]
+    
+    def load_pickled_df(df_pickled_file):
+        with open(df_pickled_file, "rb") as f:
+            df = pickle.load(f)
+        return df
+    
+    for file in df_pickled_files:
+        cell_id = file.split("/")[-1][:4]          
 
+        gene_output_name = output_path +"gene_css_unit_pickled/"+ cell_id + "_gene_css_pickled.pkl"
+        df=load_pickled_df(file)
+
+        css_gene_lst_all=compGene2css(whole_gene_file,df)
+        css_gene_unit_lst_all=Convert2unitCSS_main(css_gene_lst_all, unit=200)
+
+        with open(gene_output_name, 'wb') as g:
+            pickle.dump(css_gene_unit_lst_all, g)
+
+        if verbose:
+            print(cell_id+" is done")
+
+    return print("All done!")
 
 
 # #### Function: `countGeneCss`
@@ -1297,6 +1356,12 @@ def countGeneCss(css_gene_lst_all):
     plt.grid(False)
             
     return g_css_cnt_all,g_css_len_all
+
+
+# In[ ]:
+
+
+
 
 
 # ### 3-3-2. Non-genic area (intergenic region)
