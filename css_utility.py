@@ -4,14 +4,14 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[32]:
+# In[37]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[4]:
+# In[56]:
 
 
 import os
@@ -31,6 +31,7 @@ import itertools
 import pickle
 import seaborn as sns
 from tqdm import tqdm
+from tqdm.notebook import tqdm
 from tqdm.notebook import tqdm_notebook
 import glob
 from wordcloud import WordCloud
@@ -60,6 +61,7 @@ from collections import Counter
 #         * [3-3-1. Genic area](#3-3-1.-Genic-area)
 #         * [3-3-2. Non-genic area (intergenic region)](#3-3-2.-Non-genic-area-(intergenic-region))
 #         * [3-3-3. Genic or Non-genic raw-length CSS to unit-length CSS](#3-3-3.-Genic-or-Non-genic-raw-length-CSS-to-unit-length-CSS)
+#             * [3-3-3-0. Small code modifications](#3-3-3-0.-Small-code-modifications)
 #             * [3-3-3-1. CSS for 57 Epigenomes Genic regions are saved.](#3-3-3-1.-CSS-for-57-Epigenomes-Genic-regions-are-saved.)
 #         * [3-3-4. Cut the unit-length css into trainable size and kmerize it](#3-3-4.-Cut-the-unit-length-css-into-trainable-size-and-kmerize-it) <font color="royalblue">-> **pretrain data are saved**</font>
 #         * [3-3-5. Fine-tuning data: Dataframe version](#3-3-5.-Fine-tuning-data:-Dataframe-version)
@@ -78,7 +80,8 @@ from collections import Counter
 #             * [3-6-2-1. CSS for various gene expression cases are saved.](#3-6-2-1.-CSS-for-various-gene-expression-cases-are-saved.)
 #         * [3-6-3. Cut into Kmer and save](#3-6-3.-Cut-into-Kmer-and-save)<font color="royalblue">-> **pretrain data are saved**</font>
 #         * [3-6-4. Fine-tuning data](#3-6-4.-Fine-tuning-data) <font color="orange"> -> **fine-tuning data are saved** </font>
-#     * [3-7. Enhancer classification](#3-7.-Enhancer-classification)
+#     * [3-7. Promoter classification](#3-7.-Promoter-classification)
+#     * [3-8. Enhancer classification](#3-8.-Enhancer-classification)
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
 #     * [5-1. Evaluation](#5-1.-Evaluation)
@@ -738,7 +741,7 @@ def df2css_chr_str(df):
 # * chromosome-wise list
 # * real length
 
-# In[30]:
+# In[33]:
 
 
 # make a long string of the css (not using unit, but the real length)
@@ -762,7 +765,7 @@ def df2css_chr_str(df):
 #     return all_css
 
 
-# In[28]:
+# In[53]:
 
 
 # make a long string of the css (not using unit, but the real length)
@@ -773,7 +776,7 @@ def df2longcss(df):
     # remove the microchondria DNA from df_lst_chr
     if df_lst_chr[-3]["chromosome"].iloc[0]=="chrM":
         del df_lst_chr[-3]
-        assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+#         assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
     elif df_lst_chr[-2]["chromosome"].iloc[0]=="chrM":
         del df_lst_chr[-2]
 #         assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
@@ -797,7 +800,7 @@ def df2longcss(df):
 # * chromosome-wise list
 # * unit length (chromatin is annotated per 200 bp)
 
-# In[31]:
+# In[58]:
 
 
 # make a long string of the css (unit length, not the real length)
@@ -807,9 +810,9 @@ def df2unitcss(df):
     # remove the microchondria DNA from df_lst_chr
     if df_lst_chr[-3]["chromosome"].iloc[0]=="chrM":
         del df_lst_chr[-3]
-        assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
-    else:   
-        assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+#         assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
+#     else:   
+#         assert df_lst_chr[-3]["chromosome"].iloc[0]=="chr22"
     
     all_unit_css=[]
     for i in range(len(df_lst_chr)):
@@ -819,6 +822,66 @@ def df2unitcss(df):
             css_chr+=df_chr["unit"].iloc[j]*df_chr["state_seq"].iloc[j]
         all_unit_css.append(css_chr)  
     return all_unit_css
+
+
+# #### These are new functions (corrected)
+
+# In[43]:
+
+
+def shorten_string(s, factor):
+    # This regular expression matches groups of the same character.
+    pattern = re.compile(r'(.)\1*')
+
+    # This function will be used to replace each match.
+    def replacer(match):
+        # The group that was matched.
+        group = match.group()
+
+        # Calculate the new length, rounding as necessary.
+        new_length = round(len(group) / factor)
+
+        # Return the character repeated the new number of times.
+        return group[0] * new_length
+
+    # Use re.sub to replace each match in the string.
+    return pattern.sub(replacer, s)
+
+
+# In[44]:
+
+
+def Convert2unitCSS_main_new(css_lst_all, unit=200):# should be either css_gene_lst_all or css_Ngene_lst_all
+    """
+    Input: css_gene_lst_all or css_Ngene_lst_all, the list of chromosome-wise list of the css in genic, intergenic regions.
+    Output: css_gene_unit_lst_all or css_Ngene_unit_lst_all
+    """
+    reduced_all=[]
+    for i in range(len(css_lst_all)):
+        reduced_chr=[]
+        for j in range(len(css_lst_all[i])):
+            reduced=shorten_string(css_lst_all[i][j], unit)
+            reduced_chr.append(reduced)
+        reduced_all.append(reduced_chr)
+    return reduced_all
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # ## 2-5. Chromatin State Statistics
@@ -1204,6 +1267,46 @@ def dataLengCompo(path, k, color="teal", bins=15, dna=False):
 # * Output: `css_gene_lst_all` list of list that css for genic region per chromosome (which can be utilized very frequently after this)
 # * The output is pickled as `"../database/temp_files/css_gene_lst_all"`
 
+# In[41]:
+
+
+# def shorten_string(s, factor):
+#     # This regular expression matches groups of the same character.
+#     pattern = re.compile(r'(.)\1*')
+
+#     # This function will be used to replace each match.
+#     def replacer(match):
+#         # The group that was matched.
+#         group = match.group()
+
+#         # Calculate the new length, rounding as necessary.
+#         new_length = round(len(group) / factor)
+
+#         # Return the character repeated the new number of times.
+#         return group[0] * new_length
+
+#     # Use re.sub to replace each match in the string.
+#     return pattern.sub(replacer, s)
+
+
+# In[42]:
+
+
+# def Convert2unitCSS_main_new(css_lst_all, unit=200):# should be either css_gene_lst_all or css_Ngene_lst_all
+#     """
+#     Input: css_gene_lst_all or css_Ngene_lst_all, the list of chromosome-wise list of the css in genic, intergenic regions.
+#     Output: css_gene_unit_lst_all or css_Ngene_unit_lst_all
+#     """
+#     reduced_all=[]
+#     for i in range(len(css_lst_all)):
+#         reduced_chr=[]
+#         for j in range(len(css_lst_all[i])):
+#             reduced=shorten_string(css_lst_all[i][j], unit)
+#             reduced_chr.append(reduced)
+#         reduced_all.append(reduced_chr)
+#     return reduced_all
+
+
 # In[38]:
 
 
@@ -1271,6 +1374,12 @@ def compGene2css(whole_gene_file,df):   # fixed June. 29. 2023
     
     assert len(css_gene_lst_all)==total_chr
     return css_gene_lst_all
+
+
+# In[ ]:
+
+
+
 
 
 # #### Function: `pickled_df2gene_unit_css`
@@ -1701,6 +1810,8 @@ def countNgeneCss(css_Ngene_lst_all):
 # In[45]:
 
 
+################## this is obsolete, use Convert2unitCSS_main_new instead
+
 # the idea is to separate, count, combine
 def long2unitCSS(long_css_lst, unit=200):
     """
@@ -1771,8 +1882,10 @@ def long2unitCSS(long_css_lst, unit=200):
 #     return css_unit_lst_all
 
 
-# In[14]:
+# In[48]:
 
+
+################## this is obsolete, use Convert2unitCSS_main_new instead
 
 def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst_all or css_Ngene_lst_all
     """
@@ -1799,6 +1912,313 @@ def Convert2unitCSS_main(css_lst_all, unit=200): # should be either css_gene_lst
 # Now following files are saved at : `../database/temp_files/` 
 # * `css_gene_unit_lst_all` : The unit-length css on the genic area
 # * `css_Ngene_unit_lst_all`: The unit-length css on the intergenic area
+
+# In[ ]:
+
+
+
+
+
+# ### 3-3-3-0. Small code modifications
+
+# ### Genic anc Intergenic re-saved by following functions
+
+# The series of following functions were written to manage the discrepancies in chromosome numbers created by th e previous function, which is caused by some cells without Y chromosme (female cells). All functions to save the genic css and intergenic css were conducted and stored, thus no need to redo (so far).
+
+# In[38]:
+
+
+def shorten_string(s, factor):
+    # This regular expression matches groups of the same character.
+    pattern = re.compile(r'(.)\1*')
+
+    # This function will be used to replace each match.
+    def replacer(match):
+        # The group that was matched.
+        group = match.group()
+
+        # Calculate the new length, rounding as necessary.
+        new_length = round(len(group) / factor)
+
+        # Return the character repeated the new number of times.
+        return group[0] * new_length
+
+    # Use re.sub to replace each match in the string.
+    return pattern.sub(replacer, s)
+
+
+# In[40]:
+
+
+def Convert2unitCSS_main_new(css_lst_all, unit=200):# should be either css_gene_lst_all or css_Ngene_lst_all
+    """
+    Input: css_gene_lst_all or css_Ngene_lst_all, the list of chromosome-wise list of the css in genic, intergenic regions.
+    Output: css_gene_unit_lst_all or css_Ngene_unit_lst_all
+    """
+    reduced_all=[]
+    for i in range(len(css_Ngene_lst_all)):
+        reduced_chr=[]
+        for j in range(len(css_Ngene_lst_all[i])):
+            reduced=shorten_string(css_Ngene_lst_all[i][j], unit)
+            reduced_chr.append(reduced)
+        reduced_all.append(reduced_chr)
+    return css_unit_lst_all
+
+
+# In[49]:
+
+
+##### fixed Jul 6. 2023
+def compGene2css_work(whole_gene_file,df): 
+    """
+    Input: Reference gene file, df (CSS)
+    Output: list of chromosome-wise list that contains the css at "genic" area only.
+    """
+    
+    print("Extracting the CSS on the genic region ...")
+
+    ########### new fancy gene table without overlap ###########
+#     new_gene_lst_all=gene_removeDupl(whole_gene_file) ##### fixed June 29. 2023
+    g_df_chr_lst=whGene2GLChr(whole_gene_file)  ##### fixed June 29. 2023
+    new_gene_lst_all=merge_intervals(g_df_chr_lst) ##### fixed June 29. 2023
+    ############################################################
+    
+    #### Remove chrM ###########################################
+    contains_chrM = df['chromosome'].str.contains('chrM').any()  #check whether it contains M
+    if contains_chrM:
+        df= df[~df['chromosome'].str.contains('chrM')]
+    
+    contains_chrY = df['chromosome'].str.contains('chrY').any()
+    
+    ##### if the target file does not contain Y, remove Y in the gene list file
+    if not contains_chrY:
+        new_gene_lst_all=new_gene_lst_all[:-1] ## the final element is for Y
+    ############################################################
+    
+    assert len(df["chromosome"].unique())==len(new_gene_lst_all)
+        
+    css_lst_chr=df2longcss(df) # list of long css per chromosome
+    total_chr=len(new_gene_lst_all)
+    
+    css_gene_lst_all=[]
+    for i in tqdm_notebook(range(total_chr)):
+        css=css_lst_chr[i]   # long css of i-th chromosome
+        gene_df=new_gene_lst_all[i] # gene df of i-th chromosome
+        
+        css_gene_lst_chr=[]
+        for j in range(len(gene_df)):
+            g_start=gene_df["TxStart"].iloc[j]-1  # python counts form 0
+            g_end=gene_df["TxEnd"].iloc[j]+1      # python excludes the end
+            
+            css_gene=css[g_start:g_end]           # cut the gene area only
+            css_gene_lst_chr.append(css_gene)     # store in the list
+          
+        css_gene_lst_all.append(css_gene_lst_chr)  # list of list
+    
+    assert len(css_gene_lst_all)==total_chr
+    print("Done!")
+    return css_gene_lst_all  ## long version css
+
+
+# In[50]:
+
+
+##### fixed June 29. 2023
+def compNonGene2css_work(whole_gene_file,df): 
+    """
+    Input: Reference gene file, df (CSS)
+    Output: list of chromosome-wise list that contains the css at "non-genic" area only.
+    """
+    
+    print("Extracting the CSS on the intergenic region ...")
+
+    ########### new fancy gene table without overlap ###########
+#     new_gene_lst_all=gene_removeDupl(whole_gene_file) ##### fixed June 29. 2023
+    g_df_chr_lst=whGene2GLChr(whole_gene_file)  ##### fixed June 29. 2023
+    new_gene_lst_all=merge_intervals(g_df_chr_lst) ##### fixed June 29. 2023
+    ############################################################
+    
+    #### Remove chrM ###########################################
+    contains_chrM = df['chromosome'].str.contains('chrM').any()  #check whether it contains M
+    if contains_chrM:
+        df= df[~df['chromosome'].str.contains('chrM')]
+    
+    contains_chrY = df['chromosome'].str.contains('chrY').any()
+    
+    ##### if the target file does not contain Y, remove Y in the gene list file
+    if not contains_chrY:
+        new_gene_lst_all=new_gene_lst_all[:-1] ## the final element is for Y
+    ############################################################
+    
+    assert len(df["chromosome"].unique())==len(new_gene_lst_all)
+        
+    css_lst_chr=df2longcss(df) # list of long css per chromosome
+    total_chr=len(new_gene_lst_all)
+    
+    css_Ngene_lst_all=[]
+        
+    for i in tqdm_notebook(range(total_chr)):
+        css=css_lst_chr[i]   # long css of i-th chromosome
+        gene_df=new_gene_lst_all[i] # gene df of i-th chromosome
+        
+#         assert gene_df["TxStart"].iloc[0]>=1, "Gene starts from the very first location at {}-th chromosome.".format(i)
+#         assert gene_df["TxEnd"].iloc[-1]<=len(css), "Gene ends at the very last location at {}-th chromosome.".format(i)  
+        ### asertion was removed because it produces an error when trying to apply to cells without Y chr.        
+    
+        css_Ngene_lst_chr=[]        
+        for j in range(len(gene_df)):
+            if j==0:
+                ng_start=1 # to avoid any "zero" causing problem 
+                ng_end=gene_df["TxStart"].iloc[j]
+#                 print("j: {} | ng_start: {} - ng_end: {} ".format(j, ng_start, ng_end)) # for checking
+            elif j==len(gene_df)-1: 
+                ng_start=gene_df["TxEnd"].iloc[j]
+                ng_end=len(css)
+#                 print("j: {} | ng_start: {} - ng_end: {} ".format(j, ng_start, ng_end)) # for checking
+            else:
+                ng_start=gene_df["TxEnd"].iloc[j-1]
+                ng_end=gene_df["TxStart"].iloc[j]
+#                 print("j: {} | ng_start: {} - ng_end: {} ".format(j, ng_start, ng_end)) # for checking 
+        
+            css_Ngene=css[ng_start:ng_end]
+            css_Ngene_lst_chr.append(css_Ngene)
+        
+        css_Ngene_lst_all.append(css_Ngene_lst_chr) 
+        
+    assert len(css_Ngene_lst_all)==total_chr
+    print("Done!")
+    
+    return css_Ngene_lst_all   ## long version css
+
+
+# In[51]:
+
+
+# now working on here
+def pickled_df2gene_unit_css_new(df_pickled_path="../database/roadmap/df_pickled/", output_path="../database/roadmap/", verbose=True):
+    """
+    Save unit CSS for genic, for the entire 127 epigenomes
+    """
+    df_pickled_files = [os.path.join(df_pickled_path, df) for df in sorted(os.listdir(df_pickled_path))]
+    
+    def load_pickled_df(df_pickled_file):
+        with open(df_pickled_file, "rb") as f:
+            df = pickle.load(f)
+        return df
+    
+    for file in df_pickled_files:
+        cell_id = file.split("/")[-1][:4]  
+
+        gene_output_name = output_path +"gene_css_unit_pickled/"+ cell_id + "_gene_css_pickled.pkl"
+        df=load_pickled_df(file)
+
+        css_gene_lst_all=compGene2css_work(whole_gene_file,df)  # use existing one for genic regions
+        css_gene_unit_lst_all=Convert2unitCSS_main_new(css_gene_lst_all, unit=200)
+
+        with open(gene_output_name, 'wb') as g:
+            pickle.dump(css_gene_unit_lst_all, g)
+
+        if verbose:
+            print(cell_id+" is done")
+
+    return print("All done!")
+
+
+# In[52]:
+
+
+def pickled_df2Ngene_unit_css_new(df_pickled_path="../database/roadmap/df_pickled/", output_path="../database/roadmap/", verbose=True):
+    """
+    Save unit CSS for Intergenic, for the entire 127 epigenomes
+    """
+    df_pickled_files = [os.path.join(df_pickled_path, df) for df in sorted(os.listdir(df_pickled_path))]
+    
+    def load_pickled_df(df_pickled_file):
+        with open(df_pickled_file, "rb") as f:
+            df = pickle.load(f)
+        return df
+    
+    for file in df_pickled_files:
+        cell_id = file.split("/")[-1][:4]  
+        
+#         if int(cell_id[1:])>115:  # temp
+
+        Ngene_output_name = output_path +"Ngene_css_unit_pickled/"+ cell_id + "_Ngene_css_pickled.pkl"
+        df=load_pickled_df(file)
+
+        css_Ngene_lst_all=compNonGene2css_work(whole_gene_file,df)
+        css_Ngene_unit_lst_all=Convert2unitCSS_main_new(css_Ngene_lst_all, unit=200)
+
+        with open(Ngene_output_name, 'wb') as g:
+            pickle.dump(css_Ngene_unit_lst_all, g)
+
+        if verbose:
+            print(cell_id+" is done")
+
+    return print("All done!")
+
+
+# ### Just to save entire long-version css per chromosome, except for chrM 
+
+# `save_longcss` was conducted and the files are saved at `"/data1/chromatin_state/database_backup/roadmap_long_css/"`
+
+# In[54]:
+
+
+def removeChrM(df):
+    #### Remove chrM ###########################################
+    contains_chrM = df['chromosome'].str.contains('chrM').any()  #check whether it contains M
+    if contains_chrM:
+        df= df[~df['chromosome'].str.contains('chrM')]
+    return df
+
+
+# In[55]:
+
+
+def save_longcss(df_pickled_path, output_path="/data1/chromatin_state/database_backup/roadmap_long_css/", verbose=True):
+    file_lst = [os.path.join(df_pickled_path,file) for file in sorted(os.listdir(df_pickled_path))]
+    counter = 0  # Add a counter
+    if verbose:
+        print("output path = ", output_path)
+    for file in file_lst:
+        cell_id = file.split("/")[-1][:4]
+        with open(file,"rb") as f:
+            df = pickle.load(f)
+        df = removeChrM(df)
+        long_css = df2longcss(df)        
+        output_file_name = cell_id + "_longcss_woChrM.pkl"
+        with open(os.path.join(output_path, output_file_name),"wb") as g:  # Use os.path.join
+            pickle.dump(long_css, g)
+        counter += 1  # Increment the counter
+        if verbose and counter % 10 == 0:  # If counter is divisible by 10
+            print(f"{counter} files have been saved.")
+    print("All saved.")
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
 
 # ### 3-3-3-1. CSS for 57 Epigenomes Genic regions are saved.
 
@@ -3396,10 +3816,112 @@ def css_composition_piechart_Gen(load_pkl=True, pkl_path=None, splitted=None, sh
     
 
 
-# ## 3-7. Enhancer classification
+# ## 3-7. Promoter classification
 # **[back to index](#Index)**
 
-# ### 3-7-1. Pretrain dataset
+# ### 3-8-1. Prmototer region by location
+
+# #### Function `remove_chrM_and_trim_gene_file_accordingly`
+# * remove the chromosome M from the all chromosome per cell, and trim the gene file
+# * outputs now have the same list of chromosomes
+
+# In[47]:
+
+
+def remove_chrM_and_trim_gene_file_accordingly(whole_gene_file,df):
+    
+    ########### new fancy gene table without overlap ###########
+    g_df_chr_lst=whGene2GLChr(whole_gene_file)  ##### fixed June 29. 2023
+    new_gene_lst_all=merge_intervals(g_df_chr_lst) ##### fixed June 29. 2023
+    ############################################################
+
+    #### Remove chrM ###########################################
+    contains_chrM = df['chromosome'].str.contains('chrM').any()  #check whether it contains M
+    if contains_chrM:
+        df= df[~df['chromosome'].str.contains('chrM')]
+
+    contains_chrY = df['chromosome'].str.contains('chrY').any()
+
+    ##### if the target file does not contain Y, remove Y in the gene list file
+    if not contains_chrY:
+        new_gene_lst_all=new_gene_lst_all[:-1] ## the final element is for Y
+    ############################################################
+
+    assert len(df["chromosome"].unique())==len(new_gene_lst_all)
+    return new_gene_lst_all, df
+
+
+# #### Function `ext_TSS_by_loc`
+# * This function extracts the TSS regions with respect to gene location
+# * Run this function for a cell
+# * Output css are all reduced to unit length
+
+# In[45]:
+
+
+def ext_TSS_by_loc(whole_gene_file, df, up_num=2000, down_num=4000, gene_init=2000, unit=200):
+    """
+    extract TSS region by location estimation. 
+    input: (1) whole_gene_file: the raw gene bed file (2) df: per cell (3) up_num: upstream (4) down_num: downstream (5) gene_init: how long the initial region would be
+    output: (1) gene_start_lst_all: only gene start point per chr (2) tss_by_loc_css_unit_all: window_based (3) 
+    """
+    new_gene_lst_all, trimmed_df = remove_chrM_and_trim_gene_file_accordingly(whole_gene_file, df)
+    
+    css_lst_chr = df2longcss(trimmed_df) # list of long css per chromosome
+    total_chr = len(new_gene_lst_all)
+    
+    gene_start_lst_all = []
+    tss_by_loc_css_all = []
+    tss_by_init_css_all = []
+    for i in range(total_chr):
+        gene_start_lst = new_gene_lst_all[i]["TxStart"]
+        gene_start_lst_all.append(gene_start_lst) ### Gene start point only
+        css_lst = css_lst_chr[i]
+        
+        tss_by_loc_css_chr = []
+        tss_by_init_css_chr = []
+        for j in range(len(gene_start_lst)):
+            gene_start = gene_start_lst[j]
+            win_start = max(0, gene_start - up_num)  # use max to prevent negative index
+            win_end = min(len(css_lst), gene_start + down_num)  # use min to prevent index out of range
+
+            tss_by_loc_css = css_lst[win_start:win_end]
+            tss_by_loc_css_chr.append(tss_by_loc_css)
+            
+            tss_by_init_css = css_lst[gene_start:gene_start+gene_init]
+            tss_by_init_css_chr.append(tss_by_init_css)
+            
+        tss_by_loc_css_all.append(tss_by_loc_css_chr)
+        tss_by_init_css_all.append(tss_by_init_css_chr)
+        
+    tss_by_loc_css_unit_all=Convert2unitCSS_main_new(tss_by_loc_css_all, unit=unit)  
+    tss_by_init_css_unit_all=Convert2unitCSS_main_new(tss_by_init_css_all,unit=unit)
+        
+    return gene_start_lst_all, tss_by_loc_css_unit_all, tss_by_init_css_unit_all   
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# ## 3-8. Enhancer classification
+# **[back to index](#Index)**
+
+# ### 3-8-1. Pretrain dataset
 
 # #### Funtion `cutKmerByCell`
 # * Input: file path of a bed file like`"../database/temp_files/whole_genome/byCellType/E001_whole_css_wo_telo.txt"`)
@@ -3423,24 +3945,6 @@ def cutKmerByCell(unzipped_bed_file_path,k=4):
     
     filtered_kmerized_unit_css=[item for item in kmerized_unit_css if len(item)>=k]
     return filtered_kmerized_unit_css
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:
