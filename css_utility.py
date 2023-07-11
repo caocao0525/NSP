@@ -4,14 +4,14 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[37]:
+# In[6]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[56]:
+# In[3]:
 
 
 import os
@@ -19,6 +19,7 @@ import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from motif_utils import seq2kmer
 from motif_utils import kmer2seq
 from scipy.stats import norm
@@ -1947,7 +1948,7 @@ def shorten_string(s, factor):
     return pattern.sub(replacer, s)
 
 
-# In[40]:
+# In[7]:
 
 
 def Convert2unitCSS_main_new(css_lst_all, unit=200):# should be either css_gene_lst_all or css_Ngene_lst_all
@@ -1956,13 +1957,13 @@ def Convert2unitCSS_main_new(css_lst_all, unit=200):# should be either css_gene_
     Output: css_gene_unit_lst_all or css_Ngene_unit_lst_all
     """
     reduced_all=[]
-    for i in range(len(css_Ngene_lst_all)):
+    for i in range(len(css_lst_all)):
         reduced_chr=[]
-        for j in range(len(css_Ngene_lst_all[i])):
-            reduced=shorten_string(css_Ngene_lst_all[i][j], unit)
+        for j in range(len(css_lst_all[i])):
+            reduced=shorten_string(css_lst_all[i][j], unit)
             reduced_chr.append(reduced)
         reduced_all.append(reduced_chr)
-    return css_unit_lst_all
+    return reduced_all
 
 
 # In[49]:
@@ -3899,6 +3900,43 @@ def ext_TSS_by_loc(whole_gene_file, df, up_num=2000, down_num=4000, gene_init=20
         
     return gene_start_lst_all, tss_by_loc_css_unit_all, tss_by_init_css_unit_all   
 
+
+# #### Function `css_freq_len`
+# * Input: a list of data strip, for example, genic region data strips (genes) in css
+# * Output: dataframe (index: each chromatin state / columns: `count`,`lengths`,`relative_position`
+#     * (1) count: how frquently it appears per data strip
+#     * (2) lengths: how long it lasts per data strip
+#     * (3) relative_position: where it appears with respect to the total length of the data strip
+
+# In[2]:
+
+
+def css_freq_len(css_lst, unit=200):
+    strings=[item for item in css_lst if item!='']
+    result = defaultdict(lambda: {'count': [], 'lengths': [], 'relative_position': []})
+    for string in strings:  # Iterate over each string in the list
+        total_length = len(string)
+        for char in set(string):  # loop through unique characters in the string
+            pattern = re.compile(f'{char}+')
+            matches = pattern.findall(string)
+            count = len(matches)
+            lengths = [len(match)*unit for match in matches]  # multiplied by unit to make it real length
+            for match in matches:
+                relative_position = round(((string.index(match) / total_length) * 100) + 1, 2)
+                result[char]['relative_position'].append(relative_position)
+            result[char]['count'].append(count)
+            result[char]['lengths'].extend(lengths)  # Use extend instead of append here
+    result = dict(result)
+    # Sort dictionary
+    sorted_result = OrderedDict(sorted(result.items()))
+
+    # Convert the dictionary to a DataFrame
+    df_cs_wise = pd.DataFrame(sorted_result).transpose()  # transpose to have letters as the index
+
+    return df_cs_wise
+
+
+# #### Function 
 
 # In[ ]:
 
