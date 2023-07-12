@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[6]:
+# In[16]:
 
 
 # ### To convert the file into .py
@@ -82,6 +82,8 @@ from collections import Counter
 #         * [3-6-3. Cut into Kmer and save](#3-6-3.-Cut-into-Kmer-and-save)<font color="royalblue">-> **pretrain data are saved**</font>
 #         * [3-6-4. Fine-tuning data](#3-6-4.-Fine-tuning-data) <font color="orange"> -> **fine-tuning data are saved** </font>
 #     * [3-7. Promoter classification](#3-7.-Promoter-classification)
+#         * [3-7-1. Prmototer region extraction by location](#3-7-1.-Prmototer-region-extraction-by-location)
+#         * [3-7-2. Chromatin state per data strip visualization](#3-7-2.-Chromatin-state-per-data-strip-visualization)
 #     * [3-8. Enhancer classification](#3-8.-Enhancer-classification)
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
@@ -3265,7 +3267,7 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/E050/gene_hig
 #     * list of chromosome-wise list that contains the css at (highly/low/not) genic area only.
 # * **caution!** Do not forget to conduct `Convert2unitCSS_main(css_gene_lst_all, unit=200)`, to convert the result into 200-bps unit length
 
-# In[1]:
+# In[14]:
 
 
 def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_expanded
@@ -3277,7 +3279,8 @@ def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_
     g_lst_chr=Gexp_Gene2GLChr(exp_gene_file)
 #     g_lst_chr=whGene2GLChr(whole_gene_file) # list of gene table df per chromosome
     css_lst_chr=df2longcss(df) # list of long css per chromosome
-    total_chr=len(g_lst_chr)
+#     total_chr=len(g_lst_chr)
+    total_chr=len(css_lst_chr)
     
     print("Matching to the chromatin state sequence data ...")
     css_gene_lst_all=[]
@@ -3480,6 +3483,109 @@ def extExpGenic_byCell_2_ver01(output_path="../database/temp_files/expressed/byC
     else:
         raise ValueError("Set all_file=True, or desginate any file name to proceed!")
     return
+
+
+# #### VER02, just to change the path
+
+# In[13]:
+
+
+def extExpGenic_byCell_1_ver02(output_path="../database/roadmap/gene_exp/refFlat_byCellType/", all_file=True, high_only=True, verbose=True, exp=0, high_exp=50, **kwargs):
+    """
+    RUN THE SECOND function 'extExpGenic_byCell_2_ver02' after running this function.
+    This pipeline is to extract CSS expressed genic region, mainly for "expressed" and "highly-expressed"
+    In this function, the refFlat file for each epigenomes are extracted and saved at output path
+    
+    **** You need to create the folder first, at the save path
+    
+    (1) To process all the  ... set 'all_file=True'.
+        If you want to process only one file at a time, set e.g.) all_file=False, file="E050_15_coreMarks_stateno.bed"
+    (2) High_only = True will only produce the highly expressed cases (default) 
+    (3) Outputs are e.g.) "E112_gene_expressed.refFlat", "E112_gene_highlyexpressed.refFlat" at output path
+    """
+    
+    output_path_mod=output_path+"rpkm"+str(high_exp)+"/"
+    
+    path="../database/roadmap/gene_exp/"
+    script="classifygenes_ROADMAP_RPKM.py"
+    epi_rpkm_tsv="57epigenomes.RPKM.pc.tsv"
+    gene_ref="chr.gene.refFlat"
+    original_path="~/Work/chromatin_state/NSP/"
+    
+    save_path="./refFlat_byCellType/"+"rpkm"+str(high_exp)+"/"
+    css_bed_path="../database/bed/unzipped/"
+
+    if all_file:
+        css_gene_path="../database/temp_files/whole_gene_unit/"
+        # File list of CSS on genic region for all cell types
+        files_under_folder=sorted(os.listdir(css_gene_path))
+        cell_gene_css_all=[file for file in files_under_folder if file.startswith('E') and file.endswith('.pkl')]
+    
+        if verbose: print("processing all files ...")
+        for epi_css in tqdm_notebook(cell_gene_css_all):             
+            epi_num=epi_css[:4] # e.g.) E003
+            
+            if verbose: print("{} is now processed ...".format(epi_num))
+            file_path=css_bed_path+epi_css
+#             df=bed2df_expanded(file_path)  # css df
+
+            ######## Running the script at working path and come back to the original path #########
+            get_ipython().run_line_magic('cd', '-q {path}')
+            get_ipython().run_line_magic('run', '{script} --thre_expressed {exp} --thre_highlyexpressed {high_exp} {epi_rpkm_tsv} {epi_num} {gene_ref}')
+
+            if not high_only:
+                exp_file_name=save_path+epi_num+"_"+"gene_expressed.refFlat"
+            hexp_file_name=save_path+epi_num+"_"+"gene_highlyexpressed.refFlat"
+            get_ipython().run_line_magic('mv', '"gene_expressed.refFlat" {exp_file_name}')
+            get_ipython().run_line_magic('mv', '"gene_highlyexpressed.refFlat" {hexp_file_name}')
+            get_ipython().run_line_magic('cd', '-q {original_path}')
+            ########################################################################################
+                
+        
+    elif len(kwargs)>0:       
+        for file_key, file_name in kwargs.items():            
+            epi_num=file_name[:4]
+            if verbose: print("all_file=False, processing single case for {}.".format(epi_num))
+
+            file_path=css_bed_path+file_name
+#             df=bed2df_expanded(file_path)  # css df for the designated file
+            
+            ######## Running the script at working path and come back to the original path #########
+            get_ipython().run_line_magic('cd', '-q {path}')
+            get_ipython().run_line_magic('run', '{script} --thre_expressed {exp} --thre_highlyexpressed {high_exp} {epi_rpkm_tsv} {epi_num} {gene_ref}')
+
+            if not high_only:
+                exp_file_name=save_path+epi_num+"_"+"gene_expressed.refFlat"
+            hexp_file_name=save_path+epi_num+"_"+"gene_highlyexpressed.refFlat"
+            get_ipython().run_line_magic('mv', '"gene_expressed.refFlat" {exp_file_name}')
+            get_ipython().run_line_magic('mv', '"gene_highlyexpressed.refFlat" {hexp_file_name}')
+            get_ipython().run_line_magic('cd', '-q {original_path}')
+            ########################################################################################
+            
+    else:
+        raise ValueError("Set all_file=True, or desginate any file name to proceed!")
+    assert os.getcwd()[-3:]=="NSP", "Check the current working directory."
+    
+    return print("Results are stored at {}, and current working directory is : {}".format(output_path_mod, os.getcwd()))
+                           
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # #### Function `extNOTexp_Genic_byCell`
@@ -3820,7 +3926,7 @@ def css_composition_piechart_Gen(load_pkl=True, pkl_path=None, splitted=None, sh
 # ## 3-7. Promoter classification
 # **[back to index](#Index)**
 
-# ### 3-8-1. Prmototer region by location
+# ### 3-7-1. Prmototer region extraction by location
 
 # #### Function `remove_chrM_and_trim_gene_file_accordingly`
 # * remove the chromosome M from the all chromosome per cell, and trim the gene file
@@ -3936,7 +4042,165 @@ def css_freq_len(css_lst, unit=200):
     return df_cs_wise
 
 
-# #### Function 
+# ### 3-7-2. Chromatin state per data strip visualization
+
+# #### Function `df_cs_wise2fig`
+# To investigate how each chromatin state (A to O were placed in datasets, e.g. genic regions). <br>
+# This function visualize 
+# * (1) count: How frequently a certain chroamtin state appears
+# * (2) lengths: How long it lasts
+# * (3) relative_position: Where it appears  (with respect to the total length)
+# 
+# And produces
+# * (1) The distribution of three items above
+# * (2) Correlation between the lengths and relative positions
+# 
+# This function can be conducted as followings
+# * (1) `with open("../database/roadmap/gene_css_unit_pickled/E001_gene_css_pickled.pkl","rb") as f:
+# g_e001=pickle.load(f)`
+# * (2) `g_e001_all=flatLst(g_e001)`
+# * (3) `df_g_e001=css_freq_len(g_e001_all, unit=200)`
+# * (4) `df_cs_wise2fig(df_g_e001, chromatin_state="A")`
+
+# In[10]:
+
+
+def df_cs_wise2fig(df_cs_wise, chromatin_state="A"):
+    color=state_col_dict[chromatin_state]
+    count_cs=df_cs_wise.loc[chromatin_state]["count"]
+    len_cs=df_cs_wise.loc[chromatin_state]["lengths"]
+    rel_pos_cs=df_cs_wise.loc[chromatin_state]["relative_position"]
+
+    #### scaler for Z score = (x-mean)/std ####
+    def standard_scaler(data):
+        data_np = np.array(data)  # Convert to numpy array
+        return (data_np - np.mean(data_np)) / np.std(data_np)
+    ###########################################
+    
+    norm_len_cs = standard_scaler(len_cs)
+    norm_rel_pos_cs = standard_scaler(rel_pos_cs)
+    
+    df_len_rel_pos = pd.DataFrame({'norm_len': norm_len_cs, 'norm_rel_pos': norm_rel_pos_cs})
+    # Calculate the correlation matrix
+    len_rel_pos_corr = df_len_rel_pos.corr()
+    
+    fig, axs = plt.subplots(1, 3, figsize=(7, 2.8))
+    plt.subplots_adjust(wspace=0.5, hspace=0.5)
+
+    sns.violinplot(count_cs, color=color, linewidth=0.8, ax=axs[0])
+    axs[0].set_xlabel('Count')
+    axs[0].set_xticklabels([])  # Remove xtick labels
+    mean_count_cs = np.mean(count_cs)  # Calculate the mean
+    axs[0].annotate('Mean: {:.2f}'.format(mean_count_cs), xy=(0, 1.05), xycoords=axs[0].transAxes)  # Annotate the mean
+    axs[0].tick_params(axis='y', labelsize='small')
+
+    def thousands(x, pos):
+        """The two args are the value and tick position"""
+        return '%1.0fK' % (x * 1e-3) if x >= 1000 else '%1.0f' % x
+
+    formatter = ticker.FuncFormatter(thousands)
+
+    sns.violinplot(len_cs, color=color,  linewidth=0.8, ax=axs[1])
+    axs[1].set_xlabel('Length (bps)')
+
+    axs[1].yaxis.set_major_formatter(formatter)
+
+    axs[1].set_xticklabels([])  # Remove xtick labels
+    mean_len_cs = np.mean(len_cs)  # Calculate the mean
+    axs[1].annotate('Mean: {:.1f}'.format(mean_len_cs), xy=(0, 1.05), xycoords=axs[1].transAxes)  # Annotate the mean
+    axs[1].tick_params(axis='y', labelsize='small')
+
+    
+    sns.violinplot(rel_pos_cs, color=color, linewidth=0.8, ax=axs[2])
+    axs[2].set_xlabel('Rel_pos (%)')
+    axs[2].set_xticklabels([])  # Remove xtick labels
+    mean_rel_pos_cs = np.mean(rel_pos_cs) # Calculate the mean
+    axs[2].annotate('Mean: {:.1f}'.format(mean_rel_pos_cs), xy=(0, 1.05), xycoords=axs[2].transAxes)  # Annotate the mean
+    axs[2].tick_params(axis='y', labelsize='small')
+    
+    fig2,axs2=plt.subplots(1, 2, figsize=(7, 3))
+    sns.heatmap(len_rel_pos_corr, annot=True, cmap='Blues',  ax=axs2[0])    
+    sns.scatterplot(x=norm_len_cs,y=norm_rel_pos_cs, ax=axs2[1])
+
+    plt.tight_layout()
+    plt.show()
+    return len_rel_pos_corr
+
+
+# #### Function `save_TSS_by_loc`
+# * Input: from path for df_pickled
+# * Output: 6k (upstream 2kbs, downstream 4kbs for each gene)
+# * This function is executed, no need to rerun
+
+# In[11]:
+
+
+def save_TSS_by_loc(whole_gene_file, input_path="../database/roadmap/df_pickled/",output_path="../database/roadmap/prom/up2kdown4k/", up_num=2000, down_num=4000, unit=200):
+    """
+    extract TSS region by location estimation. 
+    input: (1) whole_gene_file: the raw gene bed file (2) input_path: pickled df per cell
+    output: save tss_by_loc_css_unit_all at the output path
+    """
+    file_lst=os.listdir(input_path)
+    all_files=[os.path.join(input_path,file) for file in file_lst]
+    for file in all_files:
+        cell_num=file.split("/")[-1][:4]
+#         if cell_num=="E002": break  # for test 
+        with open(file,"rb") as f:
+            df_pickled=pickle.load(f)
+        # align the gene file and the df file according to their availability(some cells does not have chr Y)
+        new_gene_lst_all, trimmed_df=remove_chrM_and_trim_gene_file_accordingly(whole_gene_file,df_pickled)
+        css_lst_chr = df2longcss(trimmed_df) # list of long css per chromosome
+        total_chr = len(new_gene_lst_all)       
+        tss_by_loc_css_all = []
+        for i in range(total_chr):
+            gene_start_lst = new_gene_lst_all[i]["TxStart"]
+            css_lst = css_lst_chr[i]
+            tss_by_loc_css_chr = []
+            for j in range(len(gene_start_lst)):
+                gene_start = gene_start_lst[j]
+                win_start = max(0, gene_start - up_num)  # use max to prevent negative index
+                win_end = min(len(css_lst), gene_start + down_num)  # use min to prevent index out of range
+                tss_by_loc_css = css_lst[win_start:win_end]
+                tss_by_loc_css_chr.append(tss_by_loc_css)               
+            tss_by_loc_css_all.append(tss_by_loc_css_chr)
+        tss_by_loc_css_unit_all=Convert2unitCSS_main_new(tss_by_loc_css_all, unit=unit)  
+        output_file_name=os.path.join(output_path,cell_num+"_prom_up2kdown4k.pkl")
+        with open(output_file_name,"wb") as g:
+            pickle.dump(tss_by_loc_css_unit_all,g)
+
+    return print("All done!") #tss_by_loc_css_unit_all
+
+
+# #### Function `prom_stat1`
+# * Extract the strings which has a specific chromatin states (e.g. "A" in the promoter regions)
+# * And check the proportion of those strings in total
+
+# In[12]:
+
+
+def prom_stat1(prom_path="../database/roadmap/prom/up2kdown4k/", chromatin_state="A"):
+    file_lst=os.listdir(prom_path)
+    all_files=sorted([os.path.join(prom_path,file) for file in file_lst])
+    
+    occu_cs_all=[]
+    prom_cs_all=[]
+    for file in all_files:
+        cell_num=file.split("/")[-1][:4]
+#         if cell_num=="E004": break   ### for test
+        with open(file,"rb") as f:
+            prom=pickle.load(f)
+        prom=flatLst(prom) #### flatten for all chromosomes       
+        prom_cs=[item for item in prom if chromatin_state in item]
+        prom_cs_all.append(prom_cs)
+        
+        total_entry=len(prom)
+        cs_entry=len(prom_cs)
+        occu_cs=cs_entry/total_entry ### percentage of proms which include certain CS
+        occu_cs_all.append(occu_cs)
+        
+    return prom_cs_all, occu_cs_all
+
 
 # In[ ]:
 
