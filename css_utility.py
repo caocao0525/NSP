@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[16]:
+# In[19]:
 
 
 # ### To convert the file into .py
@@ -1646,7 +1646,7 @@ def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 
 
 
-# In[ ]:
+# In[22]:
 
 
 #### Merging the gene table #### modified June. 29. 2023
@@ -3267,7 +3267,7 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/E050/gene_hig
 #     * list of chromosome-wise list that contains the css at (highly/low/not) genic area only.
 # * **caution!** Do not forget to conduct `Convert2unitCSS_main(css_gene_lst_all, unit=200)`, to convert the result into 200-bps unit length
 
-# In[14]:
+# In[20]:
 
 
 def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_expanded
@@ -3281,6 +3281,7 @@ def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_
     css_lst_chr=df2longcss(df) # list of long css per chromosome
 #     total_chr=len(g_lst_chr)
     total_chr=len(css_lst_chr)
+#     print("total_chr=",total_chr)
     
     print("Matching to the chromatin state sequence data ...")
     css_gene_lst_all=[]
@@ -3305,6 +3306,12 @@ def comp_expGene2css(exp_gene_file,df):   # df indicates css, created by bed2df_
             
     print("Done!")
     return css_gene_lst_all ## this is the original length! reduce it at Convert2unitCSS_main(css_lst_all, unit=200)!
+
+
+# In[ ]:
+
+
+
 
 
 # ### 3-6-2-1. CSS for various gene expression cases are saved.
@@ -3570,10 +3577,92 @@ def extExpGenic_byCell_1_ver02(output_path="../database/roadmap/gene_exp/refFlat
                            
 
 
-# In[ ]:
+# #### VER02, just to change the path (and the function `Convert2unitCSS_main_new`)
+
+# In[21]:
 
 
+def extExpGenic_byCell_2_ver02(output_path="../database/roadmap/gene_exp/css_byCellType/",all_file=True, high_only=True, high_exp=50, verbose=True, **kwargs):
+    """
+    Should be executed after extExpGenic_byCell_1_ver01
+    modified the previous version to make it applicalbe to highly_expressed only extraction
+    with high_only=True, highly expressed gene according to the high_exp value (RPKM) are extracted.
+    """
+    exp_ref_path="../database/roadmap/gene_exp/refFlat_byCellType/rpkm0/"
+    hexp_ref_path="../database/roadmap/gene_exp/refFlat_byCellType/"+"rpkm"+str(high_exp)+"/"
+    
+    ref_exp_file_all=sorted(os.listdir(exp_ref_path))
+    ref_hexp_file_all=sorted(os.listdir(hexp_ref_path))
+    
+    ref_exp_all=[elm for elm in ref_exp_file_all if '_expressed' in elm and elm.startswith('E')]
+    ref_hexp_all=[elm for elm in ref_hexp_file_all if 'high' in elm and elm.startswith('E')]
+      
+    css_gene_path="../database/roadmap/gene_css_unit_pickled/"  # this is without chrM
+    css_bed_path="../database/bed/unzipped/"
+    css_bed_file_all=sorted(os.listdir(css_bed_path))    
 
+    if all_file:
+        if verbose: print("processing all files ...")
+        for epi_css in tqdm_notebook(ref_hexp_all):
+            epi_num=epi_css[:4]
+            if verbose: print("{} is now processed ...".format(epi_num))
+#             ########### preparing df from bed
+#             target_bed=[elm for elm in css_bed_file_all if elm[:4]==epi_num]
+#             bed_path=css_bed_path+target_bed[0]
+#             df=bed2df_expanded(bed_path)
+            
+            ## load pickled df, to reduce the computation load
+            epi_df_path="../database/roadmap/df_pickled/"+epi_num+"_df_pickled.pkl"
+            with open(epi_df_path, "rb") as f:
+                df=pickle.load(f)
+            df = df[df['chromosome'] != 'chrM']   # to remove the chromosome M
+
+            # preparing ref from exp_refs
+            target_hexp_ref=[elm for elm in ref_hexp_all if elm[:4]==epi_num]
+            target_exp_ref=[elm for elm in ref_exp_all if elm[:4]==epi_num]
+            hexp=hexp_ref_path+target_hexp_ref[0]
+            exp=exp_ref_path+target_exp_ref[0]
+
+            if not high_only:  # extract just 'expressed' case if high_only is False (default=True)
+                css_exp_gene_lst=comp_expGene2css(exp,df)  
+                css_exp_gene_unit_lst=flatLst(Convert2unitCSS_main_new(css_exp_gene_lst, unit=200)) # new
+                with open(output_path+"rpkm0/"+epi_num+"_exp_gene_css.pkl","wb") as g:
+                    pickle.dump(css_exp_gene_unit_lst,g)
+                    
+            css_hexp_gene_lst=comp_expGene2css(hexp,df)
+            css_hexp_gene_unit_lst=flatLst(Convert2unitCSS_main_new(css_hexp_gene_lst, unit=200)) #new
+            with open(output_path+"rpkm"+str(high_exp)+"/"+epi_num+"_rpkm"+str(high_exp)+"_exp_gene_css.pkl","wb") as f:
+                pickle.dump(css_hexp_gene_unit_lst,f)
+            
+    elif "file" in kwargs:
+        file_name=kwargs["file"]
+#         for file_key, file_name in kwargs.items():            
+        epi_num=file_name[:4]
+        if verbose: print("all_file=False, processing single case for {}.".format(epi_num))
+        # preparing df from bed
+        target_bed=[elm for elm in css_bed_file_all if elm[:4]==epi_num]
+        bed_path=css_bed_path+target_bed[0]
+        df=bed2df_expanded(bed_path)
+        # preparing ref from exp_refs
+        target_hexp_ref=[elm for elm in ref_hexp_all if elm[:4]==epi_num]
+        target_exp_ref=[elm for elm in ref_exp_all if elm[:4]==epi_num]
+        hexp=hexp_ref_path+target_hexp_ref[0]
+        exp=exp_ref_path+target_exp_ref[0] 
+        
+        if not high_only:  # extract just 'expressed' case if high_only is False (default=True)
+            css_exp_gene_lst=comp_expGene2css(exp,df)
+            css_exp_gene_unit_lst=flatLst(Convert2unitCSS_main_new(css_exp_gene_lst, unit=200))
+            with open(output_path+"rpkm0/"+epi_num+"_exp_gene_css.pkl","wb") as g:
+                pickle.dump(css_exp_gene_unit_lst,g)
+
+        css_hexp_gene_lst=comp_expGene2css(hexp,df)
+        css_hexp_gene_unit_lst=flatLst(Convert2unitCSS_main_new(css_hexp_gene_lst, unit=200))
+        with open(output_path+"rpkm"+str(high_exp)+"/"+epi_num+"_rpkm"+str(high_exp)+"_exp_gene_css.pkl","wb") as f:
+            pickle.dump(css_hexp_gene_unit_lst,f)
+
+    else:
+        raise ValueError("Set all_file=True, or desginate any file name to proceed!")
+    return
 
 
 # In[ ]:
@@ -4202,10 +4291,115 @@ def prom_stat1(prom_path="../database/roadmap/prom/up2kdown4k/", chromatin_state
     return prom_cs_all, occu_cs_all
 
 
-# In[ ]:
+# ### 3-7-3. Extract Promoter regions from gene with various expression level
+
+# #### Pipeline 
+# 
+# (1) `prom_expGene2css` : cut the prom regions of long css <br>
+# (2) `extProm_wrt_g_exp` : transform css into unit length css <br>
+# (3) `extNsaveProm_g_exp` : load the required file and process all, and save
+
+# #### Function `prom_expGene2css`
+# * This function produces a long list (not unit length) of css according to the gene expression table, per cell.
+
+# In[24]:
 
 
+def prom_expGene2css(g_lst_chr_merged,df, up_num=2000, down_num=4000):   # df indicates css, created by bed2df_expanded
+    """
+    modified from `compGene2css`
+    Input: Reference gene file trimmed for gene expresseion level, df (CSS)
+    Output: list of chromosome-wise list that contains the css at (expressed) genic area with prom only.
+    """
+    g_lst_chr=g_lst_chr_merged
+    df = df[df['chromosome'] != 'chrM']
+    css_lst_chr=df2longcss(df) # list of long css per chromosome
+    
+    g_lst_chr = g_lst_chr[:len(css_lst_chr)]  # adjust the length of list according to length of df (might not have chrY)
+    total_chr=len(css_lst_chr)
+    
+    print("Matching to the chromatin state sequence data ...")
+    css_prom_lst_all=[]
+    for i in tqdm_notebook(range(total_chr)):
+        css=css_lst_chr[i]   # long css of i-th chromosome
+        gene_df=g_lst_chr[i] # gene df of i-th chromosome
+        
+        css_prom_lst_chr=[]
+        for j in range(len(gene_df)):
+            prom_start=gene_df["TxStart"].iloc[j]-1-up_num  # python counts form 0
+            prom_end=prom_start+up_num+down_num+1      # python excludes the end
+            if gene_df["TxEnd"].iloc[j]<prom_end:  # if longer than gene body, then just gene body
+                prom_end=gene_df["TxEnd"].iloc[j]+1
+    
+            css_prom=css[prom_start:prom_end]           # cut the gene area only
+            css_prom_lst_chr.append(css_prom)     # store in the list
+          
+        css_prom_lst_all.append(css_prom_lst_chr)  # list of list
+    
+    assert len(css_prom_lst_all)==total_chr
+    
+    # remove chromosome if it is empty (e.g. chrY for female)
+    css_prom_lst_all=[elm for elm in css_prom_lst_all if elm!=[]] 
+    
+    print("Done!")
+    return css_prom_lst_all 
 
+
+# #### Function `extProm_wrt_g_exp`
+# * This function produces a unit-length css of a cell screened by its gene expression level
+
+# In[28]:
+
+
+def extProm_wrt_g_exp(exp_gene_file, df, up_num=2000, down_num=4000,unit=200):
+    """
+    extract promoter regions of genes according to gene expression level
+    """
+    df = df[df['chromosome'] != 'chrM']
+    g_lst_chr=Gexp_Gene2GLChr(exp_gene_file)
+    g_lst_chr_merged=merge_intervals(g_lst_chr)
+    
+    css_prom_lst_all=prom_expGene2css(g_lst_chr_merged,df, up_num=up_num, down_num=down_num)
+    css_prom_lst_unit_all=Convert2unitCSS_main_new(css_prom_lst_all, unit=unit)
+    return css_prom_lst_unit_all
+
+
+# #### Function `extNsaveProm_g_exp`
+# * This function processes the above works (cut the prom region and make it unit length css) per cell
+# * Input
+#     * `exp_gene_dir`: directory where refFlat for each cell (subdir means the sub directory for different gene expression level)
+#     * `df_pickle_dir`: dataframe of each cell
+#     * `rpkm_val`: RPKM value, 10, 20, 30, or 50
+#     * `up_num`: upstream of gene
+#     * `down_num`: from TSS (gene initial part) to cut
+#     * `unit`: because chromatin states are annotated by 200 bps
+# * Output: save the file according to the `rpkm_val` at the output path
+
+# In[27]:
+
+
+def extNsaveProm_g_exp(exp_gene_dir="../database/roadmap/gene_exp/refFlat_byCellType/", df_pickle_dir="../database/roadmap/df_pickled/",output_path="../database/roadmap/prom/up2kdown4k/gene_exp/",rpkm_val=50, up_num=2000, down_num=4000,unit=200):
+    exp_gene_subdir=os.listdir(exp_gene_dir)
+    exp_gene_tardir=[os.path.join(exp_gene_dir, subdir) for subdir in exp_gene_subdir if str(rpkm_val) in subdir][0]
+    exp_gene_files=sorted([os.path.join(exp_gene_tardir,file) for file in os.listdir(exp_gene_tardir)])
+    
+    for exp_gene_file in exp_gene_files:
+        cell_id=exp_gene_file.split("/")[-1][:4]
+#         if cell_id=="E004":break ## for test
+        df_name=[file for file in os.listdir(df_pickle_dir) if cell_id in file][0]
+        df_path=os.path.join(df_pickle_dir,df_name)
+        with open(df_path,"rb") as f:
+            df=pickle.load(f)
+        css_prom_lst_unit_all=extProm_wrt_g_exp(exp_gene_file, df, up_num=up_num, down_num=down_num,unit=unit)
+           
+        output_name=output_path+"rpkm"+str(rpkm_val)+"/"+cell_id+"_prom_up2kdown4k.pkl"
+        output_dir = os.path.dirname(output_name)
+        
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        with open(output_name, "wb") as g:
+            pickle.dump(css_prom_lst_unit_all,g)
+    return print("Saved at ",output_path)
 
 
 # In[ ]:
