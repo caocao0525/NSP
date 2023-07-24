@@ -4,14 +4,14 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[19]:
+# In[31]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[3]:
+# In[32]:
 
 
 import os
@@ -27,6 +27,7 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
 import random
 import collections
+from collections import defaultdict, OrderedDict
 import operator
 import itertools
 import pickle
@@ -77,6 +78,7 @@ from collections import Counter
 #         * [3-5-5. Prepare and save Fine-tuning for Complex gene CSS and others](#3-5-5.-Prepare-and-save-Fine-tuning-for-Complex-gene-CSS-and-others) <font color="orange"> -> **fine-tuning data are saved**</font>
 #     * [3-6. Gene expression classification](#3-6.-Gene-expression-classification)
 #         * [3-6-1. Gene expression file into the list of dataframe](#3-6-1.-Gene-expression-file-into-the-list-of-dataframe)
+#             * [3-6-1-1. Not expressed refFlat ](#3-6-1-1.-Not-expressed-refFlat)
 #         * [3-6-2. Matching to CSS](#3-6-2.-Matching-to-CSS)
 #             * [3-6-2-1. CSS for various gene expression cases are saved.](#3-6-2-1.-CSS-for-various-gene-expression-cases-are-saved.)
 #         * [3-6-3. Cut into Kmer and save](#3-6-3.-Cut-into-Kmer-and-save)<font color="royalblue">-> **pretrain data are saved**</font>
@@ -3255,6 +3257,26 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/E050/gene_hig
     return g_df_chr_collapsed_lst  # list of dataframe
 
 
+# ### 3-6-1-1. Not expressed refFlat 
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
 # ### 3-6-2. Matching to CSS
 
 # #### Function: `comp_expGene2css`
@@ -3683,51 +3705,84 @@ def extExpGenic_byCell_2_ver02(output_path="../database/roadmap/gene_exp/css_byC
 # * This function was executed and the result is already saved.
 # * To check the result, visit the output path.
 
-# In[8]:
+# In[35]:
 
 
-def extNOTexp_Genic_byCell(output_path="../database/temp_files/expressed/byCellType/not_expressed/", all_file=True, verbose=True, **kwargs):
+# def extNOTexp_Genic_byCell(output_path="../database/temp_files/expressed/byCellType/not_expressed/", all_file=True, verbose=True, **kwargs):
+#   # This function only compares the whole genic with expressed genic and subtract them.
+#   # Perhaps should be changed later?
+#     css_exp_path="../database/temp_files/expressed/byCellType/expressed/"
+#     css_whole="../database/temp_files/whole_gene_unit/"
+#     whole_gene_files=sorted(glob.glob(css_whole+"*.pkl"))
+#     exp_gene_files=sorted(glob.glob(css_exp_path+"*.pkl"))
+
+#     if all_file: 
+#         if verbose: print("processing all files ...")
+#         for gene_file in tqdm_notebook(whole_gene_files):
+#             pattern=r'E[0-9]+'
+#             epi_num=re.findall(pattern, gene_file)[0] # e.g.) 'E003'
+#             # take expressed gene list for the same cell type
+#             exp_gene_file=[file for file in exp_gene_files if epi_num in file][0]
+#             with open(gene_file,"rb") as f:
+#                 whole_gene=flatLst(pickle.load(f))
+#             with open(exp_gene_file, "rb") as g:
+#                 exp_gene=pickle.load(g)
+#             not_exp_gene_all=[]
+#             not_exp_gene=[gene for gene in whole_gene if gene not in exp_gene]
+#             not_exp_gene_all.append(not_exp_gene)
+#             with open(output_path+epi_num+"_not_exp_gene_css.pkl","wb") as h:
+#                 pickle.dump(not_exp_gene,h)
+    
+#     elif "file" in kwargs:
+#         exp_gene_file=kwargs["file"]    
+#         epi_num=exp_gene_file[:4]
+#         exp_gene_file_w_path=css_exp_path+exp_gene_file
+#         assert epi_num[0]=="E", "File name should start with 'E'. Remove any path before the file name."
+#         if verbose: print("all_file=False, processing single case for {}.".format(epi_num))
+        
+#         gene_file=[elm for elm in whole_gene_files if epi_num in elm][0]        
+#         with open(gene_file,"rb") as f:
+#             whole_gene=flatLst(pickle.load(f))
+#         with open(exp_gene_file_w_path, "rb") as g:
+#             exp_gene=pickle.load(g)
+#         not_exp_gene=[gene for gene in whole_gene if gene not in exp_gene]
+#         with open(output_path+epi_num+"_not_exp_gene_css.pkl","wb") as h:
+#             pickle.dump(not_exp_gene,h)
+#     else:
+#         pass
+#     return print("files are saved at {}".format(output_path))
+
+
+# #### Function `extNOTexp_Genic_byCell_ver02`
+# * This function is written for produce new not_expressed gene css according to new df, refFlat, as it drops now chrM and chrY if it is female cell
+
+# In[37]:
+
+
+def extNOTexp_Genic_byCell_ver02(output_path="../database/roadmap/gene_exp/css_byCellType/not_exp/", verbose=True):
   # This function only compares the whole genic with expressed genic and subtract them.
   # Perhaps should be changed later?
-    css_exp_path="../database/temp_files/expressed/byCellType/expressed/"
-    css_whole="../database/temp_files/whole_gene_unit/"
-    whole_gene_files=sorted(glob.glob(css_whole+"*.pkl"))
-    exp_gene_files=sorted(glob.glob(css_exp_path+"*.pkl"))
+    css_exp_path="../database/roadmap/gene_exp/css_byCellType/rpkm0/"
+    css_whole="../database/roadmap/gene_css_unit_pickled/"
+    whole_gene_files=sorted(glob.glob(css_whole+"*.pkl"))  # 127 cells
+    exp_gene_files=sorted(glob.glob(css_exp_path+"*.pkl")) # 57 cells
 
-    if all_file: 
-        if verbose: print("processing all files ...")
-        for gene_file in tqdm_notebook(whole_gene_files):
-            pattern=r'E[0-9]+'
-            epi_num=re.findall(pattern, gene_file)[0] # e.g.) 'E003'
-            # take expressed gene list for the same cell type
-            exp_gene_file=[file for file in exp_gene_files if epi_num in file][0]
-            with open(gene_file,"rb") as f:
-                whole_gene=flatLst(pickle.load(f))
-            with open(exp_gene_file, "rb") as g:
-                exp_gene=pickle.load(g)
-            not_exp_gene_all=[]
-            not_exp_gene=[gene for gene in whole_gene if gene not in exp_gene]
-            not_exp_gene_all.append(not_exp_gene)
-            with open(output_path+epi_num+"_not_exp_gene_css.pkl","wb") as h:
-                pickle.dump(not_exp_gene,h)
-    
-    elif "file" in kwargs:
-        exp_gene_file=kwargs["file"]    
-        epi_num=exp_gene_file[:4]
-        exp_gene_file_w_path=css_exp_path+exp_gene_file
-        assert epi_num[0]=="E", "File name should start with 'E'. Remove any path before the file name."
-        if verbose: print("all_file=False, processing single case for {}.".format(epi_num))
-        
-        gene_file=[elm for elm in whole_gene_files if epi_num in elm][0]        
+    if verbose: print("processing all files ...")
+    for exp in exp_gene_files:
+        pattern=r'E[0-9]+'
+        epi_num=re.findall(pattern, exp)[0] # e.g.) 'E003'
+#         if epi_num=="E004":break for test
+        # take expressed gene list for the same cell type
+        gene_file=[file for file in whole_gene_files if epi_num in file][0]
         with open(gene_file,"rb") as f:
             whole_gene=flatLst(pickle.load(f))
-        with open(exp_gene_file_w_path, "rb") as g:
+        with open(exp, "rb") as g:
             exp_gene=pickle.load(g)
+        not_exp_gene_all=[]
         not_exp_gene=[gene for gene in whole_gene if gene not in exp_gene]
+        not_exp_gene_all.append(not_exp_gene)
         with open(output_path+epi_num+"_not_exp_gene_css.pkl","wb") as h:
             pickle.dump(not_exp_gene,h)
-    else:
-        pass
     return print("files are saved at {}".format(output_path))
 
 
@@ -4264,14 +4319,42 @@ def save_TSS_by_loc(whole_gene_file, input_path="../database/roadmap/df_pickled/
 # #### Function `prom_stat1`
 # * Extract the strings which has a specific chromatin states (e.g. "A" in the promoter regions)
 # * And check the proportion of those strings in total
+# * *updated* for visualization
 
 # In[12]:
 
 
-def prom_stat1(prom_path="../database/roadmap/prom/up2kdown4k/", chromatin_state="A"):
+# def prom_stat1(prom_path="../database/roadmap/prom/up2kdown4k/", chromatin_state="A"):
+#     file_lst=os.listdir(prom_path)
+#     all_files=sorted([os.path.join(prom_path,file) for file in file_lst])
+    
+#     occu_cs_all=[]
+#     prom_cs_all=[]
+#     for file in all_files:
+#         cell_num=file.split("/")[-1][:4]
+# #         if cell_num=="E004": break   ### for test
+#         with open(file,"rb") as f:
+#             prom=pickle.load(f)
+#         prom=flatLst(prom) #### flatten for all chromosomes       
+#         prom_cs=[item for item in prom if chromatin_state in item]
+#         prom_cs_all.append(prom_cs)
+        
+#         total_entry=len(prom)
+#         cs_entry=len(prom_cs)
+#         occu_cs=cs_entry/total_entry ### percentage of proms which include certain CS
+#         occu_cs_all.append(occu_cs)
+        
+#     return prom_cs_all, occu_cs_all
+
+
+# In[34]:
+
+
+def prom_stat1(prom_path="../database/roadmap/prom/up2kdown4k/all_genes/", chromatin_state="A"):
     file_lst=os.listdir(prom_path)
     all_files=sorted([os.path.join(prom_path,file) for file in file_lst])
     
+    total_css=[]
     occu_cs_all=[]
     prom_cs_all=[]
     for file in all_files:
@@ -4284,10 +4367,51 @@ def prom_stat1(prom_path="../database/roadmap/prom/up2kdown4k/", chromatin_state
         prom_cs_all.append(prom_cs)
         
         total_entry=len(prom)
+        total_css.append(prom)
         cs_entry=len(prom_cs)
         occu_cs=cs_entry/total_entry ### percentage of proms which include certain CS
         occu_cs_all.append(occu_cs)
         
+    plt.figure(figsize=(3,3))
+    sns.histplot(occu_cs_all,color="teal", element="step", fill=None)
+    title_txt="Proportion of genes having " + chromatin_state + " on prom region"
+    plt.title(title_txt) 
+    
+    dataset_total=flatLst(total_css)
+    dataset_cs=flatLst(prom_cs_all)
+    # Flatten the dataset into a single string
+    data_str_tot = "".join(dataset_total)
+    data_str_cs="".join(dataset_cs)
+    # Count occurrences of each character
+    char_counts_tot = Counter(data_str_tot)
+    char_counts_cs = Counter(data_str_cs)
+
+    # Initialize the dictionary for the characters from "A" to "O"
+    counts_tot = {chr(i+65): 0 for i in range(15)}
+    counts_cs = {chr(i+65): 0 for i in range(15)}
+
+    # Update the counts for the characters found in the data
+    counts_tot.update(char_counts_tot)
+    counts_cs.update(char_counts_cs)
+    
+    def my_autopct(pct):
+        return ('%1.1f%%' % pct) if pct > 2 else ''
+
+    fig, ax = plt.subplots(1,2)
+
+    # First subplot
+    ax[0].pie(counts_tot.values(), labels=counts_tot.keys(), colors=[state_col_dict[key] for key in counts_tot.keys()], autopct=my_autopct)
+    ax[0].axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    ax[0].set_title("Total prom region")
+
+    # Second subplot
+    ax[1].pie(counts_cs.values(), labels=counts_cs.keys(), colors=[state_col_dict[key] for key in counts_cs.keys()], autopct=my_autopct)
+    ax[1].axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    title_txt2="Regions having "+chromatin_state
+    ax[1].set_title(title_txt2)
+
+    plt.show()
+      
     return prom_cs_all, occu_cs_all
 
 
@@ -4375,12 +4499,15 @@ def extProm_wrt_g_exp(exp_gene_file, df, up_num=2000, down_num=4000,unit=200):
 #     * `unit`: because chromatin states are annotated by 200 bps
 # * Output: save the file according to the `rpkm_val` at the output path
 
-# In[27]:
+# In[38]:
 
 
 def extNsaveProm_g_exp(exp_gene_dir="../database/roadmap/gene_exp/refFlat_byCellType/", df_pickle_dir="../database/roadmap/df_pickled/",output_path="../database/roadmap/prom/up2kdown4k/gene_exp/",rpkm_val=50, up_num=2000, down_num=4000,unit=200):
     exp_gene_subdir=os.listdir(exp_gene_dir)
-    exp_gene_tardir=[os.path.join(exp_gene_dir, subdir) for subdir in exp_gene_subdir if str(rpkm_val) in subdir][0]
+    exp_gene_tardir=[os.path.join(exp_gene_dir, subdir) for subdir in exp_gene_subdir if str(rpkm_val) in subdir][0]    
+    if rpkm_val==0:
+        exp_gene_tardir=os.path.join(exp_gene_dir, "rpkm0")
+        
     exp_gene_files=sorted([os.path.join(exp_gene_tardir,file) for file in os.listdir(exp_gene_tardir)])
     
     for exp_gene_file in exp_gene_files:
@@ -4400,6 +4527,117 @@ def extNsaveProm_g_exp(exp_gene_dir="../database/roadmap/gene_exp/refFlat_byCell
         with open(output_name, "wb") as g:
             pickle.dump(css_prom_lst_unit_all,g)
     return print("Saved at ",output_path)
+
+
+# ### 3-7-4. Extract Promoter regions from gene with various expression level
+
+# #### Pipeline 
+# 
+# (1) `extWholeGeneRef` : Just extract the whole gene location files from `chr.gene.refFlat` <br>
+# (2) `extNOTexp_by_compare` : Extract the not expressed genes by comparing with whole gene with rpkm>0 <br>
+# (3) `extNsaveNOTexp_by_compare` : load the required file and process all, and save refFlat (.pkl) and prom-region css (.pkl)
+
+# Basically, these functions are already conducted and no need to rerun. To extract promoter regions with different boundary conditions, then just adjust the numbers and save path in the final functions.
+
+# In[39]:
+
+
+def extWholeGeneRef(whole_gene_ref="../database/roadmap/gene_exp/chr.gene.refFlat"):
+    ###### modified from Gexp_Gene2GLChr, this function provides the df of whole genes
+    ###### note that this file contains Y chromosome
+    g_fn=whole_gene_ref
+    g_df=pd.read_csv(g_fn, sep='\t', index_col=False, header=0)
+    g_df=g_df.iloc[:,1:]
+    g_df.rename(columns={"name":"gene_id"}, inplace=True)
+    g_df.rename(columns={"#geneName":"geneName"}, inplace=True)
+    g_df.rename(columns={"txStart":"TxStart"}, inplace=True) # to make it coherent to my previous codes
+    g_df.rename(columns={"txEnd":"TxEnd"}, inplace=True)     
+    g_df=g_df[["chrom","TxStart","TxEnd"]] # extract these only
+    # Remove other than regular chromosomes
+    chr_lst=['chr1','chr2','chr3','chr4','chr5','chr6','chr7','chr8','chr9','chr10',
+             'chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19',
+             'chr20','chr21','chr22','chrX','chrY']
+    g_df=g_df.loc[g_df["chrom"].isin(chr_lst)]
+    
+    # Create a list of chromosome-wise dataframe 
+    g_df_chr_lst=[]
+    for num in range(len(chr_lst)):
+        chr_num=chr_lst[num]
+        g_chr_df='g_'+chr_num  # name it as "g_"
+        locals()[g_chr_df]=g_df[g_df["chrom"]==chr_num]
+#         print(chr_num)
+        g_chr_df=locals()[g_chr_df]
+        g_chr_df=g_chr_df.sort_values("TxStart")
+        g_df_chr_lst.append(g_chr_df)
+    
+    # remove any overlap
+    g_df_chr_lst=merge_intervals(g_df_chr_lst)
+    return g_df_chr_lst  # list of chromosome-wise df for all gene start and end
+
+
+# In[40]:
+
+
+def extNOTexp_by_compare(whole_gene_ref, cell_exp_ref):
+    """
+    whole_gene_ref="../database/roadmap/gene_exp/chr.gene.refFlat"
+    """
+    whole_gene_ref_lst=extWholeGeneRef(whole_gene_ref)
+    cell_exp_lst=Gexp_Gene2GLChr(cell_exp_ref)
+    cell_exp_lst=merge_intervals(cell_exp_lst) 
+    if len(whole_gene_ref_lst)!=len(cell_exp_lst):
+        whole_gene_ref_lst=whole_gene_ref_lst[:-1]   
+    non_exp_gene_lst=[]
+    for i, whole_gene_chr in enumerate(whole_gene_ref_lst):
+        exp_gene_mark = whole_gene_chr.merge(cell_exp_lst[i], on=['TxStart', 'TxEnd'])
+        non_exp_gene_chr=whole_gene_chr.drop(exp_gene_mark.index)
+        non_exp_gene_lst.append(non_exp_gene_chr)
+    print("total length of non_expressed genes in this cell: ",len(pd.concat(non_exp_gene_lst)))
+    return non_exp_gene_lst
+
+
+# In[41]:
+
+
+def extNsaveNOTexp_by_compare(whole_gene_ref_path="../database/roadmap/gene_exp/chr.gene.refFlat",
+                              exp_ref_path="../database/roadmap/gene_exp/refFlat_byCellType/rpkm0/",
+                              df_pickle_dir="../database/roadmap/df_pickled/",
+                              output_path_ref="../database/roadmap/gene_exp/refFlat_byCellType/not_exp/",
+                              output_path_prom="../database/roadmap/prom/up2kdown4k/gene_exp/not_exp/",
+                              up_num=2000,down_num=4000,unit=200):
+    
+    exp_ref_file_all=sorted([os.path.join(exp_ref_path,file) for file in os.listdir(exp_ref_path)])
+    
+    for exp_ref_file in exp_ref_file_all:
+        cell_id=exp_ref_file.split("/")[-1][:4]
+#         if cell_id=="E004":break # for test
+        print(cell_id+" is now processing...")
+            
+        df_name=[file for file in os.listdir(df_pickle_dir) if cell_id in file][0]
+        df_path=os.path.join(df_pickle_dir,df_name)
+        with open(df_path,"rb") as f:
+            df=pickle.load(f)
+        
+        non_exp_gene_lst=extNOTexp_by_compare(whole_gene_ref_path, exp_ref_file) # a list of chromosome-wise df
+        #### refFlat for NOT expressed is pickled as a list of dataframe ####
+        not_exp_ref_path=output_path_ref+cell_id+"_gene_not_expressed.pkl"
+        with open(not_exp_ref_path,"wb") as g:
+            pickle.dump(non_exp_gene_lst,g)        
+        
+        css_prom_lst_all=prom_expGene2css(non_exp_gene_lst, df, up_num=up_num, down_num=down_num)
+        css_prom_lst_unit_all=Convert2unitCSS_main_new(css_prom_lst_all, unit=unit)
+        
+        output_name=output_path_prom+cell_id+"_not_exp_gene_prom_up2kdown4k.pkl"
+        with open(output_name,"wb") as h:
+            pickle.dump(css_prom_lst_unit_all,h)
+    
+    return print("refFlat is saved at {} and prom is saved at {}.".format(output_path_ref, output_path_prom))
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
