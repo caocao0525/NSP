@@ -4,14 +4,14 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[31]:
+# In[9]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility.ipynb
 
 
-# In[32]:
+# In[1]:
 
 
 import os
@@ -39,6 +39,7 @@ import glob
 from wordcloud import WordCloud
 import stylecloud
 from collections import Counter
+import ast
 
 
 # ## Index
@@ -86,6 +87,10 @@ from collections import Counter
 #     * [3-7. Promoter classification](#3-7.-Promoter-classification)
 #         * [3-7-1. Prmototer region extraction by location](#3-7-1.-Prmototer-region-extraction-by-location)
 #         * [3-7-2. Chromatin state per data strip visualization](#3-7-2.-Chromatin-state-per-data-strip-visualization)
+#         * [3-7-3. Extract Promoter regions from gene with various expression level](#3-7-3.-Extract-Promoter-regions-from-gene-with-various-expression-level)
+#         * [3-7-4. Extract Promoter regions from not expressed genes](#3-7-4.-Extract-Promoter-regions-from-not-expressed-genes)
+#         * [3-7-5. Strong and Weak promoter](#3-7-5.-Strong-and-Weak-promoter)
+#         * [3-7-6. Kmerize and save and merge](#3-7-6.-Kmerize-and-save-and-merge)
 #     * [3-8. Enhancer classification](#3-8.-Enhancer-classification)
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
@@ -93,6 +98,9 @@ from collections import Counter
 #         * [5-1-2. Pretrain evaluation](#5-1-2.-Pretrain-evaluation)
 #         * [5-1-3. Fine tuning evaluation](#5-1-3.-Fine-tuning-evaluation)
 #     * [5-2. Motif](#5-2.-Motif)
+#         * [5-2-1. Motif visualization](#5-2-1.-Motif-visualization)
+#         * [5-2-2. Motif extraction](#5-2-2.-Motif-extraction)
+#         * [5-2-3. Motif embedding: one-hot](#5-2-3.-Motif-embedding:-one-hot)
 
 # **Frequently used functions**
 
@@ -217,9 +225,9 @@ def whGene2GLChr(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 
 
 # prerequisite file load
-chr_path='../database/hg19/genome_per_chr/'
-chr_list=[os.path.join(chr_path, file) for file in sorted(os.listdir(chr_path))]
-chr1=chr_list[0]
+# chr_path='../database/hg19/genome_per_chr/'
+# chr_list=[os.path.join(chr_path, file) for file in sorted(os.listdir(chr_path))]
+# chr1=chr_list[0]
 
 
 # #### Function `chrNdist`
@@ -4529,7 +4537,7 @@ def extNsaveProm_g_exp(exp_gene_dir="../database/roadmap/gene_exp/refFlat_byCell
     return print("Saved at ",output_path)
 
 
-# ### 3-7-4. Extract Promoter regions from gene with various expression level
+# ### 3-7-4. Extract Promoter regions from not expressed genes
 
 # #### Pipeline 
 # 
@@ -4634,10 +4642,345 @@ def extNsaveNOTexp_by_compare(whole_gene_ref_path="../database/roadmap/gene_exp/
     return print("refFlat is saved at {} and prom is saved at {}.".format(output_path_ref, output_path_prom))
 
 
-# In[ ]:
+# ### 3-7-5. Strong and Weak promoter
+
+# #### Function `extStrong_prom`
+# * This function saves the strong promoter (w.r.t. the gene expression level of its gene body) for various rpkm value
+# * This function has been conducted. No need to rerun
+
+# In[1]:
 
 
+def extStrong_prom(prom_path="../database/roadmap/prom/up2kdown4k/gene_exp/", rpkm_val=50, chromatin_state="A"):#, output_path=):
+    """Gather the strong promoter regions at once"""
+    prom_path_subdir=os.listdir(prom_path)
+    prom_path_tardir=[os.path.join(prom_path, subdir) for subdir in prom_path_subdir if str(rpkm_val) in subdir][0]
+    if rpkm_val==0:
+        prom_path_tardir=os.path.join(prom_path, "rpkm0")
+        
+    prom_files=sorted([os.path.join(prom_path_tardir,file) for file in os.listdir(prom_path_tardir)])
+    
+    strong_prom_all=[]
+    for file in prom_files:
+        cell_id=file.split("/")[-1][:4]
+#         if cell_id=="E004":break ## for test
+        with open(file,"rb") as f:
+            prom_lst_chr=pickle.load(f) # list by chromosome
+        prom_all=flatLst(prom_lst_chr) # flattened, now a list of strings (prom)
+        strong_prom=[]
+        for prom in prom_all:
+            if chromatin_state in prom:
+                strong_prom.append(prom)
+        strong_prom_all.append(strong_prom)
+    strong_prom_all=flatLst(strong_prom_all)
+    print("The number of strong promoters detected: ", len(strong_prom_all))
+    return strong_prom_all
 
+
+# #### Function `extWeak_prom`
+# * This function saves the weak promoter (w.r.t. the gene expression level of its gene body) for rpkm=0
+# * This function has been conducted. No need to rerun
+
+# In[2]:
+
+
+def extWeak_prom(prom_path="../database/roadmap/prom/up2kdown4k/gene_exp/not_exp/", chromatin_state="A"):#, output_path=):
+    """Gather the Weak promoter regions at once"""   
+    prom_files=sorted([os.path.join(prom_path,file) for file in os.listdir(prom_path)])
+    
+    weak_prom_all=[]
+    for file in prom_files:
+        cell_id=file.split("/")[-1][:4]
+#         if cell_id=="E004":break ## for test
+        with open(file,"rb") as f:
+            prom_lst_chr=pickle.load(f) # list by chromosome
+        prom_all=flatLst(prom_lst_chr) # flattened, now a list of strings (prom)
+        weak_prom=[]
+        for prom in prom_all:
+            if chromatin_state in prom:
+                weak_prom.append(prom)
+        weak_prom_all.append(weak_prom)
+    weak_prom_all=flatLst(weak_prom_all)
+    print("The number of weak promoters detected: ", len(weak_prom_all))
+    return weak_prom_all
+
+
+# #### Function `prom_css_Kmer_by_cell`
+# * This function saves the kmerized promoter regions (of all genes)
+# * No need to rerun
+
+# In[4]:
+
+
+def prom_css_Kmer_by_cell(path="../database/roadmap/prom/up2kdown4k/all_genes/", output_path="../database/pretrain/prom/up2kdown4k/all_genes/",k=4):
+    output_dir=str(k)+"mer/"
+    output_path_fin=os.path.join(output_path, output_dir)
+    all_files=sorted([os.path.join(path, file) for file in os.listdir(path)]) 
+    
+    for file in all_files:
+        prom_kmer_all=[]
+        cell_id=file.split("/")[-1][:4]
+#         if cell_id=="E008": break # for test use
+        with open(file, "rb") as f:
+            prom=pickle.load(f)
+        prom_css=flatLst(prom)  # make a list from list of a list
+        prom_kmer=[seq2kmer(item,k) for item in prom_css]
+        prom_kmer_all.append(prom_kmer)
+        prom_kmer_all_flt=flatLst(prom_kmer_all)
+        prom_kmer_all_flt_not_zero=[item for item in prom_kmer_all_flt if item!=""]
+        output_name=cell_id+"_all_genes_prom_"+str(k)+"merized.txt"
+        with open(output_path_fin+output_name, "w") as g:
+            g.write("\n".join(prom_kmer_all_flt_not_zero))
+    return 
+
+
+# ### 3-7-6. Kmerize and save and merge
+
+# #### Function `prom_css_g_exp_Kmer_by_cell`
+# * To save the kmerized prom for various gene expression and kmers
+
+# In[6]:
+
+
+def prom_css_g_exp_Kmer_by_cell(path="../database/roadmap/prom/up2kdown4k/gene_exp/", 
+                                output_path="../database/pretrain/prom/up2kdown4k/gene_exp/",
+                                k=4):
+
+    path_sub=sorted(os.listdir(path))
+    for sub in path_sub:
+        input_path=os.path.join(path,sub)
+        output_path_fin=os.path.join(output_path,str(k)+"mer",sub)
+        all_files=[os.path.join(input_path,file) for file in sorted(os.listdir(input_path))]
+        for file in all_files:
+            prom_kmer_all=[]
+            cell_id=file.split("/")[-1][:4]
+#             if cell_id=="E004": break # for test use
+            with open(file, "rb") as f:
+                prom=pickle.load(f)
+            prom_css=flatLst(prom)  # make a list from list of a list
+            prom_kmer=[seq2kmer(item,k) for item in prom_css]
+            prom_kmer_all.append(prom_kmer)
+            prom_kmer_all_flt=flatLst(prom_kmer_all)
+            prom_kmer_all_flt_not_zero=[item for item in prom_kmer_all_flt if item!=""]
+            output_name=cell_id+"_prom_"+sub+"_"+str(k)+"merized.txt"
+            with open(output_path_fin+"/"+output_name, "w") as g:
+                g.write("\n".join(prom_kmer_all_flt_not_zero))
+    return 
+
+
+# #### Function`mergeLst`
+# 
+# * Create a merged pretrain data for all genes
+
+# In[1]:
+
+
+def mergeLst(path="../database/pretrain/prom/up2kdown4k/all_genes/",k=4):
+    sub_path=os.path.join(path,str(k)+"mer/")
+    all_files=[os.path.join(sub_path,file) for file in os.listdir(sub_path)]
+    
+    def mergeNcreate(all_files):  #better use this for units
+        all_entries=[]
+        for file in all_files:
+            with open(file, "r") as f:
+                all_entries.extend(f.read().splitlines())
+        content="\n".join(all_entries)
+        output_name=path+"pretrain_"+str(k)+"mer_all.txt"
+        with open(output_name,"w") as g:
+            g.write(content)
+
+
+# In[2]:
+
+
+def mergeNcreate(all_files, output_name):
+    all_entries=[]
+    for file in all_files:
+        with open(file, "r") as f:
+            all_entries.extend(f.read().splitlines())
+    content="\n".join(all_entries)       
+    with open(output_name,"w") as g:
+        g.write(content)  
+
+
+# In[4]:
+
+
+def mergeLst2(path="../database/pretrain/prom/up2kdown4k/gene_exp/",k=4, rpkm=0):
+    sub_path=os.path.join(path,str(k)+"mer/")
+    if rpkm=="not":
+        dir_name="not_exp"
+    elif rpkm==0:
+        dir_name="rpkm0"
+    else:       
+        dir_name="rpkm"+str(rpkm)
+    tar_path=os.path.join(sub_path, dir_name)
+    all_files=[os.path.join(tar_path, file) for file in os.listdir(tar_path)]
+    output_name="exp_"+str(k)+"mer_"+dir_name+"_all.txt"
+    mergeNcreate(all_files=all_files, output_name=output_name)
+    return print("Saved as ", output_name)
+
+
+# ### 3-7-7. Exclusive case
+
+# #### Function `prom_exclusive`
+# * This function saves the exclusive cases for each expression level. 
+#     (e.g. `rpkm10_excl` means that expression level from `rpkm10` to `rpkm20`)
+
+# In[5]:
+
+
+def prom_exclusive(input_path="../database/pretrain/prom/up2kdown4k/gene_exp/",k=4):
+    """
+    This function generates the exclusive lists of all detected list. 
+    E.g. rpkm10_excl accommodates the elements only in rpkm10, not rpkm20
+    """
+    tar_path=[os.path.join(input_path, kmer_path) for kmer_path in os.listdir(input_path) if str(k) in kmer_path][0]
+    all_files=sorted([file for file in os.listdir(tar_path) if ".txt" in file])
+
+    for file in all_files:
+        f_name=os.path.join(tar_path, file)
+        
+        with open(f_name, 'r') as f:
+            css = [line.strip() for line in f]
+        if "not" in file: not_exp = css
+        if "rpkm0" in file: 
+            rpkm0 = css
+            rpkm0_name=os.path.join(tar_path,"exp_"+str(k)+"mer"+"_rpkm0_excl.txt")
+            print("length of rpkm0:  ",len(rpkm0))
+        if "rpkm10" in file: 
+            rpkm10 = css
+            rpkm10_name=os.path.join(tar_path,"exp_"+str(k)+"mer"+"_rpkm10_excl.txt")
+            print("length of rpkm10: ",len(rpkm10))
+        if "rpkm20" in file: 
+            rpkm20 = css
+            rpkm20_name=os.path.join(tar_path,"exp_"+str(k)+"mer"+"_rpkm20_excl.txt")
+            print("length of rpkm20: ",len(rpkm20))
+        if "rpkm30" in file: 
+            rpkm30 = css
+            rpkm30_name=os.path.join(tar_path,"exp_"+str(k)+"mer"+"_rpkm30_excl.txt")
+            print("length of rpkm30: ",len(rpkm30))
+        if "rpkm50" in file: 
+            rpkm50 = css
+            output_name="exp"+str(k)+"mer"+"_rpkm50_excl.txt"
+            print("length of rpkm50: ",len(rpkm50))
+    
+    rpkm0_excl=[item for item in rpkm0 if item not in rpkm10]
+    rpkm0_excl_str="\n".join(rpkm0_excl)
+    with open(rpkm0_name,"w") as g1:
+        g1.write(rpkm0_excl_str)       
+    print("rpkm0_excl is completed.") 
+    
+    rpkm10_excl=[item for item in rpkm10 if item not in rpkm20]
+    rpkm10_excl_str="\n".join(rpkm10_excl)
+    with open(rpkm10_name,"w") as g2:
+        g2.write(rpkm10_excl_str)        
+    print("rpkm10_excl is completed.")
+    
+    rpkm20_excl=[item for item in rpkm20 if item not in rpkm30]
+    rpkm20_excl_str="\n".join(rpkm20_excl)
+    with open(rpkm20_name,"w") as g3:
+        g3.write(rpkm20_excl_str)
+    print("rpkm20_excl is completed.")
+    
+    rpkm30_excl=[item for item in rpkm30 if item not in rpkm50]
+    rpkm30_excl_str="\n".join(rpkm30_excl)
+    with open(rpkm30_name,"w") as g4:
+        g4.write(rpkm30_excl_str)
+    print("rpkm30_excl is completed.")
+  
+    return print("All exclusive files are saved at ", tar_path)
+        
+
+
+# #### Function `prom_FT_save`
+# * This function prepare the fine tuning data (no. of training and validation = 1:1)
+
+# In[7]:
+
+
+def prom_FT_save(input_path="../database/pretrain/prom/up2kdown4k/gene_exp/",
+                 output_path="../database/fine_tune/prom/up2kdown4k/gene_exp/",
+                 cl1="rpkm30",cl2="rpkm50", 
+                 len_tr=20000, len_dev=1000,
+                 k=4, exclusive=True):
+    assert cl1 in ["not", "rpkm0", "rpkm10", "rpkm20", "rpkm30", "rpkm50"], 'use "not", "rpkm0", "rpkm10", "rpkm20", "rpkm30", "rpkm50" for cl1'
+    assert cl2 in ["not", "rpkm0", "rpkm10", "rpkm20", "rpkm30", "rpkm50"], 'use "not", "rpkm0", "rpkm10", "rpkm20", "rpkm30", "rpkm50" for cl2'
+    
+    sub_path=os.path.join(input_path,str(k)+"mer")
+    if exclusive:
+        tar_cl1=[file for file in os.listdir(sub_path) if cl1 in file and "excl" in file][0]
+        cl1_path=os.path.join(sub_path,tar_cl1)
+        tar_cl2=[file for file in os.listdir(sub_path) if cl2 in file and "excl" in file][0]
+        cl2_path=os.path.join(sub_path,tar_cl2)
+    else:
+        tar_cl1=[file for file in os.listdir(sub_path) if cl1 in file and "all" in file][0]
+        cl1_path=os.path.join(sub_path,tar_cl1)
+        tar_cl2=[file for file in os.listdir(sub_path) if cl2 in file and "all" in file][0]
+        cl2_path=os.path.join(sub_path,tar_cl2)
+    
+    with open(cl1_path,"r") as f1:
+        cl1_lst=[line.strip() for line in f1]
+    with open(cl2_path, "r") as f2:
+        cl2_lst=[line.strip() for line in f2]
+   
+    # make it dataframe
+    df_cl1=pd.DataFrame(cl1_lst, columns=["sequence"])
+    df_cl1["label"]=1
+    df_cl2=pd.DataFrame(cl2_lst, columns=["sequence"])
+    df_cl2["label"]=0
+
+    # make them have the same length
+    if len(df_cl1)>len(df_cl2):
+        df_cl1=df_cl1.sample(n=len(df_cl2), random_state=1) # use the same random state for reproducibility
+    elif len(df_cl1)<len(df_cl2):
+        df_cl2=df_cl2.sample(n=len(df_cl1), random_state=1) # use the same random state for reproducibility
+    assert len(df_cl1)==len(df_cl2), "Check the data length."
+
+    df_all=pd.concat([df_cl1,df_cl2]).sample(frac=1).reset_index(drop=True) 
+
+    # cutting into train and dev
+    assert len(df_all)> len_tr+len_dev, "Not enough data length."
+    df_train=df_all[:len_tr]
+    df_dev=df_all[len_tr:len_tr+len_dev]    
+
+    # save at the fine tuning folder
+    data_type=cl1+"_n_"+cl2
+    
+    if exclusive:
+        output_path_fin=os.path.join(output_path,str(k)+"mer","excl",data_type)       
+    else:
+        output_path_fin=os.path.join(output_path,str(k)+"mer","all",data_type)
+
+    # Check if the directory exists
+    if not os.path.exists(output_path_fin):
+        # If the directory does not exist, create it
+        os.makedirs(output_path_fin)
+    
+    train_name=os.path.join(output_path_fin,"train.tsv")
+    dev_name=os.path.join(output_path_fin,"dev.tsv")
+
+    df_train.to_csv(train_name, sep="\t", index=False)
+    df_dev.to_csv(dev_name, sep="\t", index=False)
+#     print("Fine tuning files are saved at ", output_path_fin)
+    return df_train,df_dev
+
+###################################################################################################
+# ####### Following code was executed and the files are saved at the output path. no need to rerun
+# kmers=[3,4,5,6]
+# exp_lst=["not","rpkm0","rpkm10","rpkm20","rpkm30","rpkm50"]
+# for item in [True,False]:
+#     for k in kmers:
+# #         if k==4:break # for test
+#         for i in range(len(exp_lst)):
+#             for j in range(i+1, len(exp_lst)):
+#                 cl1, cl2 = exp_lst[i], exp_lst[j]           
+#                 prom_FT_save(input_path="../database/pretrain/prom/up2kdown4k/gene_exp/",
+#                          output_path="../database/fine_tune/prom/up2kdown4k/gene_exp/",
+#                          cl1=cl1,cl2=cl2, 
+#                          len_tr=20000, len_dev=1000,
+#                          k=k, exclusive=item)
+###################################################################################################
 
 
 # In[ ]:
@@ -5619,6 +5962,136 @@ def motif_vis(file_name, dev_path, atten_path, motif_str, motif_inst):
             plt.savefig(output_path, format='pdf')
             
             plt.show()
+
+
+# ### 5-2-2. Motif extraction
+
+# 1. Extracting the (1) motif sequence, (2) the attention scores, (3) mean, min, max of those attention scores from the two data frames generated by `motif_utilis.py`.
+# 2. Those two data frames are: 
+#     * The seq, N, k, n, x, p for the regions where p <0.05
+#     * The seq, index (of validation samples), position, score list, for all high attention > condition
+# 3. The series of following functions contribute to the final pipeline function `filtered_motif_n_score`, which generates a merged data frame of the above. The most important information would be the "**seq**" and its corresponding "**attention score**"
+
+# In[1]:
+
+
+def extract_numbers(s):
+    numbers = re.findall('\d+', s)
+    numbers = [int(number) for number in numbers]
+    return numbers
+
+
+# In[2]:
+
+
+def convert_to_array(s):
+    # Find all arrays in the string
+    arrays_str = re.findall(r'array\(\[.*?\]\)', s.replace('\n', ''))
+
+    arrays = []
+    for arr_str in arrays_str:
+        # Remove 'array([' from the start and '])' from the end
+        s_trimmed = arr_str[7:-2]
+        # Convert string to array
+        array = np.fromstring(s_trimmed, sep=',')
+        arrays.append(array)
+    
+    return arrays
+
+
+# In[3]:
+
+
+def avg_min_max(sampe_array_list):
+    if len(sampe_array_list) >1:
+        avg_val=np.mean([np.mean(item) for item in sampe_array_list])
+        min_val=min([min(item) for item in sampe_array_list])
+        max_val=max([max(item) for item in sampe_array_list])
+    else:
+        avg_val = np.mean(sampe_array_list[0])  # get the mean of the single array 
+        min_val = min(sampe_array_list[0])  # get the min value of the single array
+        max_val = max(sampe_array_list[0])  # get the max value of the single array
+    return avg_val, min_val, max_val
+
+
+# In[4]:
+
+
+def read_motif_score_file(path):
+    df_raw=pd.read_csv(path, header=None)
+    df=df_raw.T
+    df=df.dropna()
+    df.columns=["seq", "index", "position", "score"]
+    df=df[["index", "position","seq","score"]]
+    df["index"]=df["index"].apply(extract_numbers)
+    df["position"]=df["position"].apply(ast.literal_eval)
+    df["score"]=df["score"].apply(convert_to_array)
+    return df
+
+
+# In[5]:
+
+
+def filtered_motif_n_score(score_path,filter_path):
+    """
+    score_path: the file for extracting motif and corresponding attention scores
+    filter_path: the file consists of "motif", "N", "K", "n", "x", "p"
+    """
+    # motif scores are extracted for "all high attention area" meets the conditions
+    df=read_motif_score_file(score_path)
+    # filter is for p<0.05
+    fil_df=pd.read_csv(filter_path)
+    fil_df.rename(columns={'motif': 'seq'}, inplace=True)
+    df_merged=pd.merge(df, fil_df, on="seq")
+    avg_all=[]
+    min_all=[]
+    max_all=[]
+    for lst_item in df_merged["score"]:
+        avg_val, min_val, max_val=avg_min_max(lst_item)
+        avg_all.append(avg_val)
+        min_all.append(min_val)
+        max_all.append(max_val)
+    df_merged["score_mean"]=avg_all
+    df_merged["score_min"]=min_all
+    df_merged["score_max"]=max_all
+    df_merged.rename(columns={'x': 'appeared'}, inplace=True)
+    df_merged=df_merged[["seq","p","score_mean","score_max","score_min","score","appeared","index", "position"]]
+    return df_merged
+
+
+# ### 5-2-3. Motif embedding: one-hot
+
+# Hmm, not sure whether one-hot encoding is useful here. 
+
+# In[6]:
+
+
+def one_hot_encode(df_merged):
+    import string
+    char_to_int = {char: index for index, char in enumerate(string.ascii_uppercase[:15])}
+    sequences=df_merged["seq"].to_list()
+    # One-hot encode the sequences
+    encoded_sequences = []
+    for sequence in sequences:
+        encoded_sequence = []
+        for char in sequence:
+            one_hot = np.zeros(15)
+            one_hot[char_to_int[char]] = 1
+            encoded_sequence.append(one_hot)
+        encoded_sequences.append(np.array(encoded_sequence))
+    return encoded_sequences
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
