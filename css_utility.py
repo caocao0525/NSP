@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[9]:
+# In[2]:
 
 
 # ### To convert the file into .py
@@ -240,7 +240,7 @@ def whGene2GLChr(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 # In[8]:
 
 
-def chrNdist(chr_file=chr1):
+def chrNdist(chr_file): #=chr1):
     """
     input: divided genome by chromosome (without any index, only genome)
     output: dataframe of [start, end] position of "N" in the genome sequence
@@ -496,6 +496,26 @@ css_color_dict={'TssA':(255,0,0), # Red
                 'ReprPC': (128,128,128), # Silver
                 'ReprPCWk': (192,192,192), # Gainsboro
                 'Quies': (240, 240, 240)}  # White -> bright gray 
+
+
+# In[10]:
+
+
+state_col_dict_num={'A': (1.0, 0.0, 0.0),
+ 'B': (1.0, 0.271, 0.0),
+ 'C': (0.196, 0.804, 0.196),
+ 'D': (0.0, 0.502, 0.0),
+ 'E': (0.0, 0.392, 0.0),
+ 'F': (0.761, 0.882, 0.02),
+ 'G': (1.0, 1.0, 0.0),
+ 'H': (0.4, 0.804, 0.667),
+ 'I': (0.541, 0.569, 0.816),
+ 'J': (0.804, 0.361, 0.361),
+ 'K': (0.914, 0.588, 0.478),
+ 'L': (0.741, 0.718, 0.42),
+ 'M': (0.502, 0.502, 0.502),
+ 'N': (0.753, 0.753, 0.753),
+ 'O': (0.941, 0.941, 0.941)}
 
 
 # ### 2-2-1. Function to convert RGB into decimal RGB
