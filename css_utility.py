@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[2]:
+# In[4]:
 
 
 # ### To convert the file into .py
@@ -91,6 +91,8 @@ import ast
 #         * [3-7-4. Extract Promoter regions from not expressed genes](#3-7-4.-Extract-Promoter-regions-from-not-expressed-genes)
 #         * [3-7-5. Strong and Weak promoter](#3-7-5.-Strong-and-Weak-promoter)
 #         * [3-7-6. Kmerize and save and merge](#3-7-6.-Kmerize-and-save-and-merge)
+#         * [3-7-7. Exclusive case](#3-7-7.-Exclusive-case)
+#         * [3-7-8. Fine tuning result visualization](#3-7-8.-Fine-tuning-result-visualization)
 #     * [3-8. Enhancer classification](#3-8.-Enhancer-classification)
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
@@ -4764,7 +4766,7 @@ def prom_css_Kmer_by_cell(path="../database/roadmap/prom/up2kdown4k/all_genes/",
 
 def prom_css_g_exp_Kmer_by_cell(path="../database/roadmap/prom/up2kdown4k/gene_exp/", 
                                 output_path="../database/pretrain/prom/up2kdown4k/gene_exp/",
-                                k=4):
+                                k=4, custom_name="_prom_"):
 
     path_sub=sorted(os.listdir(path))
     for sub in path_sub:
@@ -4777,12 +4779,14 @@ def prom_css_g_exp_Kmer_by_cell(path="../database/roadmap/prom/up2kdown4k/gene_e
 #             if cell_id=="E004": break # for test use
             with open(file, "rb") as f:
                 prom=pickle.load(f)
+            ################# comment it if it is not a list of list
             prom_css=flatLst(prom)  # make a list from list of a list
+            #################
             prom_kmer=[seq2kmer(item,k) for item in prom_css]
             prom_kmer_all.append(prom_kmer)
             prom_kmer_all_flt=flatLst(prom_kmer_all)
             prom_kmer_all_flt_not_zero=[item for item in prom_kmer_all_flt if item!=""]
-            output_name=cell_id+"_prom_"+sub+"_"+str(k)+"merized.txt"
+            output_name=cell_id+custom_name+sub+"_"+str(k)+"merized.txt"
             with open(output_path_fin+"/"+output_name, "w") as g:
                 g.write("\n".join(prom_kmer_all_flt_not_zero))
     return 
@@ -4795,11 +4799,28 @@ def prom_css_g_exp_Kmer_by_cell(path="../database/roadmap/prom/up2kdown4k/gene_e
 # In[1]:
 
 
+# def mergeLst(path="../database/pretrain/prom/up2kdown4k/all_genes/",k=4):
+#     sub_path=os.path.join(path,str(k)+"mer/")
+#     all_files=[os.path.join(sub_path,file) for file in os.listdir(sub_path)]
+    
+#     def mergeNcreate(all_files):  #better use this for units
+#         all_entries=[]
+#         for file in all_files:
+#             with open(file, "r") as f:
+#                 all_entries.extend(f.read().splitlines())
+#         content="\n".join(all_entries)
+#         output_name=path+"pretrain_"+str(k)+"mer_all.txt"
+#         with open(output_name,"w") as g:
+#             g.write(content)
+
+
+# In[2]:
+
+
 def mergeLst(path="../database/pretrain/prom/up2kdown4k/all_genes/",k=4):
     sub_path=os.path.join(path,str(k)+"mer/")
-    all_files=[os.path.join(sub_path,file) for file in os.listdir(sub_path)]
-    
-    def mergeNcreate(all_files):  #better use this for units
+    all_files=[os.path.join(sub_path,file) for file in os.listdir(sub_path)]    
+    def mergeNcreate(all_files=all_files, path=path, k=k):
         all_entries=[]
         for file in all_files:
             with open(file, "r") as f:
@@ -4808,6 +4829,7 @@ def mergeLst(path="../database/pretrain/prom/up2kdown4k/all_genes/",k=4):
         output_name=path+"pretrain_"+str(k)+"mer_all.txt"
         with open(output_name,"w") as g:
             g.write(content)
+    mergeNcreate(all_files=all_files, path=path, k=k)
 
 
 # In[2]:
@@ -4837,8 +4859,9 @@ def mergeLst2(path="../database/pretrain/prom/up2kdown4k/gene_exp/",k=4, rpkm=0)
     tar_path=os.path.join(sub_path, dir_name)
     all_files=[os.path.join(tar_path, file) for file in os.listdir(tar_path)]
     output_name="exp_"+str(k)+"mer_"+dir_name+"_all.txt"
-    mergeNcreate(all_files=all_files, output_name=output_name)
-    return print("Saved as ", output_name)
+    output_path=os.path.join(sub_path,output_name)
+    mergeNcreate(all_files=all_files, output_name=output_path)
+    return print("Saved as ", output_path)
 
 
 # ### 3-7-7. Exclusive case
@@ -4946,9 +4969,9 @@ def prom_FT_save(input_path="../database/pretrain/prom/up2kdown4k/gene_exp/",
    
     # make it dataframe
     df_cl1=pd.DataFrame(cl1_lst, columns=["sequence"])
-    df_cl1["label"]=1
+    df_cl1["label"]=0
     df_cl2=pd.DataFrame(cl2_lst, columns=["sequence"])
-    df_cl2["label"]=0
+    df_cl2["label"]=1
 
     # make them have the same length
     if len(df_cl1)>len(df_cl2):
@@ -5001,6 +5024,199 @@ def prom_FT_save(input_path="../database/pretrain/prom/up2kdown4k/gene_exp/",
 #                          len_tr=20000, len_dev=1000,
 #                          k=k, exclusive=item)
 ###################################################################################################
+
+
+# ### 3-7-8. Fine tuning result visualization
+
+# #### Function `prom_ft`
+# * Heatmap visualization from the fine tuning result of promoter classification
+
+# In[5]:
+
+
+def prom_ft(path="../database/ft_result/prom/up2kdown4k/gene_exp/4mer/all/eval_collected/", fig=False, heatmap=True,cmap="coolwarm"):
+    eval_files=sorted(os.listdir(path))
+    cl_name=[]
+    acc_avg=[]
+    auc_avg=[]
+    f1_avg=[]
+    for file in eval_files:
+        df=pd.read_csv(os.path.join(path,file), header=None, sep="\s", engine='python')
+        df.columns=["class","acc","auc","f1","mcc","precision","recall"]
+        exp_name=df["class"][0]
+        cl_name.append(exp_name)
+        acc_avg.append(round(np.mean(df["acc"]),3))
+        auc_avg.append(round(np.mean(df["auc"]),3))
+        f1_avg.append(round(np.mean(df["f1"]),3))
+        if fig:
+            fig=plt.figure(figsize=(4,3))
+            sns.lineplot(df[["acc","auc","f1"]])
+            plt.ylim(0,1)
+            plt.title(exp_name)
+    df_avg=pd.DataFrame({"class":cl_name,"mean_auc":auc_avg,"mean_acc":acc_avg,"mean_f1":f1_avg })
+    if heatmap:
+        df_heatmap=df_avg.set_index("class")
+        sns.heatmap(df_heatmap, annot=True, cmap=cmap)
+        plt.title(path.split("/")[-3])
+    return df_avg
+            
+
+
+# ### 3-7-9. Promoter motif visualization
+
+# #### Function `motif_cp1_ext`
+# * Input path: motif result `cp1_init_df.csv`
+# * Output
+#     * `cp1_dic`= dictionary of task and the dataframe of init
+#     * `motif_dic` = dictionary of task and the motif only
+
+# In[1]:
+
+
+def motif_cp1_ext(path="../database/motif/prom/result/up2kdown4k/gene_exp/4mer/win12min4ins2/",target="excl"):
+    if target=="all": path_mod=os.path.join(path,"all")
+    if target=="excl": path_mod=os.path.join(path,"excl")    
+    sub_path=['not_n_rpkm0','not_n_rpkm10','not_n_rpkm20','not_n_rpkm30','not_n_rpkm50',
+              'rpkm0_n_rpkm10','rpkm0_n_rpkm20','rpkm0_n_rpkm30','rpkm0_n_rpkm50',
+              'rpkm10_n_rpkm20','rpkm10_n_rpkm30','rpkm10_n_rpkm50',
+              'rpkm20_n_rpkm30','rpkm20_n_rpkm50','rpkm30_n_rpkm50']
+    cp1_dic={}
+    motif_dic={}
+    for item in sub_path:
+        target_path=os.path.join(path_mod,item) 
+        
+        cp1_dic[item]=pd.DataFrame()
+        motif_dic[item]=[]
+        
+        if item in os.listdir(path_mod):        
+            if "cp1_init_df.csv" in [item for item in os.listdir(target_path)]:
+                cp1_df=pd.read_csv(os.path.join(target_path,"cp1_init_df.csv"))
+                cp1_df=cp1_df.sort_values(by="p", ascending=True) # sort motif from the lowest p-value
+                cp1_dic[item]=cp1_df
+                motif_dic[item]=cp1_df["motif"].to_list()
+    for key in list(cp1_dic.keys()):
+        if not cp1_dic[key].empty:
+            motif_lst=cp1_dic[key]["motif"].to_list()
+            task_name=key.replace("_n_","_vs._")
+            print("---------Task: {} ----------".format(task_name))
+            print(motif_lst)
+    return cp1_dic,motif_dic
+
+
+# #### Function `motif_stack_graph`
+# * Input: `motif_dic` acquired by `motif_cp1_ext`
+# * Output: motif (in text) stacked per task 
+
+# In[4]:
+
+
+def motif_stack_graph(motif_dic, figsize=(19,10)):
+    """
+    motif_dic is the dictionary acquired by motif_cp1_ext
+    """
+    data = motif_dic
+    fig, ax = plt.subplots(figsize=figsize)
+    
+    def get_rgb(letter):
+        if letter in state_col_255_dict:
+            r, g, b = state_col_255_dict[letter]
+            return (r/255, g/255, b/255)  # normalize to [0, 1]
+        return (0, 0, 0) # Default black color if letter is not found
+
+    added_to_legend = set()
+    
+    for i, (task, strings) in enumerate(data.items()):
+        y_positions = range(len(strings))
+        x_positions = [i] * len(strings)
+        ax.scatter(x_positions, y_positions, marker='', alpha=0)  # No marker, just to define the structure
+
+        for j, s in enumerate(strings):
+            for k, letter in enumerate(s):
+                rgb = get_rgb(letter)
+                ax.text(i + (k - len(s)/2) * 0.11, j, letter, ha='center', va='center', color=rgb, fontsize=16, fontweight='bold')
+                # If the letter hasn't been added to the legend, add it
+                if letter not in added_to_legend:
+                    ax.plot([], [], 'o', color=rgb, label=css_dict[letter])  # This creates a dummy plot element for the legend
+                    added_to_legend.add(letter)
+
+    ax.set_xticks(range(len(data)))
+    ax.set_xticklabels(data.keys(), rotation=45, ha='right',fontsize=18)
+    ax.set_yticks([])
+    ax.set_ylim(-1, max(len(v) for v in data.values()))
+#     ax.set_xlabel('Tasks', fontsize=18)
+#     ax.set_title('Motif Associated with Each Task', fontsize=22)
+#     ax.legend(loc='upper right', fontsize=18)  # Add the legend to the plot
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=18)
+    plt.tight_layout(rect=[0, 0, 0.85, 1])
+    plt.tight_layout()
+    plt.show()
+
+
+# #### Function `motif_color_graph`
+# * Input: `motif_dic` acquired by `motif_cp1_ext`
+# * Output: motif (in color) stacked per task 
+
+# In[3]:
+
+
+def motif_color_graph(motif_dic, figsize=(19, 10)):
+    """
+    motif_dic is the dictionary acquired by motif_cp1_ext
+    """
+    data = motif_dic
+    fig, ax = plt.subplots(figsize=figsize)
+
+    def get_rgb(letter):
+        if letter in state_col_255_dict:
+            r, g, b = state_col_255_dict[letter]
+            return (r / 255, g / 255, b / 255)
+        return (0, 0, 0)  # Default black color
+
+    # Compute counts for each letter per task
+    letter_counts_per_task = {}
+    for task, strings in data.items():
+        counts = {}
+        for s in strings:
+            for letter in s:
+                counts[letter] = counts.get(letter, 0) + 1
+        letter_counts_per_task[task] = counts
+
+    # Unique legend tracking
+    added_to_legend = set()
+
+    # Draw the stacked bar
+    for i, (task, letter_counts) in enumerate(letter_counts_per_task.items()):
+        bottom = 0
+        for letter, count in letter_counts.items():
+            label_text = f"{css_dict[letter]} ({letter})"
+            if label_text not in added_to_legend:
+                ax.bar(i, count, bottom=bottom, color=get_rgb(letter), label=label_text)
+                added_to_legend.add(label_text)
+            else:
+                ax.bar(i, count, bottom=bottom, color=get_rgb(letter))
+            bottom += count
+
+    # Reordering the legend items alphabetically
+    handles, labels = ax.get_legend_handles_labels()
+    # Extract the letter from each label, use it for sorting
+    sorted_legend_items = sorted(zip(handles, labels), key=lambda x: x[1].split()[-1])  # assuming the letter is the last element in the label string
+    sorted_handles, sorted_labels = zip(*sorted_legend_items)
+
+    ax.legend(sorted_handles, sorted_labels, loc='upper left',bbox_to_anchor=(1, 1), fontsize=8)
+
+    ax.set_xticks(range(len(data)))
+    ax.set_xticklabels(data.keys(), rotation=45, ha='right', fontsize=8)
+    ax.set_title('State composition of the motifs in the promoters', fontsize=12)
+
+    plt.tight_layout()
+    plt.subplots_adjust(right=0.75)
+    plt.show()
+
+
+# In[ ]:
+
+
+
 
 
 # In[ ]:
