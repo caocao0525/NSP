@@ -4,7 +4,7 @@
 # # Utilities
 # Various functions to process the initial data
 
-# In[4]:
+# In[2]:
 
 
 # ### To convert the file into .py
@@ -94,6 +94,11 @@ import ast
 #         * [3-7-7. Exclusive case](#3-7-7.-Exclusive-case)
 #         * [3-7-8. Fine tuning result visualization](#3-7-8.-Fine-tuning-result-visualization)
 #     * [3-8. Enhancer classification](#3-8.-Enhancer-classification)
+#         * [3-8-1. Enhancer region extraction by location](#3-8-1.-Enhancer-region-extraction-by-location)
+#         * [3-8-2. Extract Enhancer regions from gene with various expression level](#3-8-2.-Extract-Enhancer-regions-from-gene-with-various-expression-level)
+#         * [3-8-3. Extract Enhancer regions from not expressed genes](#3-8-3.-Extract-Enhancer-regions-from-not-expressed-genes)
+#         * [3-8-4. Kmerize and save and merge](#3-8-4.-Kmerize-and-save-and-merge) <font color="orange"> -> **fine-tuning data are saved** </font>
+#         * [3-8-5. Fine-tuning save byCellType](#3-8-5.-Fine-tuning-save-byCellType) <font color="orange"> -> **fine-tuning data are saved** </font>
 # * **[4. CSS Pattern analysis](#4.-CSS-Pattern-analysis)**
 # * **[5. Training result analysis](#5.-Training-result-analysis)**
 #     * [5-1. Evaluation](#5-1.-Evaluation)
@@ -101,6 +106,7 @@ import ast
 #         * [5-1-3. Fine tuning evaluation](#5-1-3.-Fine-tuning-evaluation)
 #     * [5-2. Motif](#5-2.-Motif)
 #         * [5-2-1. Motif visualization](#5-2-1.-Motif-visualization)
+#             * [5-2-1-1. Motif to Logo](#5-2-1-1.-Motif-to-Logo)
 #         * [5-2-2. Motif extraction](#5-2-2.-Motif-extraction)
 #         * [5-2-3. Motif embedding: one-hot](#5-2-3.-Motif-embedding:-one-hot)
 
@@ -4309,7 +4315,7 @@ def df_cs_wise2fig(df_cs_wise, chromatin_state="A"):
 # In[11]:
 
 
-def save_TSS_by_loc(whole_gene_file, input_path="../database/roadmap/df_pickled/",output_path="../database/roadmap/prom/up2kdown4k/", up_num=2000, down_num=4000, unit=200):
+def save_TSS_by_loc(whole_gene_file, input_path="../database/roadmap/df_pickled/",output_path="../database/roadmap/prom/up2kdown4k/",file_name="up2kdown4k", up_num=2000, down_num=4000, unit=200):
     """
     extract TSS region by location estimation. 
     input: (1) whole_gene_file: the raw gene bed file (2) input_path: pickled df per cell
@@ -4339,7 +4345,7 @@ def save_TSS_by_loc(whole_gene_file, input_path="../database/roadmap/df_pickled/
                 tss_by_loc_css_chr.append(tss_by_loc_css)               
             tss_by_loc_css_all.append(tss_by_loc_css_chr)
         tss_by_loc_css_unit_all=Convert2unitCSS_main_new(tss_by_loc_css_all, unit=unit)  
-        output_file_name=os.path.join(output_path,cell_num+"_prom_up2kdown4k.pkl")
+        output_file_name=os.path.join(output_path,cell_num+"_prom_"+file_name+".pkl")
         with open(output_file_name,"wb") as g:
             pickle.dump(tss_by_loc_css_unit_all,g)
 
@@ -4532,7 +4538,7 @@ def extProm_wrt_g_exp(exp_gene_file, df, up_num=2000, down_num=4000,unit=200):
 # In[38]:
 
 
-def extNsaveProm_g_exp(exp_gene_dir="../database/roadmap/gene_exp/refFlat_byCellType/", df_pickle_dir="../database/roadmap/df_pickled/",output_path="../database/roadmap/prom/up2kdown4k/gene_exp/",rpkm_val=50, up_num=2000, down_num=4000,unit=200):
+def extNsaveProm_g_exp(exp_gene_dir="../database/roadmap/gene_exp/refFlat_byCellType/", df_pickle_dir="../database/roadmap/df_pickled/",output_path="../database/roadmap/prom/up2kdown4k/gene_exp/",file_name="up2kdown4k",rpkm_val=50, up_num=2000, down_num=4000,unit=200):
     exp_gene_subdir=os.listdir(exp_gene_dir)
     exp_gene_tardir=[os.path.join(exp_gene_dir, subdir) for subdir in exp_gene_subdir if str(rpkm_val) in subdir][0]    
     if rpkm_val==0:
@@ -4549,7 +4555,7 @@ def extNsaveProm_g_exp(exp_gene_dir="../database/roadmap/gene_exp/refFlat_byCell
             df=pickle.load(f)
         css_prom_lst_unit_all=extProm_wrt_g_exp(exp_gene_file, df, up_num=up_num, down_num=down_num,unit=unit)
            
-        output_name=output_path+"rpkm"+str(rpkm_val)+"/"+cell_id+"_prom_up2kdown4k.pkl"
+        output_name=output_path+"rpkm"+str(rpkm_val)+"/"+cell_id+"_prom_"+file_name+".pkl"
         output_dir = os.path.dirname(output_name)
         
         if not os.path.exists(output_dir):
@@ -5234,7 +5240,357 @@ def motif_color_graph(motif_dic, figsize=(19, 10)):
 # ## 3-8. Enhancer classification
 # **[back to index](#Index)**
 
-# ### 3-8-1. Pretrain dataset
+# ### 3-8-1. Enhancer region extraction by location
+
+# * Initial location was set from 100K to 2K upstream of the nearest TSS
+# * If this area overlaps with the previous genic region, cut the enhancer region not to overlap
+# * Modified from `save_TSS_by_loc` function
+
+# In[5]:
+
+
+def save_ENH_by_loc(whole_gene_file, input_path="../database/roadmap/df_pickled/",output_path="../database/roadmap/enhancer/up100k2k/", num_1=100000, num_2=2000, unit=200):
+    """
+    extract Enhancer region (defined 100k - 2 k upstream for the first try) by location estimation. 
+    input: (1) whole_gene_file: the raw gene bed file (2) input_path: pickled df per cell
+    output: save tss_by_loc_css_unit_all at the output path
+    """
+    file_lst=os.listdir(input_path)
+    all_files=[os.path.join(input_path,file) for file in file_lst]
+    for file in all_files:
+        cell_num=file.split("/")[-1][:4]
+        print(cell_num)
+#         if cell_num=="E002": break  # for test 
+        with open(file,"rb") as f:
+            df_pickled=pickle.load(f)
+        # align the gene file and the df file according to their availability(some cells does not have chr Y)
+        new_gene_lst_all, trimmed_df=remove_chrM_and_trim_gene_file_accordingly(whole_gene_file,df_pickled)
+        css_lst_chr = df2longcss(trimmed_df) # list of long css per chromosome
+        total_chr = len(new_gene_lst_all)       
+        enh_by_loc_css_all = []
+        for i in range(total_chr):
+#             if i>=3: break  # for test 
+            gene_start_lst = new_gene_lst_all[i]["TxStart"]
+            gene_end_lst = new_gene_lst_all[i]["TxEnd"]
+            css_lst = css_lst_chr[i]
+            enh_by_loc_css_chr = []           
+            prev_gene_end = 0  # Initialize with 0 since there's no gene before the first one
+            for j in range(len(gene_start_lst)):
+                gene_start = gene_start_lst[j]
+                gene_end = gene_end_lst[j]
+#                 print(j)
+#                 print("[gene_start, gene_end]",[gene_start, gene_end])
+                win_start = max(0, gene_start - num_1)  # use max to prevent negative index
+                win_end = min(len(css_lst), gene_start - num_2)  # use min to prevent index out of range
+                # Check if enhancer region overlaps with the body of the previous gene
+                if win_start < prev_gene_end:
+                    win_start = prev_gene_end+1
+                enh_by_loc_css = css_lst[win_start:win_end]
+#                 print("[win_start,win_end]",[win_start,win_end])
+#                 print("length = ", win_end-win_start )
+                if len(enh_by_loc_css) >= 200:
+                    enh_by_loc_css_chr.append(enh_by_loc_css) 
+                prev_gene_end = gene_end 
+            enh_by_loc_css_all.append(enh_by_loc_css_chr)
+        enh_by_loc_css_unit_all=Convert2unitCSS_main_new(enh_by_loc_css_all, unit=unit)  
+        output_file_name=os.path.join(output_path,cell_num+"_enhancer_up100k2k.pkl")
+        with open(output_file_name,"wb") as g:
+            pickle.dump(enh_by_loc_css_unit_all,g)
+
+    return print("All done!") #enh_by_loc_css_unit_all
+
+
+# ### 3-8-2. Extract Enhancer regions from gene with various expression level
+
+# #### Pipeline  (modified from those for promoter)
+# 
+# (1) `ENH_expGene2css` : cut the enhancer regions of long css <br>
+# (2) `extENH_wrt_g_exp` : transform css into unit length css <br>
+# (3) `extNsaveENH_g_exp` : load the required file and process all, and save
+# 
+# **Usage:** <br>
+# `for rpkm_val in [0,10,20,30,50]:` <br>
+#    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`extNsaveENH_g_exp(rpkm_val=rpkm_val)`
+
+# In[6]:
+
+
+def ENH_expGene2css(g_lst_chr_merged,df, num_1=100000, num_2=2000):   # df indicates css, created by bed2df_expanded
+    """
+    modified from `compGene2css`
+    Input: Reference gene file trimmed for gene expresseion level, df (CSS)
+    Output: list of chromosome-wise list that contains the css at (expressed) genic area with prom only.
+    """
+    g_lst_chr=g_lst_chr_merged
+    df = df[df['chromosome'] != 'chrM']
+    css_lst_chr=df2longcss(df) # list of long css per chromosome
+    
+    g_lst_chr = g_lst_chr[:len(css_lst_chr)]  # adjust the length of list according to length of df (might not have chrY)
+    total_chr=len(css_lst_chr)
+    
+    print("Matching to the chromatin state sequence data ...")
+    css_enh_lst_all=[]
+    for i in tqdm_notebook(range(total_chr)):
+        css=css_lst_chr[i]   # long css of i-th chromosome
+        gene_df=g_lst_chr[i] # gene df of i-th chromosome
+        
+        css_enh_lst_chr=[]
+        prev_gene_end = 0  # Initialize with 0 since there's no gene before the first one
+        for j in range(len(gene_df)):
+            gene_start=gene_df["TxStart"].iloc[j]
+            gene_end=gene_df["TxEnd"].iloc[j]
+            
+            enh_start = max(0, gene_start - num_1)  # use max to prevent negative index
+            enh_end = min(len(css), gene_start - num_2)  # use min to prevent index out of range
+#             enh_start=gene_start-1-num_1  # python counts form 0
+#             enh_end=gene_start-num_2+1      # python excludes the end
+            if enh_start < prev_gene_end:
+                enh_start = prev_gene_end+1
+            css_enh = css[enh_start:enh_end]
+            if len(css_enh) >= 200:
+                css_enh_lst_chr.append(css_enh)
+            prev_gene_end = gene_end 
+          
+        css_enh_lst_all.append(css_enh_lst_chr)  # list of list
+    
+    assert len(css_enh_lst_all)==total_chr
+    
+    # remove chromosome if it is empty (e.g. chrY for female)
+    css_enh_lst_all=[elm for elm in css_enh_lst_all if elm!=[]] 
+    
+    print("Done!")
+    return css_enh_lst_all 
+
+
+# In[7]:
+
+
+def extENH_wrt_g_exp(exp_gene_file, df, num_1=100000, num_2=2000,unit=200):
+    """
+    extract enhancer regions of genes according to gene expression level
+    """
+    df = df[df['chromosome'] != 'chrM']
+    g_lst_chr=Gexp_Gene2GLChr(exp_gene_file)
+    g_lst_chr_merged=merge_intervals(g_lst_chr)
+    
+    css_enh_lst_all=ENH_expGene2css(g_lst_chr_merged,df, num_1=num_1, num_2=num_2)
+    css_enh_lst_unit_all=Convert2unitCSS_main_new(css_enh_lst_all, unit=unit)
+    return css_enh_lst_unit_all
+
+
+# In[8]:
+
+
+def extNsaveENH_g_exp(exp_gene_dir="../database/roadmap/gene_exp/refFlat_byCellType/", df_pickle_dir="../database/roadmap/df_pickled/",output_path="../database/roadmap/enhancer/up100k2k/gene_exp/",rpkm_val=50, num_1=100000, num_2=2000,unit=200):
+    exp_gene_subdir=os.listdir(exp_gene_dir)
+    exp_gene_tardir=[os.path.join(exp_gene_dir, subdir) for subdir in exp_gene_subdir if str(rpkm_val) in subdir][0]    
+    if rpkm_val==0:
+        exp_gene_tardir=os.path.join(exp_gene_dir, "rpkm0")
+        
+    exp_gene_files=sorted([os.path.join(exp_gene_tardir,file) for file in os.listdir(exp_gene_tardir)])
+    
+    for exp_gene_file in exp_gene_files:
+        cell_id=exp_gene_file.split("/")[-1][:4]
+#         if cell_id=="E004":break ## for test
+        df_name=[file for file in os.listdir(df_pickle_dir) if cell_id in file][0]
+        df_path=os.path.join(df_pickle_dir,df_name)
+        with open(df_path,"rb") as f:
+            df=pickle.load(f)
+        css_enh_lst_unit_all=extENH_wrt_g_exp(exp_gene_file, df, num_1=num_1, num_2=num_2, unit=unit)
+           
+        output_name=output_path+"rpkm"+str(rpkm_val)+"/"+cell_id+"_enhancer_up100k2k.pkl"
+        output_dir = os.path.dirname(output_name)
+        
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        with open(output_name, "wb") as g:
+            pickle.dump(css_enh_lst_unit_all,g)
+    return print("Saved at ",output_path)
+
+
+# ### 3-8-3. Extract Enhancer regions from not expressed genes
+
+# Also similar to promoter case
+
+# In[9]:
+
+
+def ENH_extNsaveNOTexp_by_compare(whole_gene_ref_path="../database/roadmap/gene_exp/chr.gene.refFlat",
+                              exp_ref_path="../database/roadmap/gene_exp/refFlat_byCellType/rpkm0/",
+                              df_pickle_dir="../database/roadmap/df_pickled/",
+                              output_path_ref="../database/roadmap/gene_exp/refFlat_byCellType/not_exp/",
+                              output_path_enhancer="../database/roadmap/enhancer/up100k2k/gene_exp/not_exp/",
+                              num_1=100000,num_2=2000,unit=200):
+    
+    exp_ref_file_all=sorted([os.path.join(exp_ref_path,file) for file in os.listdir(exp_ref_path)])
+    
+    for exp_ref_file in exp_ref_file_all:
+        cell_id=exp_ref_file.split("/")[-1][:4]
+#         if cell_id=="E004":break # for test
+        print(cell_id+" is now processing...")
+            
+        df_name=[file for file in os.listdir(df_pickle_dir) if cell_id in file][0]
+        df_path=os.path.join(df_pickle_dir,df_name)
+        with open(df_path,"rb") as f:
+            df=pickle.load(f)
+        
+        non_exp_gene_lst=extNOTexp_by_compare(whole_gene_ref_path, exp_ref_file) # a list of chromosome-wise df
+        #### refFlat for NOT expressed is pickled as a list of dataframe ####
+        not_exp_ref_path=output_path_ref+cell_id+"_gene_not_expressed.pkl"
+        with open(not_exp_ref_path,"wb") as g:
+            pickle.dump(non_exp_gene_lst,g)        
+#         css_prom_lst_all=prom_expGene2css(non_exp_gene_lst, df, up_num=up_num, down_num=down_num)
+#         css_prom_lst_unit_all=Convert2unitCSS_main_new(css_prom_lst_all, unit=unit)
+        css_enh_lst_all=ENH_expGene2css(non_exp_gene_lst, df, num_1=num_1, num_2=num_2)
+        css_enh_lst_unit_all=Convert2unitCSS_main_new(css_enh_lst_all, unit=unit)
+        
+        output_name=output_path_enhancer+cell_id+"_not_exp_gene_enhancer_up100k2k.pkl"
+        with open(output_name,"wb") as h:
+            pickle.dump(css_enh_lst_unit_all,h)
+    
+    return print("refFlat is saved at {} and prom is saved at {}.".format(output_path_ref, output_path_enhancer))
+
+
+# ### 3-8-4. Kmerize and save and merge
+
+# Also similar to promoter case
+
+# In[10]:
+
+
+def ENH_css_Kmer_by_cell(path="../database/roadmap/enhancer/up100k2k/all_genes/", output_path="../database/pretrain/enhancer/up100k2k/all_genes/",k=4):
+    output_dir=str(k)+"mer/"
+    output_path_fin=os.path.join(output_path, output_dir)
+    all_files=sorted([os.path.join(path, file) for file in os.listdir(path)]) 
+    
+    for file in all_files:
+        enh_kmer_all=[]
+        cell_id=file.split("/")[-1][:4]
+#         if cell_id=="E004": break # for test use
+        with open(file, "rb") as f:
+            enh=pickle.load(f)
+        enh_css=flatLst(enh)  # make a list from list of a list
+        enh_kmer=[seq2kmer(item,k) for item in enh_css]
+        enh_kmer_all.append(enh_kmer)
+        enh_kmer_all_flt=flatLst(enh_kmer_all)
+        enh_kmer_all_flt_not_zero=[item for item in enh_kmer_all_flt if item!=""]
+        output_name=cell_id+"_all_genes_enhancer_"+str(k)+"merized.txt"
+        with open(output_path_fin+output_name, "w") as g:
+            g.write("\n".join(enh_kmer_all_flt_not_zero))
+    return 
+
+
+# ### 3-8-5. Fine-tuning save byCellType
+
+# In[1]:
+
+
+def FT_save_byCellType(input_path="../database/pretrain/enhancer/up100k2k/all_genes/",
+                 output_path="../database/fine_tune/enhancer/up100k2k/byCellType/",
+                 cl1="E033",cl2="E115", 
+                 len_tr=20000, len_dev=1000,
+                 k=4):
+    
+    sub_path=os.path.join(input_path,str(k)+"mer")
+    tar_cl1=[file for file in os.listdir(sub_path) if cl1 in file][0]
+    cl1_path=os.path.join(sub_path,tar_cl1)
+    tar_cl2=[file for file in os.listdir(sub_path) if cl2 in file][0]
+    cl2_path=os.path.join(sub_path,tar_cl2)
+    
+    with open(cl1_path,"r") as f1:
+        cl1_lst=[line.strip() for line in f1]
+    with open(cl2_path, "r") as f2:
+        cl2_lst=[line.strip() for line in f2]
+   
+    # make it dataframe
+    df_cl1=pd.DataFrame(cl1_lst, columns=["sequence"])  # contrast, e.g.) normal cell
+    df_cl1["label"]=0
+    df_cl2=pd.DataFrame(cl2_lst, columns=["sequence"])  # experiment, e.g.) cancer cell
+    df_cl2["label"]=1
+
+    # make them have the same length
+    if len(df_cl1)>len(df_cl2):
+        df_cl1=df_cl1.sample(n=len(df_cl2), random_state=1) # use the same random state for reproducibility
+    elif len(df_cl1)<len(df_cl2):
+        df_cl2=df_cl2.sample(n=len(df_cl1), random_state=1) # use the same random state for reproducibility
+    assert len(df_cl1)==len(df_cl2), "Check the data length."
+
+    df_all=pd.concat([df_cl1,df_cl2]).sample(frac=1).reset_index(drop=True) 
+
+    # cutting into train and dev
+    assert len(df_all)> len_tr+len_dev, "Not enough data length."
+    df_train=df_all[:len_tr]
+    df_dev=df_all[len_tr:len_tr+len_dev]    
+
+    # save at the fine tuning folder
+    data_type=cl1+"_n_"+cl2
+    
+    output_path_fin=os.path.join(output_path,str(k)+"mer",data_type)
+
+    # Check if the directory exists
+    if not os.path.exists(output_path_fin):
+        # If the directory does not exist, create it
+        os.makedirs(output_path_fin)
+    
+    train_name=os.path.join(output_path_fin,"train.tsv")
+    dev_name=os.path.join(output_path_fin,"dev.tsv")
+
+    df_train.to_csv(train_name, sep="\t", index=False)
+    df_dev.to_csv(dev_name, sep="\t", index=False)
+    print("Fine tuning files are saved at ", output_path_fin)
+    return df_train,df_dev
+
+###################################################################################################
+# kmers=[3,4,5,6]
+# exp_lst=[("E033", "E115"),("E034", "E115"),("E066", "E118"),("E096", "E114")]
+# for k in kmers:
+#     #if k==4:break # for test
+#     for i in range(len(exp_lst)):
+#         cl1=exp_lst[i][0]
+#         cl2=exp_lst[i][1]
+#         FT_save_byCellType(input_path="../database/pretrain/enhancer/up100k2k/all_genes/",
+#                  output_path="../database/fine_tune/enhancer/up100k2k/byCellType/",
+#                  cl1=cl1,cl2=cl2, 
+#                  len_tr=20000, len_dev=1000,
+#                  k=k)
+###################################################################################################
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
 
 # #### Funtion `cutKmerByCell`
 # * Input: file path of a bed file like`"../database/temp_files/whole_genome/byCellType/E001_whole_css_wo_telo.txt"`)
@@ -6198,6 +6554,240 @@ def motif_vis(file_name, dev_path, atten_path, motif_str, motif_inst):
             plt.savefig(output_path, format='pdf')
             
             plt.show()
+
+
+# ### 5-2-1-1. Motif to Logo
+
+# ### Pipeline
+# 
+# * Final function: `motif_logo` which creates logo only from paths (`mat_path`, `dev_path`) and motif.
+# * Function list: `get_matWcss`,`get_motifWScore`,`score2logo`,`score2logo`
+# * Usage 
+# >`score2logo(mat_path, dev_path, motif="GBBBG")`
+
+# #### Function `get_matWcss`
+# * Usage: convert the k-merized `dev.tsv` and attention matrix into original sequence and corresponding attention score vectors, divided into 1 and 0 labels
+# * Input: `mat_path` is for `atten.npy` while `dev_path`is for `dev.tsv`
+# >e.g.) `mat_path`="../database/ft_result/pred/4_gene_exp/test02_double_data/Ghexp_rpkm30_or_not/atten.npy"
+# `dev_path`="../database/fine_tune/gene_exp/4mer/Ghexp_rpkm30_or_not/tr_len_40k/dev.tsv"
+# * Output: Dictionary output for label 1 (`all_dict_1`) and label 0 (`all_dict_1`)
+
+# In[2]:
+
+
+def get_matWcss(mat_path,dev_path):
+    atten_raw=np.load(mat_path)
+    atten=pd.DataFrame(atten_raw)
+    dev_raw=dev_conv(dev_path) #dev_conv is a function in css_utility
+    dev=dev_raw[["ori_seq","label"]]
+    dev.reset_index(drop=True, inplace=True)  # remove the header
+    
+    dev_label_1=dev[dev["label"]==1]
+    dev_label_0=dev[dev["label"]==0]
+
+    atten["label"] = dev["label"].values
+    atten_label_1=atten[atten["label"]==1]
+    dev_label_1.pop("label") # remove the label column
+    atten_label_1.pop("label") # remove the label column
+    atten_label_0=atten[atten["label"]==0]
+    dev_label_0.pop("label") # remove the label column
+    atten_label_0.pop("label") # remove the label column
+    
+    assert len(dev_label_1)==len(atten_label_1)
+    assert len(dev_label_0)==len(atten_label_0)
+    
+    all_dict_1={i:(dev_label_1.loc[i], atten_label_1.loc[i]) for i in dev_label_1.index}
+    all_dict_0={i:(dev_label_0.loc[i], atten_label_0.loc[i]) for i in dev_label_0.index}
+
+    ### to use, apply following 
+#     for index, (dev_entry, atten_entry) in list(atten_dict_1.items()):
+#         dev_tar=dev_entry['ori_seq']
+#         atten_tar=atten_entry.values
+    
+    return all_dict_1, all_dict_0
+
+
+# #### Function `draw_all_entry`
+# * Usage: just to check all the entries using gradual colormap (viridis)
+
+# In[7]:
+
+
+############# JUST TO CHECK ALL THE ENTRIES IN GRADUAL COLORMAP
+def draw_all_entry(all_dict_1):
+    for index, (dev_entry, atten_entry) in list(all_dict_1.items()):
+        dev_tar = dev_entry['ori_seq']
+        atten_tar = atten_entry.values.reshape(-1, 1).T  # Reshape to 2D array for heatmap
+
+        # Get the lengths of the dev_tar and atten_tar
+        dev_length = len(dev_tar)
+        atten_length = atten_tar.shape[1]
+
+        # Only proceed if atten_length is not longer than dev_length
+        if atten_length <= dev_length:
+            plt.figure(figsize=(28, 1))  # Adjusted height to give space for text
+
+            # Add colored text for each letter in dev_tar above where the heatmap will be
+            for i, letter in enumerate(dev_tar[:atten_length]):
+                plt.text(i + 0.5, -0.2, letter, color=state_col_dict.get(letter, 'black'),
+                         ha='center', va='center', fontsize=32, family='monospace')
+
+            sns.heatmap(data=atten_tar, cmap="viridis", yticklabels=False, cbar=False)
+
+            plt.show()
+
+
+# #### Function `get_motifWScore`
+# * Usage: Draw the designated part (motif part) only with gradual colormap (viridis)
+# * Input: `all_dict_1` from the function `get_matWcss`
+
+# In[8]:
+
+
+####################### draw the designated entry only ######################
+def get_motifWScore(all_dict_1, motif="GBBBG"):
+    # all_dict_1 is the dictionary (key:index, value=tuple of motif and )
+    motif_found_all=[]
+    score_found_all=[]
+    score_found_norm_all=[]
+
+    for index, (dev_entry, atten_entry) in list(all_dict_1.items()):
+        dev_tar = dev_entry['ori_seq']
+        atten = atten_entry.values.reshape(-1, 1).T  # Reshape to 2D array for heatmap
+        atten_tar = atten[0] # atten is a list of list, with one element
+
+        if motif in dev_tar:
+            start_index=dev_tar.find(motif)
+            end_index=start_index+len(motif)
+            if end_index <= len(atten_tar)+1:
+                print("index: ",index)
+                print("min-max: {} ~ {}".format(round(min(atten_tar),3), round(max(atten_tar),3)))
+                motif_found=dev_tar[start_index:end_index]
+                score_found=atten_tar[start_index:end_index].tolist()
+                score_found_norm=[item/sum(atten_tar) for item in score_found]  # normalize
+                
+                motif_found_all.append(motif_found)
+                score_found_all.append(score_found)
+                score_found_norm_all.append(score_found_norm)
+
+                ### create the motif figures 
+                fig_width=len(motif)*0.35
+                
+                ######## Data strip with colored scores
+                
+                plt.figure(figsize=(fig_width, 1))  # Adjusted height to give space for text
+                # Add colored text for each letter in dev_tar above the heatmap
+                for i, letter in enumerate(motif_found):                    
+                    plt.text(i + 0.5, -0.2, letter, color=state_col_dict.get(letter, 'black'),
+                             ha='center', va='center', fontsize=32, family='monospace')
+
+                sns.heatmap(data=[score_found], cmap="viridis", yticklabels=False, cbar=False)
+                plt.show()
+    return motif_found_all, score_found_all, score_found_norm_all #list of list
+
+
+# #### Function `score2logo`
+# * Usage: Create a logo using score 
+# * Input: three lists of list acquired from the function `get_motifWScore`
+
+# In[11]:
+
+
+def score2logo(motif_found_all, score_found_all, score_found_norm_all, norm=False):
+    num_row=len(motif_found_all[0])
+    columns=[chr(i) for i in range(ord("A"), ord("O")+1)]
+    
+    # df for creating logo
+    df_logo_all=[]
+    df=pd.DataFrame(0.0, index=range(num_row), columns=columns)
+    for i, motif_found in enumerate(motif_found_all):
+        if norm:
+            for j, letter in enumerate(motif_found):
+                df.loc[j, letter]=round(score_found_norm_all[i][j],3)
+        elif not norm:
+            for j, letter in enumerate(motif_found):
+                df.loc[j, letter]=round(score_found_all[i][j],3)   
+        df_logo=df.copy()
+        df_logo_all.append(df_logo)
+
+        fig_width=num_row*0.5
+        logo=logomaker.Logo(df_logo,color_scheme=state_col_dict_num, figsize=(fig_width,0.8))
+        logo.style_spines(visible=False)
+        logo.style_spines(spines=["left","bottom"], visible=True)
+        plt.show()
+    
+    
+    # Calculate the average
+    total_df = pd.DataFrame()
+    for df_logo in df_logo_all:
+        total_df = total_df.add(df_logo, fill_value=0)
+    average_df = total_df / len(df_logo_all)
+    
+    extracted_values = average_df.max(axis=1).tolist()   # make the average score into a list
+    extracted_values = [round(item,3) for item in  extracted_values] 
+    
+    df_logo_all.append(average_df)
+    
+    print("---------- Average Score Motif Logo ----------")
+    logo2=logomaker.Logo(average_df,color_scheme=state_col_dict_num, figsize=(fig_width+1,1))
+    logo2.style_spines(visible=False)
+    logo2.style_spines(spines=["left","bottom"], visible=True)
+    plt.show()
+#     print(average_df)
+    logo_score = df_logo_all[-1].max(axis=1).tolist()
+    logo_score = [round(item,3) for item in  extracted_values] 
+    print("Average logo score:",logo_score)
+    
+    return logo_score 
+
+
+# #### Function `motif_logo`
+# * Usage: final function connecting all the above functions, generating logo from the paths and motif
+
+# In[12]:
+
+
+def motif_logo(mat_path, dev_path, motif="GBBBG"):
+    all_dict_1, all_dict_0=get_matWcss(mat_path,dev_path)
+    motif_found_all,score_found_all,score_found_norm_all=get_motifWScore(all_dict_1, motif=motif)
+    logo_score=score2logo(motif_found_all,score_found_all,score_found_norm_all)
+    return
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+
 
 
 # ### 5-2-2. Motif extraction
