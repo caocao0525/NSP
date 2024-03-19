@@ -17,3 +17,10 @@ which users can customize to meet their requirements.
 
 For the environment setup, including the Python version and other settings, you can refer to the configurations used in the [DNABERT GitHub repository](https://github.com/jerryji1993/DNABERT). These guidelines will help ensure compatibility with the foundational aspects we utilize from DNABERT.
 
+## Installation
+
+To get a local copy of the repository, use the following command:
+```bash
+git clone https://github.com/caocao0525/ChromBERT.git
+
+
