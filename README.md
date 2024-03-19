@@ -23,4 +23,5 @@ which users can customize to meet their requirements.
 
 ## Environment Setup
 
-For setting up and understanding the foundational aspects of this project, please follow the guidelines provided in the [DNABERT GitHub repository](https://github.com/jerryji1993/DNABERT). DNABERT's setup and configuration are essential for properly utilizing the functionalities we build upon in our project.
+For the environment setup, including the Python version and other settings, you can refer to the configurations used in the [DNABERT GitHub repository](https://github.com/jerryji1993/DNABERT). These guidelines will help ensure compatibility with the foundational aspects we utilize from DNABERT.
+
