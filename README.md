@@ -11,15 +11,7 @@ and task-specific fine-tuning. We supply pre-trained models for both 2k upstream
 Additionally, we provide a fine-tuning example for the 2k upstream and 4k downstream setup. For data preprocessing, utility functions are available in `utility.py`, 
 which users can customize to meet their requirements.
 
-## Table of Contents
-
-- [Environment Setup](#Environment-Setup)
-- [Usage](#usage)
-- [Features](#features)
-- [Contributing](#contributing)
-- [Credits](#credits)
-- [License](#license)
-- [Contact](#contact)
+## Citation
 
 ## Environment Setup
 
