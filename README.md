@@ -42,20 +42,25 @@ We strongly suggest creating a Python virtual environment using [Anaconda](https
 
 #### 2-1. Create and activate a new conda environment
 ```
-conda create -n chrombert python=3.6
-conda activate chrombert
+$ conda create -n chrombert python=3.6
+$ conda activate chrombert
 ```
 
 #### 2-2. Clone the DNABERT repository to download the source code to your local machine.
 ```
-git clone https://github.com/caocao0525/ChromBERT
+$ git clone https://github.com/caocao0525/ChromBERT
 ```
 
 #### 2-3. Install ChromBERT in editable mode to allow for dynamic updates to the code without needing reinstallation.
 ```
-python3 -m pip install --editable .
+$ cd ChromBERT
+$ python3 -m pip install --editable .
 ```
- 
+
+#### 2-4. Install required packages
+```
+$ cd 
+```
 
 For the environment setup, including the Python version and other settings, you can refer to the configurations used in the [DNABERT GitHub repository](https://github.com/jerryji1993/DNABERT). These guidelines will help ensure compatibility with the foundational aspects we utilize from DNABERT.
 
