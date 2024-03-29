@@ -12,6 +12,8 @@ Additionally, we provide a fine-tuning example for the 2k upstream and 4k downst
 which users can customize to meet their requirements.
 
 ## Citation
+
+## 1. System Requirements and Optimal Configurations
 ### Software
 - Operating System: Linux (Ubuntu 22.04 LTS recommended)
 - Python: 3.6 or higher
@@ -40,7 +42,7 @@ We have tested and confirmed that the following configurations work well for run
 Select a configuration that best matches your available resources. Ensuring compatibility among these components is crucial for optimal performance.
 
 
-## Environment Setup
+## 2. Installation with Environment Setup
 We strongly suggest creating a Python virtual environment using [Anaconda](https://docs.anaconda.com/free/anaconda/install/linux/). Below, you'll find a detailed, step-by-step guide that covers everything from establishing a new conda environment to installing ChromBERT along with the necessary packages.
 
 * 
@@ -48,7 +50,7 @@ We strongly suggest creating a Python virtual environment using [Anaconda](https
 
 For the environment setup, including the Python version and other settings, you can refer to the configurations used in the [DNABERT GitHub repository](https://github.com/jerryji1993/DNABERT). These guidelines will help ensure compatibility with the foundational aspects we utilize from DNABERT.
 
-## Installation
+## 2. Installation
 
 To get a local copy of the repository, use the following command:
 ```bash
