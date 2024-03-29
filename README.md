@@ -15,6 +15,9 @@ which users can customize to meet their requirements.
 
 ## Environment Setup
 
+Here's the hardware setup we used for training the model:
+* NVIDIA A40 
+
 For the environment setup, including the Python version and other settings, you can refer to the configurations used in the [DNABERT GitHub repository](https://github.com/jerryji1993/DNABERT). These guidelines will help ensure compatibility with the foundational aspects we utilize from DNABERT.
 
 ## Installation
