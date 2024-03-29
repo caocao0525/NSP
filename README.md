@@ -13,17 +13,35 @@ which users can customize to meet their requirements.
 
 ## Citation
 
-
-## System Requirements
-
 ### Software
-- Operating System: Linux (Ubuntu 22.04 LTS recommended)
-- Python: 3.6 or higher
-- PyTorch: 1.4.0 (Check with `conda list pytorch` to see your installed version)
+- **Operating System:** Linux (Ubuntu 22.04 LTS recommended)
+- **Python:** Version 3.6 or higher (up to 3.9 recommended for best compatibility)
+- **PyTorch:** Version 1.4.0 (Check compatibility for later versions with `conda list pytorch`)
+
+#### Verified Configurations
+The following configurations have been thoroughly tested and are known to work well for running our model:
+
+**Configuration 1:**
+- **CUDA Version:** 10.1
+- **cuDNN Version:** 7.6.5
+- **NVIDIA Driver Version:** 515.65.01
+- **GPU:** NVIDIA A40
+
+**Configuration 2:**
+- **CUDA Version:** 10.0.130
+- **cuDNN Version:** 7.6.5
+- **NVIDIA Driver Version:** 450.119.04
+- **GPU:** NVIDIA RTX 2080Ti
+
+These configurations are provided as guidelines. Users with similar setups should also achieve good results, but adjustments may be necessary based on specific hardware and software environments.
 
 ### Hardware
-- GPU: NVIDIA A40 with CUDA Version 11.7 compatibility
-- Memory: 32 GB RAM recommended
+- **GPU:** NVIDIA A40 or higher with appropriate CUDA compatibility recommended for optimal performance.
+- **Memory:** 64 GB RAM recommended. This recommendation is based on the memory requirements observed during testing, which includes processing large datasets and maintaining efficient model operations.
+
+
+Select a configuration that best matches your available resources. Ensuring compatibility among these components is crucial for optimal performance.
+
 
 ## Environment Setup
 
