@@ -22,17 +22,11 @@ which users can customize to meet their requirements.
 #### Verified Configurations
 We have tested and confirmed that the following configurations work well for running our model:
 
-**Configuration 1:**
-- CUDA Version: 10.1
-- cuDNN Version: 7.6.5
-- NVIDIA Driver Version: 515.65.01
-- GPU: NVIDIA A40
+| Configuration    | CUDA Version | cuDNN Version | NVIDIA Driver Version | GPU               |
+|------------------|--------------|---------------|-----------------------|-------------------|
+| **Configuration 1** | 10.1         | 7.6.5         | 515.65.01             | NVIDIA A40        |
+| **Configuration 2** | 10.0.130     | 7.6.5         | 450.119.04            | NVIDIA RTX 2080Ti |
 
-**Configuration 2:**
-- CUDA Version: 10.0.130
-- cuDNN Version: 7.6.5
-- NVIDIA Driver Version: 450.119.04
-- GPU: NVIDIA RTX 2080Ti
 
 ### Hardware
 - Recommended GPU: NVIDIA A40 or higher with appropriate CUDA compatibility
