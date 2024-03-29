@@ -39,15 +39,20 @@ Select a configuration that best matches your available resources. Ensuring comp
 ## 2. Installation with Environment Setup
 We strongly suggest creating a Python virtual environment using [Anaconda](https://docs.anaconda.com/free/anaconda/install/linux/). Below, you'll find a detailed, step-by-step guide that covers everything from establishing a new conda environment to installing ChromBERT along with the necessary packages.
 
+
+### 2-1. Create and activate a new conda environment
 ```
-# Create and activate a new conda environment
 conda create -n chrombert python=3.6
 conda activate chrombert
+```
 
-# Clone the DNABERT repository to download the source code to your local machine.
+### 2-2. Clone the DNABERT repository to download the source code to your local machine.
+```
 git clone https://github.com/caocao0525/ChromBERT
+```
 
-# Install DNABERT in editable mode to allow for dynamic updates to the code without needing reinstallation. Useful for development and contributions.
+### 2-3. Install ChromBERT in editable mode to allow for dynamic updates to the code without needing reinstallation.
+```
 python3 -m pip install --editable .
 ```
  
