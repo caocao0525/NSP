@@ -13,10 +13,23 @@ which users can customize to meet their requirements.
 
 ## Citation
 
+
+## System Requirements
+
+### Software
+- Operating System: Linux (Ubuntu 22.04 LTS recommended)
+- Python: 3.6 or higher
+- PyTorch: 1.4.0 (Check with `conda list pytorch` to see your installed version)
+
+### Hardware
+- GPU: NVIDIA A40 with CUDA Version 11.7 compatibility
+- Memory: 32 GB RAM recommended
+
 ## Environment Setup
 
 Here's the hardware setup we used for training the model:
-* NVIDIA A40 
+* 
+* 
 
 For the environment setup, including the Python version and other settings, you can refer to the configurations used in the [DNABERT GitHub repository](https://github.com/jerryji1993/DNABERT). These guidelines will help ensure compatibility with the foundational aspects we utilize from DNABERT.
 
