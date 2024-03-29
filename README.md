@@ -40,6 +40,7 @@ Select a configuration that best matches your available resources. Ensuring comp
 We strongly suggest creating a Python virtual environment using [Anaconda](https://docs.anaconda.com/free/anaconda/install/linux/). Below, you'll find a detailed, step-by-step guide that covers everything from establishing a new conda environment to installing ChromBERT along with the necessary packages.
 
 ```
+# comment
 conda create -n chrombert python=3.6
 conda activate chrombert
 ```
