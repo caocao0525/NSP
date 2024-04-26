@@ -5,11 +5,11 @@
 # 
 # Functions that can be exploited for data pre-processing and downstream analysis
 
-# In[ ]:
+# In[3]:
 
 
 # ### To convert the file into .py
-get_ipython().system('jupyter nbconvert --to script css_utility_working.ipynb')
+# !jupyter nbconvert --to script css_utility_working.ipynb
 
 
 # In[60]:
