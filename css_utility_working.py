@@ -5,7 +5,7 @@
 # 
 # Functions that can be exploited for data pre-processing and downstream analysis
 
-# In[1]:
+# In[82]:
 
 
 # ### To convert the file into .py
@@ -1580,7 +1580,7 @@ def motif_init2class_df_incl_ff_fr(input_path="./init_concat.csv", fillna_method
     return clustered_sequences
 
 
-# In[61]:
+# In[83]:
 
 
 def motif_init2cluster_vis_all(input_path="./init_concat.csv", n_clusters=11, fillna_method="ffill", linkage_method="complete", random_state=95, font_scale=0.004,font_v_scale=9, fig_w=10, fig_h=10, node_size=600, node_dist=0.05):
@@ -1651,7 +1651,7 @@ def motif_init2cluster_vis_all(input_path="./init_concat.csv", n_clusters=11, fi
     print(n_clusters)
     plt.show()
     
-    fig.savefig("./cluster_result_fill_ffill.png",bbox_inches='tight', dpi=300,facecolor='white',  # Set the background color to white
+    fig.savefig("./cluster_result.png",bbox_inches='tight', dpi=300,facecolor='white',  # Set the background color to white
     edgecolor='black')
 
 
