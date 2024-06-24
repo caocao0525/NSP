@@ -5,7 +5,7 @@
 # 
 # Functions that can be exploited for data pre-processing and downstream analysis
 
-# In[2]:
+# In[73]:
 
 
 # ### To convert the file into .py
@@ -1347,7 +1347,7 @@ def motif_init2df(input_path="./init_concat.csv"):
 # In[58]:
 
 
-def motif_init2pred_with_dendrogram(input_path="./init_concat.csv", categorical=False, fillna_method="ffill", n_clusters=None, linkage_method="average", threshold=35):
+def motif_init2pred_with_dendrogram(input_path="./init_concat.csv", categorical=False, fillna_method="ffill", n_clusters=None, linkage_method="complete", threshold=35):
     """
     Read init.csv file and directly predict the class using DTW and Agglomerative Clustering.
     This version includes forward-reverse comparison. A dendrogram is provided to help the user 
@@ -1661,10 +1661,10 @@ def motif_init2class(input_path="./init_concat.csv", categorical=False, fillna_m
 # test passed
 
 
-# In[64]:
+# In[1]:
 
 
-def motif_init2class_vis(input_path="./init_concat.csv", categorical=False, fillna_method="ffill", n_clusters=11):
+def motif_init2class_vis(input_path="./init_concat.csv", categorical=False, fillna_method="ffill", n_clusters=11, linkage_method="complete"):
     """
     Read init.csv file and visualize the predicted class using DTW and Agglomerative Clustering.
     This version includes forward-reverse comparison.
@@ -1683,7 +1683,7 @@ def motif_init2class_vis(input_path="./init_concat.csv", categorical=False, fill
     - Y axis represents the type of chromatin state
     """
     df_sequences = motif_init2df(input_path=input_path)
-    _, y_pred = motif_init2pred(input_path=input_path, categorical=categorical,fillna_method=fillna_method, n_clusters=n_clusters)
+    _, y_pred = motif_init2pred(input_path=input_path, categorical=categorical,fillna_method=fillna_method, n_clusters=n_clusters, linkage_method=linkage_method)
 
     from itertools import cycle
     from matplotlib import cm
