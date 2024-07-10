@@ -5,14 +5,14 @@
 # 
 # Functions that can be exploited for data pre-processing and downstream analysis
 
-# In[65]:
+# In[12]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility_working.ipynb
 
 
-# In[6]:
+# In[13]:
 
 
 import os
@@ -53,33 +53,34 @@ from tslearn.metrics import dtw
 from tqdm import tqdm, notebook
 from tqdm.notebook import tqdm_notebook
 
+import logomaker
 from wordcloud import WordCloud
 # import stylecloud
 
 
 # ### Useful Dictionaries
 
-# In[7]:
+# In[14]:
 
 
 state_dict={1:"A", 2:"B", 3:"C", 4:"D", 5:"E",6:"F",7:"G",8:"H" ,
                 9:"I" ,10:"J",11:"K", 12:"L", 13:"M", 14:"N", 15:"O"}
 
 
-# In[8]:
+# In[15]:
 
 
 css_name=['TssA','TssAFlnk','TxFlnk','Tx','TxWk','EnhG','Enh','ZNF/Rpts',
           'Het','TssBiv','BivFlnk','EnhBiv','ReprPC','ReprPcWk','Quies']
 
 
-# In[9]:
+# In[16]:
 
 
 css_dict=dict(zip(list(state_dict.values()), css_name))  # css_dict={"A":"TssA", "B":"TssAFlnk", ... }
 
 
-# In[10]:
+# In[17]:
 
 
 # Color dict update using the info from https://egg2.wustl.edu/roadmap/web_portal/chr_state_learning.html
@@ -100,7 +101,7 @@ css_color_dict={'TssA':(255,0,0), # Red
                 'Quies': (240, 240, 240)}  # White -> bright gray 
 
 
-# In[11]:
+# In[18]:
 
 
 state_col_dict_num={'A': (1.0, 0.0, 0.0),
@@ -120,7 +121,7 @@ state_col_dict_num={'A': (1.0, 0.0, 0.0),
  'O': (0.941, 0.941, 0.941)}
 
 
-# In[12]:
+# In[19]:
 
 
 def colors2color_dec(css_color_dict):
@@ -134,7 +135,7 @@ def colors2color_dec(css_color_dict):
 
 # **scale 0 to 1**
 
-# In[13]:
+# In[20]:
 
 
 state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dict)))
@@ -142,7 +143,7 @@ state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dic
 
 # **scale 0 to 255**
 
-# In[14]:
+# In[21]:
 
 
 state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values())))
@@ -150,7 +151,7 @@ state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values
 
 # **hexacode**
 
-# In[15]:
+# In[22]:
 
 
 hexa_state_col_dict={letter: "#{:02x}{:02x}{:02x}".format(*rgb) for letter,rgb in state_col_255_dict.items()}
@@ -158,7 +159,7 @@ hexa_state_col_dict={letter: "#{:02x}{:02x}{:02x}".format(*rgb) for letter,rgb i
 
 # **name instead of alphabets**
 
-# In[16]:
+# In[23]:
 
 
 css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
@@ -166,7 +167,7 @@ css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
 
 # ### Helper functions
 
-# In[17]:
+# In[24]:
 
 
 def flatLst(lst):
@@ -174,7 +175,7 @@ def flatLst(lst):
     return flatten_lst
 
 
-# In[18]:
+# In[25]:
 
 
 ### Produce colorful letter-represented chromatin state sequences
@@ -194,7 +195,7 @@ def colored_css_str_as_is(sub_str):   # convert space into space
     return print("\033[1m"+col_str+"\033[0;0m") 
 
 
-# In[19]:
+# In[26]:
 
 
 def seq2kmer(seq, k):
@@ -206,7 +207,7 @@ def seq2kmer(seq, k):
     return kmers
 
 
-# In[20]:
+# In[27]:
 
 
 def kmer2seq(kmers):
@@ -221,7 +222,7 @@ def kmer2seq(kmers):
     return seq
 
 
-# In[21]:
+# In[28]:
 
 
 # create dataframe from bed file
@@ -244,7 +245,7 @@ def bed2df_as_is(filename):
 
 # ### Main functions
 
-# In[22]:
+# In[29]:
 
 
 def bed2df_expanded(filename):
@@ -1501,16 +1502,249 @@ def saveCRMforPREall_mod(input_path="../database/remap2022/crm/",output_path="..
     return print("File is saved at {}".format(output_path))
 
 
-# In[ ]:
+# #### Motif logo visualization
+# 1. Logo style visualization using attention score <br><br>
+# Usage: `motif_logo(mat_path, dev_path, motif="GBBBG")`
+
+# In[4]:
 
 
+def dev_conv(dev_file_path):
+    """
+    convert dev.tsv file to dataframe with restored sequence (original sequence)
+    """
+    dev_df=pd.read_csv(dev_file_path,sep="\t")
+    dev_df.fillna(" ", inplace=True) # change the nan into empty string
+    assert dev_df["sequence"].isnull().sum()==0, "check the dev file for nan values"
+    
+    def kmer2seq_or_space(seq):
+        if seq == " ":
+            return " "
+        else:
+            return kmer2seq(seq)
+    
+    dev_df["ori_seq"] = dev_df["sequence"].apply(kmer2seq_or_space)
+
+    return dev_df
 
 
-
-# In[ ]:
-
+# In[5]:
 
 
+def get_matWcss(mat_path,dev_path):
+    """
+    Read atten.npy and dev.tsv to create two dictionaries:
+        all_dict_1: attention matrix for label 1 per data strip
+        all_dict_0: attention matrix for label 0 per data strip
+    """
+    atten_raw=np.load(mat_path)
+    atten=pd.DataFrame(atten_raw)
+    dev_raw=dev_conv(dev_path) #dev_conv is a function in css_utility
+    dev=dev_raw[["ori_seq","label"]]
+    dev.reset_index(drop=True, inplace=True)  # remove the header
+    
+    dev_label_1=dev[dev["label"]==1]
+    dev_label_0=dev[dev["label"]==0]
+
+    atten["label"] = dev["label"].values
+    atten_label_1=atten[atten["label"]==1]
+    dev_label_1.pop("label") # remove the label column
+    atten_label_1.pop("label") # remove the label column
+    atten_label_0=atten[atten["label"]==0]
+    dev_label_0.pop("label") # remove the label column
+    atten_label_0.pop("label") # remove the label column
+    
+    assert len(dev_label_1)==len(atten_label_1)
+    assert len(dev_label_0)==len(atten_label_0)
+    
+    all_dict_1={i:(dev_label_1.loc[i], atten_label_1.loc[i]) for i in dev_label_1.index}
+    all_dict_0={i:(dev_label_0.loc[i], atten_label_0.loc[i]) for i in dev_label_0.index}
+
+    ### to use, apply following 
+#     for index, (dev_entry, atten_entry) in list(atten_dict_1.items()):
+#         dev_tar=dev_entry['ori_seq']
+#         atten_tar=atten_entry.values
+    
+    return all_dict_1, all_dict_0
+
+
+# In[9]:
+
+
+####################### draw the designated entry only ######################
+def get_motifWScore(all_dict_1, motif, extend_len=0):   # modify the code for showing extended version
+    """ 
+    For a class of interest (labeled either 1 or 0, but normally 1), find the motif of interest with the corresponding attention scores.
+    Outputs:
+        - motif_found_all: a list of the list of found motif in the class of interest
+        - score_found_all: a list of the list of corresponding scores (not normalized)
+        - score_found_norm_all: a list of the list of corresponding scores (normalized, per each data strip)
+
+    """
+    #### small function to correctly show the counting number
+    def get_ordinal_suffix(number):
+        if 10 <= number % 100 <= 20:
+            suffix = 'th'
+        else:
+            suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(number % 10, 'th')
+        return suffix
+    
+    # all_dict_1 is the dictionary (key:index, value=tuple of motif and )
+    motif_found_all=[]
+    score_found_all=[]
+    score_found_norm_all=[]
+
+    cnt=0
+    for index, (dev_entry, atten_entry) in list(all_dict_1.items()):
+        dev_tar = dev_entry['ori_seq']
+        atten = atten_entry.values.reshape(-1, 1).T  # Reshape to 2D array for heatmap
+        atten_tar = atten[0] # atten is a list of list, with one element
+
+#         if motif in dev_tar:
+#             start_index=dev_tar.find(motif)
+#             end_index=start_index+len(motif)
+        if motif in dev_tar:
+            start_index=dev_tar.find(motif)-extend_len
+            end_index=start_index+len(motif)+(extend_len*2)
+            if end_index <= len(atten_tar)+1:
+                cnt+=1
+                print(f"{motif}: {cnt}{get_ordinal_suffix(cnt)} appearance")
+                print("- Index in attention matrix: ",index)
+                print("- Score min-max: {} ~ {}".format(round(min(atten_tar),3), round(max(atten_tar),3)))
+                motif_found=dev_tar[start_index:end_index]
+                score_found=atten_tar[start_index:end_index].tolist()
+                score_found_norm=[item/sum(atten_tar) for item in score_found]  # normalize
+                
+                motif_found_all.append(motif_found)
+                score_found_all.append(score_found)
+                score_found_norm_all.append(score_found_norm)
+
+                ### create the motif figures 
+                show_len=end_index-start_index
+                fig_width=show_len*0.35
+                
+                ######## Data strip with colored scores (to show the motif on the colored strip)
+                
+                # plt.figure(figsize=(fig_width, 1))  # Adjusted height to give space for text
+                # # Add colored text for each letter in dev_tar above the heatmap
+                # for i, letter in enumerate(motif_found):                    
+                #     plt.text(i + 0.5, -0.2, letter, color=state_col_dict.get(letter, 'black'),
+                #              ha='center', va='center', fontsize=32, family='monospace')
+
+                # sns.heatmap(data=[score_found], cmap="viridis", yticklabels=False, cbar=False)
+                # plt.show()
+    return motif_found_all, score_found_all, score_found_norm_all #list of list
+
+
+# In[7]:
+
+
+def score2logo(motif_found_all, score_found_all, score_found_norm_all, norm=False):
+    """
+    Use the result of get_motifWScore, create logos
+    """
+    import logomaker
+    num_row=len(motif_found_all[0])
+    columns=[chr(i) for i in range(ord("A"), ord("O")+1)]
+    
+    # df for creating logo
+    df_logo_all=[]
+    df=pd.DataFrame(0.0, index=range(num_row), columns=columns)
+    for i, motif_found in enumerate(motif_found_all):
+        if norm:
+            for j, letter in enumerate(motif_found):
+                df.loc[j, letter]=round(score_found_norm_all[i][j],3)
+        elif not norm:
+            for j, letter in enumerate(motif_found):
+                df.loc[j, letter]=round(score_found_all[i][j],3)   
+        df_logo=df.copy()
+        df_logo_all.append(df_logo)
+
+        fig_width=num_row*0.5
+        logo=logomaker.Logo(df_logo,color_scheme=state_col_dict_num, figsize=(fig_width,0.8))
+        logo.style_spines(visible=False)
+        logo.style_spines(spines=["left","bottom"], visible=True)
+        plt.show()
+    
+    
+    # Calculate the average
+    total_df = pd.DataFrame()
+    for df_logo in df_logo_all:
+        total_df = total_df.add(df_logo, fill_value=0)
+    average_df = total_df / len(df_logo_all)
+    
+    extracted_values = average_df.max(axis=1).tolist()   # make the average score into a list
+    extracted_values = [round(item,3) for item in  extracted_values] 
+    
+    df_logo_all.append(average_df)
+    
+    print("---------- Average Score Motif Logo ----------")
+    logo2=logomaker.Logo(average_df,color_scheme=state_col_dict_num, figsize=(fig_width+1,1))
+    logo2.style_spines(visible=False)
+    logo2.style_spines(spines=["left","bottom"], visible=True)
+    plt.show()
+#     print(average_df)
+    logo_score = df_logo_all[-1].max(axis=1).tolist()
+    logo_score = [round(item,3) for item in  extracted_values] 
+    print("Average logo score:",logo_score)
+    
+    return logo_score 
+
+
+# In[10]:
+
+
+def motif_logo(mat_path, dev_path, motif):
+    all_dict_1, all_dict_0=get_matWcss(mat_path,dev_path)
+    motif_found_all,score_found_all,score_found_norm_all=get_motifWScore(all_dict_1, motif=motif)
+    logo_score=score2logo(motif_found_all,score_found_all,score_found_norm_all)
+    return
+
+
+# In[31]:
+
+
+# #### test
+# mat_path="../database/ft_result/pred/4_gene_exp/test02_double_data/Ghexp_rpkm30_or_not/atten.npy"
+# dev_path="../database/fine_tune/gene_exp/4mer/Ghexp_rpkm30_or_not/tr_len_40k/dev.tsv"
+# motif_logo(mat_path, dev_path, motif="GBBBG")
+# #### test
+
+
+# #### Motif Word Cloud Visualization
+# 
+# * Usage: `motif2wordcloud(motif_dir, color_map="viridis")`
+# * Note that `motif_dir` is a directory where the motif files are collected.
+
+# In[32]:
+
+
+def motif2wordcloud(path, color_map="viridis"):
+    target=[word for word in path.split("/")[-2:] if word !=""][0]
+    print("target", target)
+    file_lst=[os.path.join(path,file) for file in os.listdir(path) if ".txt" in file]
+    motifs={}
+    for file_name in file_lst:
+        motif, num_txt=file_name.split("/")[-1].split("_")[1:3]
+        freq=num_txt.split(".")[0]
+        motifs[motif]=int(freq)
+    print("motifs = ", motifs)
+    wc=WordCloud(width=800, height=400, background_color="white", colormap=color_map)
+    wordcloud=wc.generate_from_frequencies(motifs)
+    plt.figure(figsize=(6,2), facecolor=None)
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis("off")
+    plt.tight_layout(pad=0)
+    plt.show()
+
+
+# In[34]:
+
+
+# #### test
+# old_path="../database/motif/motif_test/"
+# motif2wordcloud(old_path, color_map="viridis")
+# #### test
 
 
 # #### Motif Clustering
