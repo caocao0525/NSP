@@ -5,7 +5,7 @@
 # 
 # Functions that can be exploited for data pre-processing and downstream analysis
 
-# In[5]:
+# In[65]:
 
 
 # ### To convert the file into .py
@@ -1183,6 +1183,7 @@ def prom_css_Kmer_by_cell(path="./", output_path="./",k=4):
 
 
 # ### Prepare fine tuning data using chromatin state sequence lists
+#  Note that these functions are designed for universal applicability and can be used across a wide range of general cases, not just for specific data types.
 
 # #### Pipeline 
 # 
