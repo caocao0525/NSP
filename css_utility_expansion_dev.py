@@ -5,7 +5,7 @@
 # 
 # Functions that can be exploited for data pre-processing and downstream analysis
 
-# In[1]:
+# In[48]:
 
 
 # ### To convert the file into .py
@@ -338,8 +338,43 @@ def bed2df_as_is(filename):
 # In[29]:
 
 
-def bed2df_expanded(filename):
+# def bed2df_expanded(filename):
     
+#     """Create an expanded dataframe from the .bed file.
+#     Dataframe contains following columns:
+#     chromosome |  start |  end  | state | length | unit | state_seq | state_seq_full"""
+#     if not os.path.exists(filename):
+#         raise FileNotFoundError("Please provide a valid file path.")
+
+#     df_raw=pd.read_csv(filename, sep='\t', lineterminator='\n', header=None, low_memory=False)
+#     df=df_raw.rename(columns={0:"chromosome",1:"start",2:"end",3:"state"})
+#     df=df[:-1]
+#     df["start"]=pd.to_numeric(df["start"])
+#     df["end"]=pd.to_numeric(df["end"])
+#     df["state"]=pd.to_numeric(df["state"])
+#     df["length"]=df["end"]-df["start"]
+#     df["unit"]=(df["length"]/200).astype(int)  # chromatin state is annotated every 200 bp (18th May 2022)
+               
+#     df["state_seq"]=df["state"].map(state_dict)
+#     df["state_seq_full"]=df["unit"]*df["state_seq"]
+    
+#     return df 
+
+
+# In[23]:
+
+
+# # test for bed2df_expanded
+# test_path_bed='../database/bed/unzipped/E001_15_coreMarks_stateno.bed'
+# test_bed2df_expanded=bed2df_expanded(test_path_bed)
+# test_bed2df_expanded.head()
+# # test passed
+
+
+# In[46]:
+
+
+def bed2df_expanded(filename, state_num=15):
     """Create an expanded dataframe from the .bed file.
     Dataframe contains following columns:
     chromosome |  start |  end  | state | length | unit | state_seq | state_seq_full"""
@@ -354,21 +389,14 @@ def bed2df_expanded(filename):
     df["state"]=pd.to_numeric(df["state"])
     df["length"]=df["end"]-df["start"]
     df["unit"]=(df["length"]/200).astype(int)  # chromatin state is annotated every 200 bp (18th May 2022)
-               
-    df["state_seq"]=df["state"].map(state_dict)
-    df["state_seq_full"]=df["unit"]*df["state_seq"]
+    if state_num==18:
+        df["state_seq"]=df["state"].map(state_dict_18)
+        df["state_seq_full"]=df["unit"]*df["state_seq"]
+    else:
+        df["state_seq"]=df["state"].map(state_dict)
+        df["state_seq_full"]=df["unit"]*df["state_seq"]
     
     return df 
-
-
-# In[23]:
-
-
-# # test for bed2df_expanded
-# test_path_bed='../database/bed/unzipped/E001_15_coreMarks_stateno.bed'
-# test_bed2df_expanded=bed2df_expanded(test_path_bed)
-# test_bed2df_expanded.head()
-# # test passed
 
 
 # In[24]:
@@ -717,7 +745,7 @@ def save_TSS_by_loc(whole_gene_file, input_path="./",output_path="./",file_name=
 # Pretrain data preprocessing and storing
 
 # Preprocessing for removing continuous O state for pretrain dataset
-# 1. Sace the CSS per cell, per chromosome
+# 1. Save the CSS per cell, per chromosome
 def save_css_by_cell_wo_continuous_15state(path_to_css_unit_pickled, output_path,k=4):
     # read files from css_unit_pickled
     files=os.listdir(path_to_css_unit_pickled)
