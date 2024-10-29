@@ -5,14 +5,14 @@
 # 
 # Functions that can be exploited for data pre-processing and downstream analysis
 
-# In[2]:
+# In[98]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility_expansion_dev.ipynb
 
 
-# In[6]:
+# In[99]:
 
 
 import os
@@ -22,6 +22,7 @@ import random
 import operator
 import itertools
 from itertools import cycle
+import argparse
 
 import pickle
 import glob
@@ -431,6 +432,12 @@ def unzipped_to_df(path_unzipped, output_path="./"):
 # path_unzipped='../database/bed/unzipped'
 # test_unzipped_to_df=unzipped_to_df(path_unzipped,output_path="../database/final_test")
 # # test passed
+
+
+# In[ ]:
+
+
+
 
 
 # In[35]:
@@ -2467,22 +2474,54 @@ def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_cluster
 
 
 
-# In[96]:
+# In[100]:
+
+
+# ############# This is to enable easy execution of the function
+
+# if __name__ == "__main__":
+#     if len(sys.argv) > 1:
+#         # Filter out arguments that are not function names
+#         func_name = sys.argv[1]
+        
+#         # Check if func_name is a valid function in globals()
+#         if func_name in globals() and callable(globals()[func_name]):
+#             globals()[func_name]()  # Run the function by name
+#         else:
+#             print(f"Function '{func_name}' not found.")
+# ###############################################################
+
+
+# In[101]:
 
 
 ############# This is to enable easy execution of the function
+# Define your functions
+def unzipped_to_df(input_dir, output_dir):
+    print(f"Running unzipped_to_df with input: {input_dir} and output: {output_dir}")
 
+def another_function(arg1, arg2, arg3):
+    print(f"Running another_function with arguments: {arg1}, {arg2}, {arg3}")
+
+# Check if running in an interactive environment
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        # Filter out arguments that are not function names
-        func_name = sys.argv[1]
-        
-        # Check if func_name is a valid function in globals()
-        if func_name in globals() and callable(globals()[func_name]):
-            globals()[func_name]()  # Run the function by name
-        else:
-            print(f"Function '{func_name}' not found.")
-###############################################################
+    if "ipykernel_launcher" in sys.argv[0]:  # Jupyter notebook or IPython
+        # Simulate command-line arguments for testing in Jupyter
+        sys.argv = ["script_name", "unzipped_to_df", "../unzipped", "./"]
+
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description="Run specified function with arguments")
+    parser.add_argument("function", help="Name of the function to run")
+    parser.add_argument("args", nargs="*", help="Arguments for the function")
+
+    # Parse the arguments
+    args = parser.parse_args()
+
+    # Call the specified function with provided arguments
+    if args.function in globals() and callable(globals()[args.function]):
+        globals()[args.function](*args.args)  # Call the function with unpacked arguments
+    else:
+        print(f"Function '{args.function}' not found.")
 
 
 # In[ ]:
