@@ -5,7 +5,7 @@
 # 
 # Functions that can be exploited for data pre-processing and downstream analysis
 
-# In[104]:
+# In[207]:
 
 
 # ### To convert the file into .py
@@ -401,10 +401,10 @@ def bed2df_expanded(filename, state_num=15):
     return df 
 
 
-# In[133]:
+# In[208]:
 
 
-def unzipped_to_df(path_unzipped, output_path="./"):
+def unzipped_to_df(path_unzipped, output_path="./", state_num=15):
     """
     Store the DataFrame converted from .bed file, cell-wise
     - path_unzipped: the directory of your .bed files
@@ -417,7 +417,7 @@ def unzipped_to_df(path_unzipped, output_path="./"):
         # print(cell_id) ###### for test
         
         output_name=os.path.join(output_path,cell_id+"_df_pickled.pkl")
-        df=bed2df_expanded(file)
+        df=bed2df_expanded(file, state_num=state_num)
         df.to_pickle(output_name)
         # if cell_id=="E002":  ###### for test
         #     break
