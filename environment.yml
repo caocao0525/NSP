@@ -1,0 +1,20 @@
+name: nsp
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn
+  - scipy
+  - scikit-learn
+  - networkx
+  - tslearn
+  - tqdm
+  - logomaker
+  - wordcloud
+  - pip:
+    - matplotlib-venn  # if needed and not available via conda
+
