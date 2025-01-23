@@ -7,11 +7,11 @@
 # 
 # ChromBERT has been expanded to include support for IHEC data
 
-# In[210]:
+# In[5]:
 
 
-# ### To convert the file into .py
-# !jupyter nbconvert --to script css_utility_expansion_dev.ipynb
+### To convert the file into .py
+get_ipython().system('jupyter nbconvert --to script css_utility_expansion_dev.ipynb')
 
 
 # In[2]:
@@ -820,83 +820,7 @@ def save_css_by_cell_wo_continuous_15state(path_to_css_unit_pickled, output_path
     return 
 
 
-# In[2]:
-
-
-# [IHEC] Pretrain data preprocessing and storing (for 18-state version)
-
-# Preprocessing for removing continuous R state for pretrain dataset
-# 1-1. Save the CSS per cell, per chromosome
-def save_css_by_cell_wo_continuous_18state(path_to_css_unit_pickled, output_path,k=4):
-    # read files from css_unit_pickled
-    files=os.listdir(path_to_css_unit_pickled)
-    file_path_lst=[os.path.join(path_to_css_unit_pickled,file) for file in files]
-    for file_path in file_path_lst:
-        file_name=os.path.basename(file_path)
-        if file_name[:4] == 'IHEC':
-            file_id = file_name[:14]
-        else:
-            pass
-        # ##########################
-        # if str(file_id)=="E003":
-        #     break  # for test
-        # ##########################
-        with open(file_path,"rb") as f:
-            css=pickle.load(f)
-        css_kmer=[]
-        for css_chr in css:
-            css_chr_kmer=seq2kmer(css_chr,k)
-            target_to_remove="R"*k   # get rid of the word with continuous 15th state "o"
-            css_chr_kmer_trim = css_chr_kmer.replace(target_to_remove, "")
-            # clean up extra spaces
-            css_chr_kmer_trim = ' '.join(css_chr_kmer_trim.split())
-            css_kmer.append(css_chr_kmer_trim)
-        output_file_name=os.path.join(output_path,file_id+"_unitcss_wo_all"+str(k)+"R_state.pkl")    
-        with open(output_file_name, "wb") as g:
-            pickle.dump(css_kmer, g)  # note that it is chromosome-wise list (each element corresponds to each chromosome)
-
-        print("trimmed css by cell saved: ",file_id)
-    return 
-
-
-# In[148]:
-
-
-# Preprocessing for removing continuous O state for pretrain dataset
-# 2. Concatenate all the cells and create one .txt file
-# (Note. new line joining chromosome-wise and cell-wise)
-def kmerCSS_to_pretrain_data(path_to_kmer_css_unit_pickled,output_path):
-    files=os.listdir(path_to_kmer_css_unit_pickled)
-    file_path_lst=[os.path.join(path_to_kmer_css_unit_pickled,file) for file in files]
-
-    css_all=[]
-    for file_path in file_path_lst:
-        file_name=os.path.basename(file_path)
-        if file_name[0] == 'E' and file_name[1:4].isdigit():
-            file_id = file_name[:4]
-        else:
-            pass
-        # ##########################
-        # if str(file_id)=="E003":
-        #     break  # for test
-        # # ##########################
-        with open(file_path,"rb") as f:
-            css=pickle.load(f)
-
-        css_per_cell='\n'.join(css)   # join the chromosome by new line
-
-        css_all.append(css_per_cell)   
-
-    css_all_cell='\n'.join(css_all)  # join the cell by new line
-
-    output_name=os.path.join(output_path,"pretrain_genome_all.txt") 
-    with open(output_name, "w") as g:
-        g.write(css_all_cell)
-
-    return 
-
-
-# In[ ]:
+# In[7]:
 
 
 # Preprocessing for removing continuous O state for pretrain dataset
@@ -931,6 +855,144 @@ def kmerCSS_to_pretrain_data_ihec(path_to_kmer_css_unit_pickled,output_path):
         g.write(css_all_cell)
 
     return 
+
+
+# #### Expansion to IHEC data 
+# (1) Pretraining data preparation for all genomic regions
+
+# In[2]:
+
+
+#######################################################################
+# [IHEC] Pretrain data preprocessing and storing (for 18-state version)
+#######################################################################
+
+# Preprocessing for removing continuous R state for pretrain dataset
+# 1-1. Save the CSS per cell, per chromosome
+
+def save_css_by_cell_wo_continuous_18state(path_to_css_unit_pickled, output_path, k=4, max_tokens=510):
+    """
+    Preprocesses and saves CSS per cell, per chromosome, removing continuous R states 
+    and splitting excess tokens into new lines, saving output as .txt.
+
+    Args:
+        path_to_css_unit_pickled (str): Path to the pickled CSS unit files.
+        output_path (str): Path to save the processed files.
+        k (int): Length of the k-mer. Default is 4.
+        max_tokens (int): Maximum number of tokens per line. Default is 510.
+    """
+    # Read files from css_unit_pickled
+    files = os.listdir(path_to_css_unit_pickled)
+    file_path_lst = [os.path.join(path_to_css_unit_pickled, file) for file in files]
+    
+    for file_path in file_path_lst:
+        file_name = os.path.basename(file_path)
+        if file_name[:4] == 'IHEC':
+            file_id = file_name[:14]
+        else:
+            continue
+        
+        with open(file_path, "rb") as f:
+            css = pickle.load(f)
+        
+        css_kmer = []
+        for css_chr in css:
+            css_chr_kmer = seq2kmer(css_chr, k)
+            target_to_remove = "R" * k  # Get rid of the word with continuous R state
+            css_chr_kmer_trim = css_chr_kmer.replace(target_to_remove, "")
+            # Clean up extra spaces
+            css_chr_kmer_trim = ' '.join(css_chr_kmer_trim.split())
+            # Split into chunks of max_tokens
+            tokens = css_chr_kmer_trim.split()
+            for i in range(0, len(tokens), max_tokens):
+                chunk = tokens[i:i + max_tokens]
+                css_kmer.append(' '.join(chunk))
+        
+        # Save output as .txt file
+        output_file_name = os.path.join(output_path, file_id + "_test_" + str(k) + "R_state.txt")
+        with open(output_file_name, "w") as g:
+            for line in css_kmer:
+                g.write(line + "\n")  # Write each chunk as a line in the file
+
+        print("Trimmed and chunked CSS by cell saved as .txt: ", file_id)
+    
+    return
+
+
+# In[ ]:
+
+
+# css_unit_path="../database/css_unit_pickled_test/"
+# wo_R_output_path="../database"
+# save_css_by_cell_wo_continuous_18state(css_unit_path, wo_R_output_path, k=4, max_tokens=510)
+
+
+# In[6]:
+
+
+#######################################################################
+# [IHEC] Pretrain data preprocessing and storing (for 18-state version)
+#######################################################################
+
+# 1-2. Save the CSS of all cells by concatenating them
+
+def save_and_concatenate_css(path_to_css_unit_pickled, concatenated_output_file, k=4, max_tokens=510):
+    """
+    Preprocesses CSS per cell, per chromosome, removing continuous R states,
+    splitting excess tokens into new lines, and saving all processed CSS into a single file.
+
+    Args:
+        path_to_css_unit_pickled (str): Path to the pickled CSS unit files.
+        concatenated_output_file (str): Path to save the concatenated .txt file.
+        k (int): Length of the k-mer. Default is 4.
+        max_tokens (int): Maximum number of tokens per line. Default is 510.
+    """
+    # Read files from css_unit_pickled
+    files = os.listdir(path_to_css_unit_pickled)
+    file_path_lst = [os.path.join(path_to_css_unit_pickled, file) for file in files]
+
+    all_kmers = []  # List to store all processed css_kmers for concatenation
+
+    for file_path in file_path_lst:
+        file_name = os.path.basename(file_path)
+        if file_name[:4] == 'IHEC':
+            file_id = file_name[:14]
+        else:
+            continue
+        
+        with open(file_path, "rb") as f:
+            css = pickle.load(f)
+        
+        for css_chr in css:
+            css_chr_kmer = seq2kmer(css_chr, k)
+            target_to_remove = "R" * k  # Get rid of the word with continuous R state
+            css_chr_kmer_trim = css_chr_kmer.replace(target_to_remove, "")
+            # Clean up extra spaces
+            css_chr_kmer_trim = ' '.join(css_chr_kmer_trim.split())
+            # Split into chunks of max_tokens
+            tokens = css_chr_kmer_trim.split()
+            for i in range(0, len(tokens), max_tokens):
+                chunk = tokens[i:i + max_tokens]
+                all_kmers.append(' '.join(chunk))  # Add each chunk directly to all_kmers
+
+    # Save concatenated output to a single .txt file
+    with open(concatenated_output_file, "w") as concat_file:
+        for line in all_kmers:
+            concat_file.write(line + "\n")
+
+    print(f"All processed CSS concatenated and saved to {concatenated_output_file}")
+
+
+
+# In[ ]:
+
+
+# save_and_concatenate_css(
+#     path_to_css_unit_pickled="../database/css_unit_pickled",
+#     concatenated_output_file="../database/pretrain/IHEC_all_genome_cut_4mer_wo_R_all_concatenated_css.txt",
+#     k=4,
+#     max_tokens=510
+# )
 
 
 # In[149]:
