@@ -7,11 +7,11 @@
 # 
 # ChromBERT has been expanded to include support for IHEC data
 
-# In[5]:
+# In[9]:
 
 
-### To convert the file into .py
-get_ipython().system('jupyter nbconvert --to script css_utility_expansion_dev.ipynb')
+# ### To convert the file into .py
+# !jupyter nbconvert --to script css_utility_expansion_dev.ipynb
 
 
 # In[2]:
