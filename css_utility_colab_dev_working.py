@@ -7,7 +7,7 @@
 # 
 # ChromBERT has been expanded to include support for IHEC data
 
-# In[59]:
+# In[62]:
 
 
 # ### To convert the file into .py
@@ -3091,7 +3091,7 @@ def motif_init2class_vis(input_path="./init_concat.csv", categorical=False, fill
 # # test passed
 
 
-# In[ ]:
+# In[66]:
 
 
 ####### update completed for python 3.11.
@@ -3150,7 +3150,11 @@ def motif_init2cluster_vis(input_path="./init_concat.csv", categorical=False, n_
     np.random.seed(random_state)
     # Draw the graph with a spring layout
     # Adjust k to manage the distance between nodes, which can be smaller since nodes can overlap
-    pos = nx.spring_layout(G, k=node_dist, iterations=10)
+
+    ############# position test
+    # pos = nx.spring_layout(G, k=node_dist, iterations=10)
+    pos = nx.spring_layout(G, k=node_dist, iterations=10, seed=random_state)
+    #############
 
     # Draw the nodes themselves
     nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=colors, alpha=0.3)
@@ -3172,75 +3176,18 @@ def motif_init2cluster_vis(input_path="./init_concat.csv", categorical=False, n_
     edgecolor='black')
 
 
-# In[55]:
+# In[67]:
 
 
-# # test
-# motif_init2cluster_vis(categorical=True)
-# # test passed
+# test
+motif_init2cluster_vis(categorical=True)
+# test passed
 
 
 # In[ ]:
 
 
-# def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_clusters=11, fillna_method="ffill", linkage_method="complete", n_neighbors=5, min_dist=0.3, random_state=2):
-#     """
-#     Generate a UMAP embedding of the given data.
-
-#     Parameters:
-
-#     - input_path: .csv file of all motifs with high attention score
-
-#     - n_clusters: number of clusters
-
-#     - n_neighbors: int (default=5), The size of local neighborhood (in terms of number of neighboring sample points) 
-#       used for manifold approximation. Larger values result in a more global view of the manifold, while smaller values emphasize local data structures. 
-#       Adjust according to the desired granularity of the embedding.
-
-#     - mid_dist: float (default=0.3), The minimum distance between embedded points in the low-dimensional space. 
-#       Smaller values allow points to cluster more tightly in the embedding, which is useful for identifying finer substructures within the data. 
-#       Larger values help preserve the overall topology of the data by preventing points from clustering too tightly.
-#     """
-#     df_sequences = motif_init2df(input_path=input_path)
-#     X_train = df_sequences.loc[:, df_sequences.columns != 'position']
-#     X_train = X_train.astype('float64')  # Convert to float64
-#     # X_filled = X_train.fillna(X_train.mean())
-#     if fillna_method==0:
-#         X_train_filled = X_train.fillna(0)
-#     if fillna_method=="ffill":
-#         X_train_filled = X_train.fillna(method=fillna_method) 
-
-#     dtw_distance_matrix, y_pred = motif_init2pred(input_path=input_path, categorical=categorical, n_clusters=n_clusters, fillna_method=fillna_method, linkage_method=linkage_method)
-
-#     # Now apply UMAP on the cleaned data
-#     from umap import UMAP
-#     # # seed=111
-#     # # umap_reducer = UMAP(n_neighbors=n_neighbors, min_dist=min_dist, random_state=seed)
-#     # umap_reducer = UMAP(n_neighbors=n_neighbors, min_dist=min_dist)
-#     umap_reducer = UMAP(n_neighbors=n_neighbors, min_dist=min_dist, random_state=random_state, n_jobs=1)
-
-#     # umap_embedding = umap_reducer.fit_transform(X_train_filled.T)  # Ensure the data is transposed if necessary
-#     umap_embedding = umap_reducer.fit_transform(dtw_distance_matrix)  # Ensure the data is transposed if necessary
-
-#     plt.figure(figsize=(8, 5))
-#     scatter = plt.scatter(umap_embedding[:, 0], umap_embedding[:, 1], c=y_pred, cmap='Spectral', s=100, edgecolors='white', linewidth=0.6)
-
-#     # Create a color bar with ticks for each cluster label
-#     colorbar = plt.colorbar(scatter, ticks=np.arange(0, 11))
-#     colorbar.set_label('Cluster label')
-
-#     # Set the plot title and labels
-#     plt.title('UMAP Projection After Agglomerative Clustering', fontsize=14)
-#     plt.xlabel('UMAP Dimension 1', fontsize=14)
-#     plt.ylabel('UMAP Dimension 2', fontsize=14)
-
-#     # Show the plot
-#     plt.show()
-
-
-# In[56]:
-
-
+####### update completed for python 3.11.
 def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_clusters=11, fillna_method="ffill", linkage_method="complete", n_neighbors=5, min_dist=0.3, random_state=2):
     """
     Generate a UMAP embedding of the given data.
@@ -3302,11 +3249,11 @@ def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_cluster
     plt.show()
 
 
-# In[60]:
+# In[ ]:
 
 
 # # test
-# motif_init2umap(categorical=True)
+# motif_init2umap(categorical=True,  n_clusters=11, fillna_method="ffill", linkage_method="complete", n_neighbors=5, min_dist=0.3, random_state=2)
 # # test passed
 
 
@@ -3315,6 +3262,8 @@ def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_cluster
 
 
 
+
+# 
 
 # In[ ]:
 
