@@ -7,11 +7,11 @@
 # 
 # ChromBERT has been expanded to include support for IHEC data
 
-# In[ ]:
+# In[59]:
 
 
 # ### To convert the file into .py
-#!jupyter nbconvert --to script css_utility_colab_dev_working.ipynb
+# !jupyter nbconvert --to script css_utility_colab_dev_working.ipynb
 
 
 # In[1]:
@@ -3302,12 +3302,12 @@ def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_cluster
     plt.show()
 
 
-# In[57]:
+# In[60]:
 
 
-# test
-motif_init2umap(categorical=True)
-# test passed
+# # test
+# motif_init2umap(categorical=True)
+# # test passed
 
 
 # In[ ]:
