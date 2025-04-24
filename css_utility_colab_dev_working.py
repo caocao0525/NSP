@@ -7,7 +7,7 @@
 # 
 # ChromBERT has been expanded to include support for IHEC data
 
-# In[62]:
+# In[69]:
 
 
 # ### To convert the file into .py
@@ -3176,12 +3176,12 @@ def motif_init2cluster_vis(input_path="./init_concat.csv", categorical=False, n_
     edgecolor='black')
 
 
-# In[67]:
+# In[ ]:
 
 
-# test
-motif_init2cluster_vis(categorical=True)
-# test passed
+# # test
+# motif_init2cluster_vis(categorical=True)
+# # test passed
 
 
 # In[ ]:
