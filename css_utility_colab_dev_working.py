@@ -7,7 +7,7 @@
 # 
 # ChromBERT has been expanded to include support for IHEC data
 
-# In[ ]:
+# In[75]:
 
 
 # ### To convert the file into .py
@@ -3091,7 +3091,7 @@ def motif_init2class_vis(input_path="./init_concat.csv", categorical=False, fill
 # # test passed
 
 
-# In[72]:
+# In[ ]:
 
 
 ####### update completed for python 3.11.
@@ -3112,8 +3112,12 @@ def motif_init2cluster_vis(input_path="./init_concat.csv", categorical=False, n_
             fp = FontProperties(family="DejaVu Sans", weight="bold")
             tp = TextPath((0, 0), letter, prop=fp)
             tp_transformed = transforms.Affine2D().scale(scale_factor).translate(x_offset, y) + ax.transData
-            letter_patch = PathPatch(tp, color=color, lw=0, transform=tp_transformed)
+            # letter_patch = PathPatch(tp, color=color, lw=0, transform=tp_transformed)
+            # ax.add_patch(letter_patch)
+            ####### to make text comes on the bubble #####
+            letter_patch = PathPatch(tp, color=color, lw=0, transform=tp_transformed, zorder=2)
             ax.add_patch(letter_patch)
+            ##############################################
             # Get the width of the letter and add a small margin
             letter_width = tp.get_extents().width * scale_factor
             x_offset += letter_width  # Increment the x position by the width of the letter
@@ -3157,7 +3161,10 @@ def motif_init2cluster_vis(input_path="./init_concat.csv", categorical=False, n_
     #############
 
     # Draw the nodes themselves
-    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=colors, alpha=0.3)
+    ####### to make text comes on the bubble #####
+    # nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=colors, alpha=0.3)
+    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=colors, alpha=0.3, ax=ax, zorder=1)
+    ################################################
 
     # Draw the text
     for node, (node_pos, elements) in enumerate(zip(pos.values(), df['LetterSequence'])):      
