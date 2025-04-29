@@ -7,7 +7,7 @@
 # 
 # ChromBERT has been expanded to include support for IHEC data
 
-# In[97]:
+# In[7]:
 
 
 # ### To convert the file into .py
@@ -915,18 +915,6 @@ def save_TSS_by_loc_IHEC(whole_gene_file, input_path="./",output_path="./",file_
 #                 output_path="../database/prom_IHEC/prom_css_pickled/up2kdown4k",
 #                 file_name="up2kdown4k", 
 #                 up_num=2000, down_num=4000, unit=200)
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
 
 
 # In[ ]:
@@ -1856,40 +1844,46 @@ def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 #     * `unit`: because chromatin states are annotated by 200 bps
 # * Output: save the file according to the `rpkm_val` at the output path
 
-# In[75]:
+# In[ ]:
 
 
-def extNsaveProm_g_exp(exp_gene_dir="./", df_pickle_dir="./",output_path="./",file_name="up2kdown4k",rpkm_val=50, up_num=2000, down_num=4000,unit=200):
-    exp_gene_subdir=os.listdir(exp_gene_dir)
-    exp_gene_tardir=[os.path.join(exp_gene_dir, subdir) for subdir in exp_gene_subdir if str(rpkm_val) in subdir][0]    
 
-    if rpkm_val==0:
-        exp_gene_tardir=os.path.join(exp_gene_dir, "rpkm0")
 
-    exp_gene_files=sorted([os.path.join(exp_gene_tardir,file) for file in os.listdir(exp_gene_tardir)])
 
-    for exp_gene_file in exp_gene_files:
-        cell_id=exp_gene_file.split("/")[-1][:4]
+# In[ ]:
 
-        # print(cell_id)   ## for test
-        # if cell_id=="E004":break ## for test
 
-        df_name=[file for file in os.listdir(df_pickle_dir) if cell_id in file][0]
-        df_path=os.path.join(df_pickle_dir,df_name)
-        with open(df_path,"rb") as f:
-            df=pickle.load(f)
-        css_prom_lst_unit_all=extProm_wrt_g_exp(exp_gene_file, df, up_num=up_num, down_num=down_num,unit=unit)
+# def extNsaveProm_g_exp(exp_gene_dir="./", df_pickle_dir="./",output_path="./",file_name="up2kdown4k",rpkm_val=50, up_num=2000, down_num=4000,unit=200):
+#     exp_gene_subdir=os.listdir(exp_gene_dir)
+#     exp_gene_tardir=[os.path.join(exp_gene_dir, subdir) for subdir in exp_gene_subdir if str(rpkm_val) in subdir][0]    
 
-        output_name=output_path+"rpkm"+str(rpkm_val)+"/"+cell_id+"_prom_"+file_name+".pkl"
-        output_dir = os.path.dirname(output_name)
+#     if rpkm_val==0:
+#         exp_gene_tardir=os.path.join(exp_gene_dir, "rpkm0")
 
-        # print(output_name) ### test
+#     exp_gene_files=sorted([os.path.join(exp_gene_tardir,file) for file in os.listdir(exp_gene_tardir)])
 
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir, exist_ok=True)
-        with open(output_name, "wb") as g:
-            pickle.dump(css_prom_lst_unit_all,g)
-    return print("Saved at ",output_path)
+#     for exp_gene_file in exp_gene_files:
+#         cell_id=exp_gene_file.split("/")[-1][:4]
+
+#         # print(cell_id)   ## for test
+#         # if cell_id=="E004":break ## for test
+
+#         df_name=[file for file in os.listdir(df_pickle_dir) if cell_id in file][0]
+#         df_path=os.path.join(df_pickle_dir,df_name)
+#         with open(df_path,"rb") as f:
+#             df=pickle.load(f)
+#         css_prom_lst_unit_all=extProm_wrt_g_exp(exp_gene_file, df, up_num=up_num, down_num=down_num,unit=unit)
+
+#         output_name=output_path+"rpkm"+str(rpkm_val)+"/"+cell_id+"_prom_"+file_name+".pkl"
+#         output_dir = os.path.dirname(output_name)
+
+#         # print(output_name) ### test
+
+#         if not os.path.exists(output_dir):
+#             os.makedirs(output_dir, exist_ok=True)
+#         with open(output_name, "wb") as g:
+#             pickle.dump(css_prom_lst_unit_all,g)
+#     return print("Saved at ",output_path)
 
 
 # In[76]:
@@ -1903,26 +1897,53 @@ def extNsaveProm_g_exp(exp_gene_dir="./", df_pickle_dir="./",output_path="./",fi
 # In[ ]:
 
 
-###### colab fine-tuning
+def extNsaveProm_g_exp(exp_gene_dir="./", df_pickle_dir="./", output_path="./",
+                       file_name="up2kdown4k", rpkm_val=50, up_num=2000, down_num=4000,
+                       unit=200, unit_type="rpkm"):
+    """
+    Extract promoter chromatin state sequences based on gene expression and save as .pkl files.
 
+    Parameters:
+    - exp_gene_dir: Directory containing expressed gene lists.
+    - df_pickle_dir: Directory containing chromatin state DataFrames (pickled).
+    - output_path: Base path to save output files.
+    - file_name: Suffix name for output files.
+    - rpkm_val: Expression threshold (50, 0, etc.).
+    - up_num: Upstream region size from TSS (default 2000).
+    - down_num: Downstream region size from TSS (default 4000).
+    - unit: Bin size (default 200).
+    - unit_type: 'rpkm' or 'tpm' (default 'rpkm' for backward compatibility).
+    """
 
+    # Find target gene directory
+    if rpkm_val == 0:
+        exp_gene_tardir = os.path.join(exp_gene_dir, f"{unit_type}0")
+    else:
+        exp_gene_subdirs = os.listdir(exp_gene_dir)
+        exp_gene_tardir = [os.path.join(exp_gene_dir, subdir) for subdir in exp_gene_subdirs if str(rpkm_val) in subdir and unit_type in subdir][0]
 
-# In[ ]:
+    exp_gene_files = sorted([os.path.join(exp_gene_tardir, file) for file in os.listdir(exp_gene_tardir)])
 
+    for exp_gene_file in exp_gene_files:
+        cell_id = exp_gene_file.split("/")[-1][:4]
 
+        df_name = [file for file in os.listdir(df_pickle_dir) if cell_id in file][0]
+        df_path = os.path.join(df_pickle_dir, df_name)
+        with open(df_path, "rb") as f:
+            df = pickle.load(f)
 
+        css_prom_lst_unit_all = extProm_wrt_g_exp(exp_gene_file, df, up_num=up_num, down_num=down_num, unit=unit)
 
+        output_name = os.path.join(output_path, f"{unit_type}{rpkm_val}", f"{cell_id}_prom_{file_name}.pkl")
+        output_dir = os.path.dirname(output_name)
 
-# In[ ]:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
 
+        with open(output_name, "wb") as g:
+            pickle.dump(css_prom_lst_unit_all, g)
 
-
-
-
-# In[ ]:
-
-
-
+    print("Saved at", output_path)
 
 
 # In[ ]:
