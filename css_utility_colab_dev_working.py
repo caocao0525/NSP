@@ -7,14 +7,14 @@
 # 
 # ChromBERT has been expanded to include support for IHEC data
 
-# In[7]:
+# In[11]:
 
 
 # ### To convert the file into .py
 # !jupyter nbconvert --to script css_utility_colab_dev_working.ipynb
 
 
-# In[1]:
+# In[12]:
 
 
 import os
@@ -70,47 +70,47 @@ from wordcloud import WordCloud
 
 # ### Useful Dictionaries
 
-# In[2]:
+# In[13]:
 
 
 state_dict={1:"A", 2:"B", 3:"C", 4:"D", 5:"E",6:"F",7:"G",8:"H" ,
                 9:"I" ,10:"J",11:"K", 12:"L", 13:"M", 14:"N", 15:"O"}
 
 
-# In[3]:
+# In[14]:
 
 
 state_dict_18={1:"A", 2:"B", 3:"C", 4:"D", 5:"E",6:"F",7:"G",8:"H" ,
                 9:"I" ,10:"J",11:"K", 12:"L", 13:"M", 14:"N", 15:"O", 16:"P", 17:"Q", 18:"R"}
 
 
-# In[4]:
+# In[15]:
 
 
 css_name=['TssA','TssAFlnk','TxFlnk','Tx','TxWk','EnhG','Enh','ZNF/Rpts',
           'Het','TssBiv','BivFlnk','EnhBiv','ReprPC','ReprPcWk','Quies']
 
 
-# In[5]:
+# In[16]:
 
 
 css_name_18=['TssA','TssAFlnk','TssFlnkU','TssFlnkD','Tx','TxWk','EnhG1','EnhG2','EnhA1','EnhA2','EnhWk','ZNF/Rpts',
           'Het','TssBiv','EnhBiv','ReprPC','ReprPcWk','Quies']
 
 
-# In[6]:
+# In[17]:
 
 
 css_dict=dict(zip(list(state_dict.values()), css_name))  # css_dict={"A":"TssA", "B":"TssAFlnk", ... }
 
 
-# In[7]:
+# In[18]:
 
 
 css_dict_18=dict(zip(list(state_dict_18.values()), css_name_18))  # css_dict={"A":"TssA", "B":"TssAFlnk", ... }
 
 
-# In[8]:
+# In[19]:
 
 
 # Color dict update using the info from https://egg2.wustl.edu/roadmap/web_portal/chr_state_learning.html
@@ -131,7 +131,7 @@ css_color_dict={'TssA':(255,0,0), # Red
                 'Quies': (240, 240, 240)}  # White -> bright gray 
 
 
-# In[9]:
+# In[20]:
 
 
 css_color_dict_18={ 'TssA':(255,0,0), # Red
@@ -154,7 +154,7 @@ css_color_dict_18={ 'TssA':(255,0,0), # Red
                  'Quies': (240, 240, 240)}  # White -> bright gray 
 
 
-# In[10]:
+# In[21]:
 
 
 state_col_dict_num={'A': (1.0, 0.0, 0.0),
@@ -174,7 +174,7 @@ state_col_dict_num={'A': (1.0, 0.0, 0.0),
  'O': (0.941, 0.941, 0.941)}
 
 
-# In[11]:
+# In[22]:
 
 
 state_col_dict_num_18={'A': (1.0, 0.0, 0.0),
@@ -197,7 +197,7 @@ state_col_dict_num_18={'A': (1.0, 0.0, 0.0),
  'R': (0.941, 0.941, 0.941) }
 
 
-# In[12]:
+# In[23]:
 
 
 def colors2color_dec(css_color_dict):
@@ -211,13 +211,13 @@ def colors2color_dec(css_color_dict):
 
 # **scale 0 to 1**
 
-# In[13]:
+# In[24]:
 
 
 state_col_dict=dict(zip(list(state_dict.values()),colors2color_dec(css_color_dict)))
 
 
-# In[14]:
+# In[25]:
 
 
 state_col_dict_18=dict(zip(list(state_dict_18.values()),colors2color_dec(css_color_dict_18)))
@@ -225,13 +225,13 @@ state_col_dict_18=dict(zip(list(state_dict_18.values()),colors2color_dec(css_col
 
 # **scale 0 to 255**
 
-# In[15]:
+# In[26]:
 
 
 state_col_255_dict=dict(zip(list(state_dict.values()),list(css_color_dict.values())))
 
 
-# In[16]:
+# In[27]:
 
 
 state_col_255_dict_18=dict(zip(list(state_dict_18.values()),list(css_color_dict_18.values())))
@@ -239,13 +239,13 @@ state_col_255_dict_18=dict(zip(list(state_dict_18.values()),list(css_color_dict_
 
 # **hexacode**
 
-# In[17]:
+# In[28]:
 
 
 hexa_state_col_dict={letter: "#{:02x}{:02x}{:02x}".format(*rgb) for letter,rgb in state_col_255_dict.items()}
 
 
-# In[18]:
+# In[29]:
 
 
 hexa_state_col_dict_18={letter: "#{:02x}{:02x}{:02x}".format(*rgb) for letter,rgb in state_col_255_dict_18.items()}
@@ -253,13 +253,13 @@ hexa_state_col_dict_18={letter: "#{:02x}{:02x}{:02x}".format(*rgb) for letter,rg
 
 # **name instead of alphabets**
 
-# In[19]:
+# In[30]:
 
 
 css_name_col_dict=dict(zip(css_name,state_col_dict.values()))
 
 
-# In[20]:
+# In[31]:
 
 
 css_name_col_dict_18=dict(zip(css_name_18,state_col_dict_18.values()))
@@ -267,7 +267,7 @@ css_name_col_dict_18=dict(zip(css_name_18,state_col_dict_18.values()))
 
 # ### Helper functions
 
-# In[21]:
+# In[32]:
 
 
 def flatLst(lst):
@@ -275,7 +275,7 @@ def flatLst(lst):
     return flatten_lst
 
 
-# In[22]:
+# In[33]:
 
 
 ### Produce colorful letter-represented chromatin state sequences
@@ -295,7 +295,7 @@ def colored_css_str_as_is(sub_str):   # convert space into space
     return print("\033[1m"+col_str+"\033[0;0m") 
 
 
-# In[23]:
+# In[34]:
 
 
 def seq2kmer(seq, k):
@@ -307,7 +307,7 @@ def seq2kmer(seq, k):
     return kmers
 
 
-# In[24]:
+# In[35]:
 
 
 def kmer2seq(kmers):
@@ -322,7 +322,7 @@ def kmer2seq(kmers):
     return seq
 
 
-# In[25]:
+# In[36]:
 
 
 # create dataframe from bed file
@@ -345,7 +345,7 @@ def bed2df_as_is(filename):
 
 # ### Main functions
 
-# In[27]:
+# In[37]:
 
 
 def bed2df_expanded(filename, state_num=15):
@@ -373,7 +373,7 @@ def bed2df_expanded(filename, state_num=15):
     return df 
 
 
-# In[28]:
+# In[38]:
 
 
 def unzipped_to_df(path_unzipped, output_path="./", state_num=15):
@@ -397,7 +397,7 @@ def unzipped_to_df(path_unzipped, output_path="./", state_num=15):
 # unzipped_to_df(unzipped_epi_files, output_path="../database/roadmap/df_pickled/")
 
 
-# In[30]:
+# In[39]:
 
 
 # # test for unzipped_to_df
@@ -406,7 +406,7 @@ def unzipped_to_df(path_unzipped, output_path="./", state_num=15):
 # # test passed
 
 
-# In[29]:
+# In[40]:
 
 
 # first, learn where one chromosome ends in the df
@@ -440,7 +440,7 @@ def df2chr_index(df):
     return chr_index
 
 
-# In[30]:
+# In[41]:
 
 
 def df2chr_df(df):
@@ -463,7 +463,7 @@ def df2chr_df(df):
     return df_chr_list   # elm is the df of each chromosome
 
 
-# In[31]:
+# In[42]:
 
 
 # make a long string of the css (unit length, not the real length)
@@ -488,7 +488,7 @@ def df2unitcss(df):
     return all_unit_css
 
 
-# In[32]:
+# In[43]:
 
 
 # # test for df2unitcss
@@ -500,7 +500,7 @@ def df2unitcss(df):
 # # test passed
 
 
-# In[33]:
+# In[44]:
 
 
 # #### To save css_unit from df_pickled in bulk
@@ -526,7 +526,7 @@ def df2unitcss(df):
 # ## this has been conducted, no need to execute again
 
 
-# In[36]:
+# In[45]:
 
 
 def shorten_string(s, factor):
@@ -548,7 +548,7 @@ def shorten_string(s, factor):
     return pattern.sub(replacer, s)
 
 
-# In[37]:
+# In[46]:
 
 
 def Convert2unitCSS_main_new(css_lst_all, unit=200):# should be either css_gene_lst_all or css_Ngene_lst_all
@@ -566,7 +566,7 @@ def Convert2unitCSS_main_new(css_lst_all, unit=200):# should be either css_gene_
     return reduced_all
 
 
-# In[38]:
+# In[47]:
 
 
 # make a long string of the css (not using unit, but the real length)
@@ -586,14 +586,23 @@ def df2longcss(df):
     all_css=[]
     for i in range(len(df_lst_chr)):
         df_chr=df_lst_chr[i]
+        ### Drop rows with missing length or state_seq BEFORE the loop
+        df_chr = df_chr.dropna(subset=["length", "state_seq"])
+        ####
         css_chr=''
         for j in range(len(df_chr)):
-            css_chr+=df_chr["length"].iloc[j]*df_chr["state_seq"].iloc[j]
-        all_css.append(css_chr)  
+            # css_chr+=df_chr["length"].iloc[j]*df_chr["state_seq"].iloc[j]
+            css_chr += int(df_chr["length"].iloc[j]) * df_chr["state_seq"].iloc[j]
+
+        ###  Only append if css_chr is not empty
+        if css_chr:
+            all_css.append(css_chr)
+        ###  
+
     return all_css
 
 
-# In[39]:
+# In[48]:
 
 
 # function for preprocess the whole gene data and produce chromosome-wise gene lists
@@ -632,7 +641,7 @@ def whGene2GLChr(whole_gene_file):
     return g_df_chr_lst
 
 
-# In[40]:
+# In[49]:
 
 
 #### Merging the gene table #### modified June. 29. 2023
@@ -663,7 +672,7 @@ def merge_intervals(df_list):
     return merged_list  # a list of DF, containing only TxStart and TxEnd
 
 
-# In[41]:
+# In[50]:
 
 
 def remove_chrM_and_trim_gene_file_accordingly(whole_gene_file,df):
@@ -689,7 +698,7 @@ def remove_chrM_and_trim_gene_file_accordingly(whole_gene_file,df):
     return new_gene_lst_all, df
 
 
-# In[42]:
+# In[51]:
 
 
 def save_TSS_by_loc(whole_gene_file, input_path="./",output_path="./",file_name="upNkdownNk", up_num=2000, down_num=4000, unit=200):
@@ -730,20 +739,20 @@ def save_TSS_by_loc(whole_gene_file, input_path="./",output_path="./",file_name=
     return print("All done!") #tss_by_loc_css_unit_all
 
 
-# In[43]:
+# In[52]:
 
 
 # with open ("../database/roadmap/df_pickled/E003_df_pickled.pkl", "rb") as f:
 #     df_test=pickle.load(f)
 
 
-# In[44]:
+# In[53]:
 
 
 ################## for Colab test
 
 
-# In[45]:
+# In[54]:
 
 
 def save_prom_by_loc_per_cell(whole_gene_file, df, up_num=2000, down_num=4000, unit=200):
@@ -784,14 +793,14 @@ def save_prom_by_loc_per_cell(whole_gene_file, df, up_num=2000, down_num=4000, u
     return prom_by_loc_per_cell_css_unit_all
 
 
-# In[46]:
+# In[55]:
 
 
 # whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'
 # prom_by_loc_per_cell_css_unit_all=save_prom_by_loc_per_cell(whole_gene_file, df_test, up_num=2000, down_num=4000, unit=200)
 
 
-# In[89]:
+# In[56]:
 
 
 def process_prom_list(prom_by_loc_per_cell_css_unit_all, k, low_signal):
@@ -817,7 +826,7 @@ def process_prom_list(prom_by_loc_per_cell_css_unit_all, k, low_signal):
 #### dont forget to upload the gene file
 
 
-# In[48]:
+# In[57]:
 
 
 # final_prom_list=process_prom_list(prom_by_loc_per_cell_css_unit_all, 4, "O")
@@ -831,7 +840,7 @@ def process_prom_list(prom_by_loc_per_cell_css_unit_all, k, low_signal):
 
 
 
-# In[ ]:
+# In[58]:
 
 
 # with open("../database/final_test/E001_df_pickled.pkl","rb") as f:
@@ -850,7 +859,7 @@ def process_prom_list(prom_by_loc_per_cell_css_unit_all, k, low_signal):
 
 
 
-# In[49]:
+# In[59]:
 
 
 # # test for save_TSS_by_loc
@@ -859,7 +868,7 @@ def process_prom_list(prom_by_loc_per_cell_css_unit_all, k, low_signal):
 # # test passed
 
 
-# In[34]:
+# In[60]:
 
 
 #######################################################################
@@ -907,7 +916,7 @@ def save_TSS_by_loc_IHEC(whole_gene_file, input_path="./",output_path="./",file_
     return print("All done!") #tss_by_loc_css_unit_all_flat
 
 
-# In[51]:
+# In[61]:
 
 
 # save_TSS_by_loc_IHEC(whole_gene_file="../database/RefSeq/hg38/RefSeq.WholeGene.bed", 
@@ -923,7 +932,7 @@ def save_TSS_by_loc_IHEC(whole_gene_file, input_path="./",output_path="./",file_
 
 
 
-# In[52]:
+# In[62]:
 
 
 # Pretrain data preprocessing and storing
@@ -962,7 +971,7 @@ def save_css_by_cell_wo_continuous_15state(path_to_css_unit_pickled, output_path
     return 
 
 
-# In[53]:
+# In[63]:
 
 
 # Preprocessing for removing continuous O state for pretrain dataset
@@ -1002,7 +1011,7 @@ def kmerCSS_to_pretrain_data_ihec(path_to_kmer_css_unit_pickled,output_path):
 # #### Expansion to IHEC data 
 # (1) Pretraining data preparation for all genomic regions
 
-# In[54]:
+# In[64]:
 
 
 #######################################################################
@@ -1126,7 +1135,7 @@ def save_css_by_cell_wo_continuous_18state(path_to_css_unit_pickled, output_file
     return
 
 
-# In[55]:
+# In[65]:
 
 
 # # css_unit_path="../database/css_unit_pickled_test/"
@@ -1142,7 +1151,7 @@ def save_css_by_cell_wo_continuous_18state(path_to_css_unit_pickled, output_file
 #                                        max_tokens=510)
 
 
-# In[56]:
+# In[66]:
 
 
 #######################################################################
@@ -1200,7 +1209,7 @@ def save_and_concatenate_css(path_to_css_unit_pickled, concatenated_output_file,
 
 
 
-# In[57]:
+# In[67]:
 
 
 # save_and_concatenate_css(
@@ -1211,7 +1220,7 @@ def save_and_concatenate_css(path_to_css_unit_pickled, concatenated_output_file,
 # )
 
 
-# In[58]:
+# In[68]:
 
 
 ######################################################
@@ -1219,7 +1228,7 @@ def save_and_concatenate_css(path_to_css_unit_pickled, concatenated_output_file,
 ######################################################
 
 
-# In[59]:
+# In[69]:
 
 
 # 1-1. Extract the sequence and rpkm value as a dataframe (for a single cell)
@@ -1293,7 +1302,7 @@ def create_css_with_rpkm_df(file_path, css_unit_path, unit=200):
     return result_df
 
 
-# In[60]:
+# In[70]:
 
 
 # # Example usage
@@ -1305,7 +1314,7 @@ def create_css_with_rpkm_df(file_path, css_unit_path, unit=200):
 # result_df.head()
 
 
-# In[61]:
+# In[71]:
 
 
 # 1-2. Prepare cell-wise dataframe of chromatin state sequence and rpkm pairs
@@ -1346,7 +1355,7 @@ def process_all_css_unit_rpkm_pair(file_dir, css_unit_dir, output_dir, unit=200)
         print(f"Saved result to {output_file}")
 
 
-# In[62]:
+# In[72]:
 
 
 # file_dir="../database_exp/RNA/hg19/gene_expression/sorted_output/"
@@ -1355,7 +1364,7 @@ def process_all_css_unit_rpkm_pair(file_dir, css_unit_dir, output_dir, unit=200)
 # process_all_css_unit_rpkm_pair(file_dir, css_unit_dir, output_dir, unit=200)
 
 
-# In[63]:
+# In[73]:
 
 
 # 1-3. Extract the sequence and rpkm value as a dataframe (for a single cell)
@@ -1443,7 +1452,7 @@ def create_promoter_css_with_rpkm_df(file_path, css_unit_path, unit=200, upstrea
 
 
 
-# In[64]:
+# In[74]:
 
 
 def process_all_promoter_css_unit_rpkm_pairs(file_dir, css_unit_dir, output_dir, unit=200, upstream=2000, downstream=4000, remove_o=True):
@@ -1492,7 +1501,7 @@ def process_all_promoter_css_unit_rpkm_pairs(file_dir, css_unit_dir, output_dir,
         # break
 
 
-# In[65]:
+# In[75]:
 
 
 # file_dir="../database_exp/RNA/hg19/gene_expression/sorted_output/"
@@ -1507,7 +1516,7 @@ def process_all_promoter_css_unit_rpkm_pairs(file_dir, css_unit_dir, output_dir,
 # # process_all_promoter_css_unit_rpkm_pairs(file_dir, css_unit_dir, output_dir, unit=200, upstream=2000, downstream=4000,remove_o=True)
 
 
-# In[66]:
+# In[76]:
 
 
 import pandas as pd
@@ -1543,7 +1552,7 @@ def preprocess_and_split_dataset(file_path, k=4, test_size=0.2, random_state=42)
     return train_data, dev_data
 
 
-# In[67]:
+# In[77]:
 
 
 # # Example usage
@@ -1570,7 +1579,7 @@ def preprocess_and_split_dataset(file_path, k=4, test_size=0.2, random_state=42)
 
 
 
-# In[68]:
+# In[78]:
 
 
 def prom_css_Kmer_by_cell(path="./", output_path="./",k=4):
@@ -1599,7 +1608,7 @@ def prom_css_Kmer_by_cell(path="./", output_path="./",k=4):
     return 
 
 
-# In[69]:
+# In[79]:
 
 
 # test for prom_css_Kmer_by_cell
@@ -1622,7 +1631,7 @@ def prom_css_Kmer_by_cell(path="./", output_path="./",k=4):
 # * Input: gene expression (high/low/not) file
 # * Output: a chromosome-wise list of dataframe containing `TxStart` and `TxEnd`
 
-# In[70]:
+# In[80]:
 
 
 # function for preprocess the whole gene data and produce chromosome-wise gene lists
@@ -1634,7 +1643,13 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/E050/gene_hig
     g_fn=exp_gene_file
     g_df_raw=pd.read_csv(g_fn, sep='\t', index_col=False, header=0)
     g_df=g_df_raw
-    g_df=g_df.iloc[:,1:]
+    #### treat IHEC DATA ###
+    # Skip first column ONLY for legacy ROADMAP format
+    if "IHEC" not in os.path.basename(g_fn):
+        g_df = g_df_raw.iloc[:, 1:]  # skip 1st column
+    else:
+        g_df = g_df_raw  # keep as-is for IHEC
+    # g_df=g_df.iloc[:,1:]
     g_df.rename(columns={"name":"gene_id"}, inplace=True)
     g_df.rename(columns={"#geneName":"geneName"}, inplace=True)
     g_df.rename(columns={"txStart":"TxStart"}, inplace=True) # to make it coherent to my previous codes
@@ -1643,22 +1658,23 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/E050/gene_hig
 #                                       6:"cdsStart",7:"cdsEnd",8:"exonCount",9:"exonStart",10:"exonEnds",
 #                                       11:"gene type",12:"transcript type",13:"reference transcript name",
 #                                       14:"reference transcription id"})
-    ## string to the list of "int", for exon start/end ##
-    g_df_temp=g_df # copy for processing
-    exon_start_int_lst=[]
-    for i, str_lst in enumerate(g_df_temp["exonStarts"]):
-        int_lst=[int(elm) for elm in str_lst.replace("[","").replace("]","").split(",")]
-        assert g_df_temp["exonCount"][i]==len(int_lst) # make sure the no. element in exon st count
-        exon_start_int_lst.append(int_lst)    
-    g_df_temp["exonStarts"]=exon_start_int_lst
+    ####### commented out for IHEC DATA 
+    # ## string to the list of "int", for exon start/end ##
+    # g_df_temp=g_df # copy for processing
+    # exon_start_int_lst=[]
+    # for i, str_lst in enumerate(g_df_temp["exonStarts"]):
+    #     int_lst=[int(elm) for elm in str_lst.replace("[","").replace("]","").split(",")]
+    #     assert g_df_temp["exonCount"][i]==len(int_lst) # make sure the no. element in exon st count
+    #     exon_start_int_lst.append(int_lst)    
+    # g_df_temp["exonStarts"]=exon_start_int_lst
 
-    exon_end_int_lst=[]
-    for i, str_lst in enumerate(g_df_temp["exonEnds"]):
-        int_lst=[int(elm) for elm in str_lst.replace("[","").replace("]","").split(",")]
-        assert g_df_temp["exonCount"][i]==len(int_lst) # make sure the no. element in exon start = count
-        exon_end_int_lst.append(int_lst)    
-    g_df_temp["exonEnds"]=exon_end_int_lst    
-    g_df=g_df_temp # and make it back the original name
+    # exon_end_int_lst=[]
+    # for i, str_lst in enumerate(g_df_temp["exonEnds"]):
+    #     int_lst=[int(elm) for elm in str_lst.replace("[","").replace("]","").split(",")]
+    #     assert g_df_temp["exonCount"][i]==len(int_lst) # make sure the no. element in exon start = count
+    #     exon_end_int_lst.append(int_lst)    
+    # g_df_temp["exonEnds"]=exon_end_int_lst    
+    # g_df=g_df_temp # and make it back the original name
 
     g_df=g_df[["geneName","gene_id","chrom","TxStart","TxEnd"]] # extract these only
 
@@ -1692,53 +1708,109 @@ def Gexp_Gene2GLChr(exp_gene_file='../database/bed/gene_expression/E050/gene_hig
 # #### Function `prom_expGene2css`
 # * This function produces a long list (not unit length) of css according to the gene expression table, per cell.
 
-# In[71]:
+# In[81]:
 
 
-def prom_expGene2css(g_lst_chr_merged,df, up_num=2000, down_num=4000):   # df indicates css, created by bed2df_expanded
+# def prom_expGene2css(g_lst_chr_merged,df, up_num=2000, down_num=4000):   # df indicates css, created by bed2df_expanded
+#     """
+#     modified from `compGene2css`
+#     Input: Reference gene file trimmed for gene expresseion level, df (CSS)
+#     Output: list of chromosome-wise list that contains the css at (expressed) genic area with prom only.
+#     """
+#     g_lst_chr=g_lst_chr_merged
+#     df = df[df['chromosome'] != 'chrM']
+#     css_lst_chr=df2longcss(df) # list of long css per chromosome
+#     #### remove any empty element##
+#     css_lst_chr = [s for s in css_lst_chr if s != '']
+#     #####
+
+#     g_lst_chr = g_lst_chr[:len(css_lst_chr)]  # adjust the length of list according to length of df (might not have chrY)
+#     total_chr=len(css_lst_chr)
+
+#     print("Matching to the chromatin state sequence data ...")
+#     css_prom_lst_all=[]
+#     # for i in tqdm_notebook(range(total_chr)):
+#     for i in range(total_chr):
+#         css=css_lst_chr[i]   # long css of i-th chromosome
+#         gene_df=g_lst_chr[i] # gene df of i-th chromosome
+
+#         css_prom_lst_chr=[]
+#         for j in range(len(gene_df)):
+#             prom_start=gene_df["TxStart"].iloc[j]-1-up_num  # python counts form 0
+#             prom_end=prom_start+up_num+down_num+1      # python excludes the end
+#             if gene_df["TxEnd"].iloc[j]<prom_end:  # if longer than gene body, then just gene body
+#                 prom_end=gene_df["TxEnd"].iloc[j]+1
+
+#             css_prom=css[prom_start:prom_end]           # cut the gene area only
+#             css_prom_lst_chr.append(css_prom)     # store in the list
+
+#         css_prom_lst_all.append(css_prom_lst_chr)  # list of list
+
+#     assert len(css_prom_lst_all)==total_chr
+
+#     # remove chromosome if it is empty (e.g. chrY for female)
+#     css_prom_lst_all=[elm for elm in css_prom_lst_all if elm!=[]] 
+
+#     print("Done!")
+#     return css_prom_lst_all 
+
+
+# In[82]:
+
+
+##### modified to deal with ihec
+def prom_expGene2css(g_lst_chr_merged, df, up_num=2000, down_num=4000):
     """
     modified from `compGene2css`
-    Input: Reference gene file trimmed for gene expresseion level, df (CSS)
+    Input: Reference gene file trimmed for gene expression level, df (CSS)
     Output: list of chromosome-wise list that contains the css at (expressed) genic area with prom only.
     """
-    g_lst_chr=g_lst_chr_merged
     df = df[df['chromosome'] != 'chrM']
-    css_lst_chr=df2longcss(df) # list of long css per chromosome
+    css_lst_chr_full = df2longcss(df)
 
-    g_lst_chr = g_lst_chr[:len(css_lst_chr)]  # adjust the length of list according to length of df (might not have chrY)
-    total_chr=len(css_lst_chr)
+    # Filter out empty css + their corresponding gene dfs
+    css_lst_chr = []
+    g_lst_chr_filtered = []
+    for css_chr, gene_df_chr in zip(css_lst_chr_full, g_lst_chr_merged):
+        if css_chr != '':
+            css_lst_chr.append(css_chr)
+            g_lst_chr_filtered.append(gene_df_chr)
+
+    g_lst_chr = g_lst_chr_filtered
+    total_chr = len(css_lst_chr)
 
     print("Matching to the chromatin state sequence data ...")
-    css_prom_lst_all=[]
-    # for i in tqdm_notebook(range(total_chr)):
+    css_prom_lst_all = []
     for i in range(total_chr):
-        css=css_lst_chr[i]   # long css of i-th chromosome
-        gene_df=g_lst_chr[i] # gene df of i-th chromosome
+        css = css_lst_chr[i]
+        gene_df = g_lst_chr[i]
 
-        css_prom_lst_chr=[]
+        css_prom_lst_chr = []
         for j in range(len(gene_df)):
-            prom_start=gene_df["TxStart"].iloc[j]-1-up_num  # python counts form 0
-            prom_end=prom_start+up_num+down_num+1      # python excludes the end
-            if gene_df["TxEnd"].iloc[j]<prom_end:  # if longer than gene body, then just gene body
-                prom_end=gene_df["TxEnd"].iloc[j]+1
+            prom_start = gene_df["TxStart"].iloc[j] - 1 - up_num
+            prom_end = prom_start + up_num + down_num + 1
+            if gene_df["TxEnd"].iloc[j] < prom_end:
+                prom_end = gene_df["TxEnd"].iloc[j] + 1
 
-            css_prom=css[prom_start:prom_end]           # cut the gene area only
-            css_prom_lst_chr.append(css_prom)     # store in the list
+            css_prom = css[prom_start:prom_end]
+            if css_prom:
+                css_prom_lst_chr.append(css_prom)     # store in the list
 
-        css_prom_lst_all.append(css_prom_lst_chr)  # list of list
+        css_prom_lst_all.append(css_prom_lst_chr)
 
-    assert len(css_prom_lst_all)==total_chr
+    assert len(css_prom_lst_all) == total_chr
 
-    # remove chromosome if it is empty (e.g. chrY for female)
-    css_prom_lst_all=[elm for elm in css_prom_lst_all if elm!=[]] 
+    # Optional: still remove if any chromosome has 0 valid promoters
+    css_prom_lst_all = [elm for elm in css_prom_lst_all if elm != []]
 
     print("Done!")
-    return css_prom_lst_all 
+    return css_prom_lst_all
 
 
-# In[72]:
+# In[83]:
 
 
+# To extract promoter regions for a single gene list (e.g., for one cell type).
 def extProm_wrt_g_exp(exp_gene_file, df, up_num=2000, down_num=4000,unit=200):
     """
     extract promoter regions of genes according to gene expression level
@@ -1758,7 +1830,7 @@ def extProm_wrt_g_exp(exp_gene_file, df, up_num=2000, down_num=4000,unit=200):
 # * `removeOverlapDF`: function used inside the main function.
 # * To acquire final collapsed gene table, run `gene_removeDupl`
 
-# In[73]:
+# In[84]:
 
 
 def removeOverlapDF(test_df):    
@@ -1819,7 +1891,7 @@ def removeOverlapDF(test_df):
     return gene_collapsed_df
 
 
-# In[74]:
+# In[85]:
 
 
 def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
@@ -1850,7 +1922,7 @@ def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 
 
 
-# In[ ]:
+# In[86]:
 
 
 # def extNsaveProm_g_exp(exp_gene_dir="./", df_pickle_dir="./",output_path="./",file_name="up2kdown4k",rpkm_val=50, up_num=2000, down_num=4000,unit=200):
@@ -1886,7 +1958,7 @@ def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 #     return print("Saved at ",output_path)
 
 
-# In[76]:
+# In[87]:
 
 
 # test for extNsaveProm_g_exp
@@ -1894,7 +1966,7 @@ def gene_removeDupl(whole_gene_file='../database/RefSeq/RefSeq.WholeGene.bed'):
 # test passed
 
 
-# In[ ]:
+# In[88]:
 
 
 def extNsaveProm_g_exp(exp_gene_dir="./", df_pickle_dir="./", output_path="./",
@@ -1960,7 +2032,7 @@ def extNsaveProm_g_exp(exp_gene_dir="./", df_pickle_dir="./", output_path="./",
 # (2) `extNOTexp_by_compare` : Extract the not expressed genes by comparing with whole gene with rpkm>0 <br>
 # (3) `extNsaveNOTexp_by_compare` : load the required file and process all, and save refFlat (.pkl) and prom-region css (.pkl)
 
-# In[77]:
+# In[89]:
 
 
 def extWholeGeneRef(whole_gene_ref):
@@ -1996,7 +2068,7 @@ def extWholeGeneRef(whole_gene_ref):
     return g_df_chr_lst  # list of chromosome-wise df for all gene start and end
 
 
-# In[78]:
+# In[90]:
 
 
 def extNOTexp_by_compare(whole_gene_ref, cell_exp_ref):
@@ -2017,7 +2089,7 @@ def extNOTexp_by_compare(whole_gene_ref, cell_exp_ref):
     return non_exp_gene_lst
 
 
-# In[79]:
+# In[91]:
 
 
 def extNsaveNOTexp_by_compare(whole_gene_ref_path,
@@ -2057,7 +2129,7 @@ def extNsaveNOTexp_by_compare(whole_gene_ref_path,
     return print("refFlat is saved at {} and prom is saved at {}.".format(output_path_ref, output_path_prom))
 
 
-# In[80]:
+# In[92]:
 
 
 # # # test for extNsaveNOTexp_by_compare
@@ -2073,7 +2145,7 @@ def extNsaveNOTexp_by_compare(whole_gene_ref_path,
 # #### Function `prom_css_Kmer_by_cell`
 # * This function saves the kmerized promoter regions (of all genes)
 
-# In[81]:
+# In[93]:
 
 
 def prom_css_Kmer_by_cell(path="./", output_path="./",k=4):
@@ -2101,7 +2173,7 @@ def prom_css_Kmer_by_cell(path="./", output_path="./",k=4):
     return 
 
 
-# In[82]:
+# In[94]:
 
 
 # test for prom_css_Kmer_by_cell
@@ -2132,7 +2204,7 @@ def prom_css_Kmer_by_cell(path="./", output_path="./",k=4):
 # 
 # (4) `process_save_TF` : Prepare binary classification data, after finishing above processes
 
-# In[83]:
+# In[95]:
 
 
 # Cut if it is longer than 510
@@ -2170,7 +2242,7 @@ def css_CUT_Kmer(css, cut_thres=510, k=4):
     return splitted, kmerized_unit_css
 
 
-# In[84]:
+# In[96]:
 
 
 def prep_by_merge_cell(input_path):  # css is the list of chromatin state sequence list in the region of interest
@@ -2202,7 +2274,7 @@ def prep_by_merge_cell(input_path):  # css is the list of chromatin state sequen
     return css_concat
 
 
-# In[85]:
+# In[97]:
 
 
 def kmerize_and_cut(input_path,output_path, output_file_name, k=4, cut_thres=510):
@@ -2230,7 +2302,7 @@ def kmerize_and_cut(input_path,output_path, output_file_name, k=4, cut_thres=510
     return print("The files in {} were merged, {}-merized, and saved at{}".format(input_path,k,output_path))
 
 
-# In[86]:
+# In[98]:
 
 
 # # test 
@@ -2239,10 +2311,10 @@ def kmerize_and_cut(input_path,output_path, output_file_name, k=4, cut_thres=510
 # # test passed
 
 
-# In[87]:
+# In[ ]:
 
 
-def process_save_TF(cl1_path, cl2_path, output_path, k=4, wo_cont_o_state=True, len_tr=20000, len_dev=1000):
+def process_save_TF(cl1_path, cl2_path, output_path, k=4, wo_cont_low_state=True, len_tr=20000, len_dev=1000, low_signal='O'):
     """
     When you have k-merized .txt file for each class, process and save it for fine-tuning data 
 
@@ -2251,7 +2323,7 @@ def process_save_TF(cl1_path, cl2_path, output_path, k=4, wo_cont_o_state=True, 
     - cl2_path (str): Path to class 2 (the class of comparison)
     - output_path (str): Path to save the result file (train.tsv, dev.tsv)
     - k (int): The length of k-mer, default=4
-    - wo_cnt_o_state (bool): whether to remove continuous O state (True to remove)
+    - wo_cont_low_state (bool): whether to remove continuous Low signal state, for 15-state, 'O', for 18-state, 'R' (True to remove)
     - len_tr: The length of train.tsv file. Default=20000
     - len_dev: The length of dev.tsv file. Default=1000
 
@@ -2264,9 +2336,9 @@ def process_save_TF(cl1_path, cl2_path, output_path, k=4, wo_cont_o_state=True, 
     cl2=pd.read_csv(cl2_path, header=None, names=["sequence"])
     cl2_list=cl2["sequence"].tolist()
 
-    if wo_cont_o_state:
-        cl1_list = [item for item in cl1_list if k*"O" not in item]
-        cl2_list = [item for item in cl2_list if k*"O" not in item]
+    if wo_cont_low_state:
+        cl1_list = [item for item in cl1_list if k*low_signal not in item]  
+        cl2_list = [item for item in cl2_list if k*low_signal not in item]
 
     print("class 1 has {} elements.".format(len(cl1_list)))
     print("class 2 has {} elements.".format(len(cl2_list)))
@@ -2304,7 +2376,7 @@ def process_save_TF(cl1_path, cl2_path, output_path, k=4, wo_cont_o_state=True, 
 
 
 
-# In[88]:
+# In[100]:
 
 
 # # test
@@ -2325,7 +2397,7 @@ def process_save_TF(cl1_path, cl2_path, output_path, k=4, wo_cont_o_state=True, 
 # (3) `saveCRMforPREall` : save the CRM extracted for various limit length (from 6 to 10)
 # 
 
-# In[84]:
+# In[101]:
 
 
 def crm_df_maker(crm_path="../database/remap2022/remap2022_crm_macs2_hg19_v1_0.bed", limit_len=3):
@@ -2358,7 +2430,7 @@ def crm_df_maker(crm_path="../database/remap2022/remap2022_crm_macs2_hg19_v1_0.b
     return crm_df_fin
 
 
-# In[85]:
+# In[102]:
 
 
 ### cut the css according to the CRM position
@@ -2388,7 +2460,7 @@ def extCRMfromCell(css_sample_path="../database/roadmap/css_unit_pickled/E003_un
     return cut_lst_all
 
 
-# In[86]:
+# In[103]:
 
 
 def extCRMfromCell_all(input_path="../database/roadmap/css_unit_pickled/", crm_path="../database/remap2022/remap2022_crm_macs2_hg19_v1_0.bed", output_path="../database/remap2022/crm/", limit_len=6):
@@ -2404,7 +2476,7 @@ def extCRMfromCell_all(input_path="../database/roadmap/css_unit_pickled/", crm_p
     return print("All files are saved at {}, with limit_len={}".format(output_path, limit_len))
 
 
-# In[87]:
+# In[104]:
 
 
 def saveCRMforPREall_mod(input_path="../database/remap2022/crm/",output_path="../database/pretrain/crm/",limit_len=10, k=4): 
@@ -2442,7 +2514,7 @@ def saveCRMforPREall_mod(input_path="../database/remap2022/crm/",output_path="..
 
 # #### Quick Result Visualization
 
-# In[2]:
+# In[105]:
 
 
 def plot_chrombert_eval(prediction_path, dev_path, cmap='crest_r'):
@@ -2481,7 +2553,7 @@ def plot_chrombert_eval(prediction_path, dev_path, cmap='crest_r'):
     plt.show()
 
 
-# In[5]:
+# In[106]:
 
 
 #### Motif visualiaztion on Attention matrix 
@@ -2542,7 +2614,7 @@ def prom_motif_vis_on_mat(dev_path, atten_path, target_len=30, threshold=0.33, f
 # 1. Logo style visualization using attention score <br><br>
 # Usage: `motif_logo(mat_path, dev_path, motif="GBBBG")`
 
-# In[3]:
+# In[107]:
 
 
 def dev_conv(dev_file_path):
@@ -2564,7 +2636,7 @@ def dev_conv(dev_file_path):
     return dev_df
 
 
-# In[89]:
+# In[108]:
 
 
 def get_matWcss(mat_path,dev_path):
@@ -2604,7 +2676,7 @@ def get_matWcss(mat_path,dev_path):
     return all_dict_1, all_dict_0
 
 
-# In[90]:
+# In[109]:
 
 
 ####################### draw the designated entry only ######################
@@ -2672,7 +2744,7 @@ def get_motifWScore(all_dict_1, motif, extend_len=0):   # modify the code for sh
     return motif_found_all, score_found_all, score_found_norm_all #list of list
 
 
-# In[91]:
+# In[110]:
 
 
 def score2logo(motif_found_all, score_found_all, score_found_norm_all, norm=False):
@@ -2727,7 +2799,7 @@ def score2logo(motif_found_all, score_found_all, score_found_norm_all, norm=Fals
     return logo_score 
 
 
-# In[92]:
+# In[111]:
 
 
 def motif_logo(mat_path, dev_path, motif):
@@ -2737,7 +2809,7 @@ def motif_logo(mat_path, dev_path, motif):
     return
 
 
-# In[93]:
+# In[112]:
 
 
 # #### test
@@ -2752,7 +2824,7 @@ def motif_logo(mat_path, dev_path, motif):
 # * Usage: `motif2wordcloud(motif_dir, color_map="viridis")`
 # * Note that `motif_dir` is a directory where the motif files are collected.
 
-# In[35]:
+# In[113]:
 
 
 def motif2wordcloud(path, color_map="viridis"):
@@ -2774,7 +2846,7 @@ def motif2wordcloud(path, color_map="viridis"):
     plt.show()
 
 
-# In[95]:
+# In[114]:
 
 
 # #### test
@@ -2785,7 +2857,7 @@ def motif2wordcloud(path, color_map="viridis"):
 
 # #### Motif Clustering
 
-# In[36]:
+# In[115]:
 
 
 def motif_init2df(input_path="./init_concat.csv"):
@@ -2805,7 +2877,7 @@ def motif_init2df(input_path="./init_concat.csv"):
     return df_sequences
 
 
-# In[97]:
+# In[116]:
 
 
 # test for motif_init2df
@@ -2814,7 +2886,7 @@ def motif_init2df(input_path="./init_concat.csv"):
 # test passed
 
 
-# In[37]:
+# In[117]:
 
 
 ####### update completed for python 3.11.
@@ -2940,7 +3012,7 @@ def motif_init2pred_with_dendrogram(
     return y_pred
 
 
-# In[70]:
+# In[118]:
 
 
 # # test for motif_init2pred_with_dendrogram
@@ -2948,7 +3020,7 @@ def motif_init2pred_with_dendrogram(
 # # test passed
 
 
-# In[39]:
+# In[119]:
 
 
 ####### update completed for python 3.11.
@@ -3069,7 +3141,7 @@ def motif_init2pred(input_path="./init_concat.csv", categorical=False, fillna_me
 
 
 
-# In[41]:
+# In[120]:
 
 
 # # test
@@ -3077,7 +3149,7 @@ def motif_init2pred(input_path="./init_concat.csv", categorical=False, fillna_me
 # # test passed
 
 
-# In[47]:
+# In[121]:
 
 
 def motif_init2class(input_path="./init_concat.csv", categorical=False, fillna_method="ffill", n_clusters=11, linkage_method="complete"): #,fillna_method='ffill'):
@@ -3123,7 +3195,7 @@ def motif_init2class(input_path="./init_concat.csv", categorical=False, fillna_m
     return clustered_sequences
 
 
-# In[103]:
+# In[122]:
 
 
 # # test
@@ -3131,7 +3203,7 @@ def motif_init2class(input_path="./init_concat.csv", categorical=False, fillna_m
 # # test passed
 
 
-# In[42]:
+# In[123]:
 
 
 def motif_init2class_vis(input_path="./init_concat.csv", categorical=False, fillna_method="ffill", n_clusters=11, linkage_method="complete"):
@@ -3202,7 +3274,7 @@ def motif_init2class_vis(input_path="./init_concat.csv", categorical=False, fill
     plt.show()
 
 
-# In[44]:
+# In[124]:
 
 
 # # test
@@ -3210,7 +3282,7 @@ def motif_init2class_vis(input_path="./init_concat.csv", categorical=False, fill
 # # test passed
 
 
-# In[90]:
+# In[125]:
 
 
 ####### update completed for python 3.11.
@@ -3296,7 +3368,7 @@ def motif_init2cluster_vis(input_path="./init_concat.csv", categorical=False, n_
     fig.savefig("./cluster_result.pdf", bbox_inches='tight', dpi=300, facecolor='white', edgecolor='black')
 
 
-# In[92]:
+# In[126]:
 
 
 # # test
@@ -3304,7 +3376,7 @@ def motif_init2cluster_vis(input_path="./init_concat.csv", categorical=False, n_
 # # test passed
 
 
-# In[ ]:
+# In[127]:
 
 
 ####### update completed for python 3.11.
@@ -3369,7 +3441,7 @@ def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_cluster
     plt.show()
 
 
-# In[95]:
+# In[128]:
 
 
 # # test
@@ -3403,7 +3475,7 @@ def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_cluster
 
 
 
-# In[110]:
+# In[129]:
 
 
 # ############# This is to enable easy execution of the function
@@ -3421,7 +3493,7 @@ def motif_init2umap(input_path="./init_concat.csv",categorical=False,  n_cluster
 # ###############################################################
 
 
-# In[ ]:
+# In[130]:
 
 
 # Parse arguments for command-line use
